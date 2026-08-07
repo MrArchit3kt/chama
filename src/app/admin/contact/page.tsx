@@ -77,17 +77,17 @@ export default async function AdminContactPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                 Admin Contact
               </p>
-              <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+              <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
                 Demandes des utilisateurs
               </h1>
-              <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+              <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
                 Consulte les demandes admin, signalements de joueurs, bugs et
                 suggestions d’amélioration.
               </p>
@@ -103,7 +103,7 @@ export default async function AdminContactPage({
         </div>
 
         {hasError ? (
-          <div className="neon-card p-6">
+          <div className="neon-card p-4 md:p-6">
             <p className="text-sm font-medium text-rose-400">
               Erreur serveur pendant l’action demandée.
             </p>
@@ -111,7 +111,7 @@ export default async function AdminContactPage({
         ) : null}
 
         {isClosed ? (
-          <div className="neon-card p-6">
+          <div className="neon-card p-4 md:p-6">
             <p className="text-sm font-medium text-emerald-400">
               Demande clôturée avec succès.
             </p>
@@ -119,33 +119,33 @@ export default async function AdminContactPage({
         ) : null}
 
         {requests.length === 0 ? (
-          <div className="neon-card p-8">
+          <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
               Aucune demande reçue pour le moment.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3 md:gap-4">
             {requests.map((item) => (
-              <div key={item.id} className="neon-card p-6">
-                <div className="flex flex-col gap-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
+              <div key={item.id} className="neon-card p-4 md:p-6">
+                <div className="flex flex-col gap-4 md:gap-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3 md:gap-4">
                     <div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                         <span className="neon-badge">{getTypeLabel(item.type)}</span>
 
                         <span
                           className={
                             item.status === "OPEN"
-                              ? "rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-300"
-                              : "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300"
+                              ? "rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
+                              : "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
                           }
                         >
                           {getStatusLabel(item.status)}
                         </span>
                       </div>
 
-                      <h2 className="mt-4 text-xl font-bold text-white">
+                      <h2 className="mt-3 text-lg font-bold text-white md:mt-4 md:text-xl">
                         {item.subject}
                       </h2>
 
@@ -165,14 +165,14 @@ export default async function AdminContactPage({
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-5">
-                    <p className="text-sm leading-7 text-white">{item.message}</p>
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3.5 md:p-5">
+                    <p className="text-sm leading-6 text-white md:leading-7">{item.message}</p>
                   </div>
 
                   {item.status === "OPEN" ? (
                     <form action={closeContactRequest}>
                       <input type="hidden" name="id" value={item.id} />
-                      <button type="submit" className="neon-button px-5 py-3">
+                      <button type="submit" className="neon-button px-4 py-2.5 md:px-5 md:py-3">
                         Clôturer la demande
                       </button>
                     </form>

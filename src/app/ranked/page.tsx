@@ -128,15 +128,15 @@ export default async function RankedPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
             Ranked
           </p>
-          <h2 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Mix Warzone Ranked
           </h2>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Le Ranked est strict : équipes de 3 uniquement. Rejoins la file pour
             être pris en compte, puis consulte toutes les équipes (la tienne en
             premier).

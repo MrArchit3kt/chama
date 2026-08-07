@@ -73,15 +73,15 @@ export default async function AdminRegistrationsPage({
     <SiteShell>
       <AdminPlayersRealtime channel="registrations" />
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         <div className="neon-card p-6 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Admin Registrations
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Validation des inscriptions
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Accepte ou refuse les nouveaux comptes avant leur accès au site.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default async function AdminRegistrationsPage({
         </div>
 
         {pendingUsers.length === 0 ? (
-          <div className="neon-card p-8">
+          <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
               Aucune demande d’inscription en attente.
             </p>
@@ -175,7 +175,7 @@ export default async function AdminRegistrationsPage({
                   <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
                     <form action={approveRegistration}>
                       <input type="hidden" name="userId" value={user.id} />
-                      <button type="submit" className="neon-button w-full px-5 py-3">
+                      <button type="submit" className="neon-button w-full px-4 py-2.5 md:px-5 md:py-3">
                         Accepter
                       </button>
                     </form>
@@ -184,7 +184,7 @@ export default async function AdminRegistrationsPage({
                       <input type="hidden" name="userId" value={user.id} />
                       <button
                         type="submit"
-                        className="neon-button-secondary w-full px-5 py-3"
+                        className="neon-button-secondary w-full px-4 py-2.5 md:px-5 md:py-3"
                       >
                         Refuser
                       </button>

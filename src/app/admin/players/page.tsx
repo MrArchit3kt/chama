@@ -292,7 +292,7 @@ export default async function AdminPlayersPage({
     <SiteShell>
       <AdminPlayersRealtime channel="players" />
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         <div className="neon-card p-3.5 md:p-8">
           <div className="flex flex-col gap-3 md:gap-6">
             <div className="flex flex-col gap-3 md:gap-4 lg:flex-row lg:items-center lg:justify-between">

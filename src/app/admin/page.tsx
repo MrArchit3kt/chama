@@ -121,8 +121,8 @@ export default async function AdminHomePage() {
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <div className="flex items-center gap-3">
             <Settings className="h-5 w-5 text-cyan-300" />
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
@@ -130,32 +130,32 @@ export default async function AdminHomePage() {
             </p>
           </div>
 
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Centre de contrôle du site
           </h1>
 
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Gère la communauté CHAMA : joueurs, inscriptions, mix, événements,
             demandes de contact, règlement et configuration globale du site.
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
           {stats.map((stat) => (
             <Link
               key={stat.label}
               href={stat.href}
-              className="neon-card-soft p-4 transition hover:-translate-y-0.5"
+              className="neon-card-soft p-3 transition hover:-translate-y-0.5 md:p-4"
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/50 md:text-[11px] md:tracking-[0.18em]">
                 {stat.label}
               </p>
-              <p className={`mt-1 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+              <p className={`mt-1 text-xl font-black md:text-2xl ${stat.color}`}>{stat.value}</p>
             </Link>
           ))}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
           {cards.map((card) => {
             const Icon = card.icon;
 
@@ -163,17 +163,17 @@ export default async function AdminHomePage() {
               <Link
                 key={card.href}
                 href={card.href}
-                className="neon-card p-6 transition hover:-translate-y-0.5"
+                className="neon-card p-4 transition hover:-translate-y-0.5 md:p-6"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06]">
-                    <Icon className="h-5 w-5 text-cyan-300" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/6 md:h-11 md:w-11">
+                    <Icon className="h-4.5 w-4.5 text-cyan-300 md:h-5 md:w-5" />
                   </div>
 
-                  <h2 className="text-xl font-bold text-white">{card.title}</h2>
+                  <h2 className="text-lg font-bold text-white md:text-xl">{card.title}</h2>
                 </div>
 
-                <p className="neon-text-muted mt-4 text-sm leading-6">
+                <p className="neon-text-muted mt-3 text-sm leading-6 md:mt-4">
                   {card.description}
                 </p>
               </Link>

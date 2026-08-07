@@ -98,7 +98,7 @@ export default async function SocialsPage() {
                   href={discordInviteUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="neon-button inline-flex px-6 py-3"
+                  className="neon-button inline-flex px-4 py-2.5 md:px-6 md:py-3"
                 >
                   Rejoindre Discord
                 </Link>

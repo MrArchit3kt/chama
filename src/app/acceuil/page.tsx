@@ -61,7 +61,7 @@ export default async function HomePage() {
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         <section className="neon-card overflow-hidden p-0">
           <div className="relative min-h-[320px] md:min-h-[460px]">
             <Image
@@ -87,26 +87,26 @@ export default async function HomePage() {
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href="/tuto" className="neon-button-secondary px-6 py-3">
+                  <Link href="/tuto" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
                     Comment ça marche ?
                   </Link>
 
-                  <Link href="/membres" className="neon-button-secondary px-6 py-3">
+                  <Link href="/membres" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
                     Voir les membres
                   </Link>
 
-                  <Link href="/reglement" className="neon-button-secondary px-6 py-3">
+                  <Link href="/reglement" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
                     Règlement
                   </Link>
 
                   {socialsEnabled ? (
-                    <Link href="/socials" className="neon-button-secondary px-6 py-3">
+                    <Link href="/socials" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
                       Voir nos réseaux
                     </Link>
                   ) : null}
 
                   {contactEnabled ? (
-                    <Link href="/contact" className="neon-button-secondary px-6 py-3">
+                    <Link href="/contact" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
                       Contacter les admins
                     </Link>
                   ) : null}
@@ -117,18 +117,18 @@ export default async function HomePage() {
         </section>
 
         {eventsEnabled ? (
-          <section className="neon-card p-8">
+          <section className="neon-card p-5 md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                   Événements annoncés
                 </p>
-                <h2 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+                <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
                   Les prochaines annonces
                 </h2>
               </div>
 
-              <Link href="/events" className="neon-button-secondary px-5 py-3">
+              <Link href="/events" className="neon-button-secondary px-4 py-2.5 md:px-5 md:py-3">
                 Voir tous les événements
               </Link>
             </div>

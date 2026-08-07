@@ -89,33 +89,33 @@ export default async function NotificationsPage() {
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
             Alertes
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Mes notifications
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Toutes les notifications non lues ont été marquées comme lues à
             l’ouverture de cette page.
           </p>
         </div>
 
         {notifications.length === 0 ? (
-          <div className="neon-card p-8">
+          <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
               Aucune notification pour le moment.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3 md:gap-4">
             {notifications.map((notification) => (
-              <div key={notification.id} className="neon-card p-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div key={notification.id} className="neon-card p-4 md:p-6">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                       <span className="neon-badge">
                         {getNotificationTypeLabel(notification.type)}
                       </span>
@@ -125,19 +125,19 @@ export default async function NotificationsPage() {
                       <span
                         className={
                           notification.status === "READ"
-                            ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300"
-                            : "rounded-full border border-pink-400/20 bg-pink-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-pink-300"
+                            ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
+                            : "rounded-full border border-pink-400/20 bg-pink-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-pink-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
                         }
                       >
                         {getNotificationStatusLabel(notification.status)}
                       </span>
                     </div>
 
-                    <h2 className="mt-4 text-lg font-bold text-white">
+                    <h2 className="mt-3 text-base font-bold text-white md:mt-4 md:text-lg">
                       {notification.title}
                     </h2>
 
-                    <p className="neon-text-muted mt-3 text-sm leading-7">
+                    <p className="neon-text-muted mt-2 text-sm leading-6 md:mt-3 md:leading-7">
                       {notification.message}
                     </p>
                   </div>

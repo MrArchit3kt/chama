@@ -291,7 +291,7 @@ export default async function TutoPage() {
           </div>
 
           <div className="mt-6">
-            <Link href="/socials" className="neon-button inline-flex px-6 py-3">
+            <Link href="/socials" className="neon-button inline-flex px-4 py-2.5 md:px-6 md:py-3">
               Aller sur la page Réseaux
             </Link>
           </div>
@@ -304,7 +304,7 @@ export default async function TutoPage() {
           </p>
           <Link
             href="/contact"
-            className="neon-button-secondary mt-3 inline-flex px-6 py-3"
+            className="neon-button-secondary mt-3 inline-flex px-4 py-2.5 md:px-6 md:py-3"
           >
             Contacter les admins
           </Link>

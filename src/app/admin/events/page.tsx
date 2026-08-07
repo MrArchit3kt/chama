@@ -149,12 +149,12 @@ export default async function AdminEventsPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Admin Events
           </p>
-          <h2 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Gestion des événements
           </h2>
           <p className="neon-text-muted mt-4 max-w-2xl leading-7">
@@ -162,8 +162,8 @@ export default async function AdminEventsPage({
           </p>
         </div>
 
-        <div className="neon-card p-8">
-          <h3 className="text-2xl font-bold text-white">Créer un événement</h3>
+        <div className="neon-card p-5 md:p-8">
+          <h3 className="text-xl font-bold text-white md:text-2xl">Créer un événement</h3>
 
           <form
             action={createEvent}
@@ -304,16 +304,16 @@ export default async function AdminEventsPage({
             ) : null}
 
             <div>
-              <button type="submit" className="neon-button px-6 py-3">
+              <button type="submit" className="neon-button px-4 py-2.5 md:px-6 md:py-3">
                 Publier l’événement
               </button>
             </div>
           </form>
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid gap-4 md:gap-6">
           {events.length === 0 ? (
-            <div className="neon-card p-8">
+            <div className="neon-card p-5 md:p-8">
               <p className="neon-text-muted text-sm">
                 Aucun événement créé pour le moment.
               </p>
@@ -331,14 +331,14 @@ export default async function AdminEventsPage({
               const imageSrc = getEventImageSrc(event.coverImageUrl);
 
               return (
-                <div key={event.id} className="neon-card p-8">
-                  <div className="flex flex-col gap-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                <div key={event.id} className="neon-card p-4 md:p-8">
+                  <div className="flex flex-col gap-4 md:gap-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 md:gap-3">
                       <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
                           Événement existant
                         </p>
-                        <h3 className="mt-2 text-2xl font-bold text-white">
+                        <h3 className="mt-2 text-lg font-bold text-white md:text-2xl">
                           {event.title}
                         </h3>
                         <p className="neon-text-muted mt-2 text-sm">
@@ -351,7 +351,7 @@ export default async function AdminEventsPage({
                         ) : null}
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 md:gap-2">
                         <span className="neon-badge">
                           {getEventStatusLabel(event.status)}
                         </span>
@@ -362,12 +362,12 @@ export default async function AdminEventsPage({
                     </div>
 
                     {imageSrc ? (
-                      <div className="rounded-2xl border border-white/8 bg-black/30 p-4 md:p-6">
+                      <div className="rounded-2xl border border-white/8 bg-black/30 p-3 md:p-6">
                         <div className="flex justify-center overflow-auto rounded-2xl border border-white/8 bg-black/20 p-2 md:p-4">
                           <img
                             src={imageSrc}
                             alt={event.title}
-                            className="block h-auto max-h-[42rem] w-auto max-w-full rounded-xl"
+                            className="block h-auto max-h-72 w-auto max-w-full rounded-xl md:max-h-168"
                             loading="lazy"
                           />
                         </div>
@@ -590,7 +590,7 @@ export default async function AdminEventsPage({
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        <button type="submit" className="neon-button px-6 py-3">
+                        <button type="submit" className="neon-button px-4 py-2.5 md:px-6 md:py-3">
                           Modifier l’événement
                         </button>
                       </div>
@@ -600,7 +600,7 @@ export default async function AdminEventsPage({
                       <input type="hidden" name="id" value={event.id} />
                       <button
                         type="submit"
-                        className="neon-button-secondary px-6 py-3"
+                        className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3"
                       >
                         Supprimer l’événement
                       </button>

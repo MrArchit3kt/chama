@@ -41,15 +41,15 @@ export default async function AdminBadgesPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Badges (Admin)
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Catalogue de badges
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Crée des badges ici, puis attribue-les aux joueurs depuis{" "}
             <span className="text-white">Admin Players</span> (détail d’un
             joueur → section Badges).
@@ -146,7 +146,7 @@ export default async function AdminBadgesPage({
             </div>
 
             <div className="md:col-span-2">
-              <button type="submit" className="neon-button px-6 py-3">
+              <button type="submit" className="neon-button px-4 py-2.5 md:px-6 md:py-3">
                 Créer le badge
               </button>
             </div>

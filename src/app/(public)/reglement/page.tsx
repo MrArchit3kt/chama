@@ -26,33 +26,33 @@ export default async function RulesPage() {
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Règlement
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Règlement officiel de la communauté
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Lis attentivement les règles de jeu, de comportement et de vie de la communauté CHAMA.
           </p>
         </div>
 
         {!rules ? (
-          <div className="neon-card p-8">
+          <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
               Aucun règlement publié pour le moment.
             </p>
           </div>
         ) : (
-          <div className="neon-card p-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-bold text-white">{rules.title}</h2>
+          <div className="neon-card p-5 md:p-8">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <h2 className="text-xl font-bold text-white md:text-2xl">{rules.title}</h2>
               <span className="neon-badge">Version {rules.versionNumber}</span>
             </div>
 
-            <div className="neon-text-muted mt-6 space-y-4 whitespace-pre-wrap leading-7 text-sm md:text-base">
+            <div className="neon-text-muted mt-4 space-y-4 whitespace-pre-wrap text-sm leading-6 md:mt-6 md:text-base md:leading-7">
               {rules.content}
             </div>
           </div>

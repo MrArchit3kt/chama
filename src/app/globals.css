@@ -372,6 +372,16 @@ button {
     inset 0 0 12px rgba(57, 240, 255, 0.03);
 }
 
+/* ✅ Harmonisation mobile : badges plus compacts sur petits écrans */
+@media (max-width: 640px) {
+  .neon-badge {
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+  }
+}
+
 /* Scrollbar */
 .thin-scrollbar {
   scrollbar-width: thin;

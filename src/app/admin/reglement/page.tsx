@@ -53,23 +53,23 @@ export default async function AdminReglementPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
             Admin Règlement
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Gestion du règlement
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Rédige ou mets à jour le règlement officiel de la communauté.
             Chaque sauvegarde crée une nouvelle version.
           </p>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-          <div className="neon-card p-8">
-            <h2 className="text-2xl font-bold text-white">
+        <div className="grid gap-4 md:gap-6 xl:grid-cols-[2fr_1fr]">
+          <div className="neon-card p-5 md:p-8">
+            <h2 className="text-xl font-bold text-white md:text-2xl">
               {activeRules ? "Modifier le règlement" : "Créer le règlement"}
             </h2>
 
@@ -132,15 +132,15 @@ export default async function AdminReglementPage({
               ) : null}
 
               <div>
-                <button type="submit" className="neon-button px-6 py-3">
+                <button type="submit" className="neon-button px-4 py-2.5 md:px-6 md:py-3">
                   Enregistrer le règlement
                 </button>
               </div>
             </form>
           </div>
 
-          <div className="grid gap-6">
-            <div className="neon-card p-6">
+          <div className="grid gap-4 md:gap-6">
+            <div className="neon-card p-4 md:p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                 Version active
               </p>

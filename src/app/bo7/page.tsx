@@ -128,15 +128,15 @@ export default async function BO7Page({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-fuchsia-300/75">
             BO7
           </p>
-          <h2 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Mix Black Ops 7
           </h2>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Rejoins la file pour être pris en compte dans le prochain mix, puis
             consulte toutes les équipes générées (la tienne en premier).
           </p>

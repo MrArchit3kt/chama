@@ -94,15 +94,15 @@ export default async function EventsPage({
 
   return (
     <SiteShell>
-      <div className="grid gap-6">
-        <div className="neon-card p-8">
+      <div className="grid gap-4 md:gap-6">
+        <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Events
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-3xl font-black">
+          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
             Événements de la communauté
           </h1>
-          <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Tous les événements publiés de la team CHAMA.
           </p>
         </div>
@@ -124,13 +124,13 @@ export default async function EventsPage({
         ) : null}
 
         {events.length === 0 ? (
-          <div className="neon-card p-8">
+          <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
               Aucun événement publié pour le moment.
             </p>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-4 md:gap-6">
             {events.map((event) => {
               const myParticipation = event.participants[0] ?? null;
               const imageSrc = getEventImageSrc(event.coverImageUrl);
@@ -138,22 +138,22 @@ export default async function EventsPage({
               return (
                 <div key={event.id} className="neon-card overflow-hidden p-0">
                   {imageSrc ? (
-                    <div className="border-b border-white/8 bg-black/30 p-4 md:p-6">
+                    <div className="border-b border-white/8 bg-black/30 p-3 md:p-6">
                       <div className="overflow-hidden rounded-2xl border border-white/8 bg-black/40">
                         <img
                           src={imageSrc}
                           alt={event.title}
-                          className="block h-auto max-h-[700px] w-full object-contain"
+                          className="block h-auto max-h-80 w-full object-contain md:max-h-175"
                           loading="lazy"
                         />
                       </div>
                     </div>
                   ) : null}
 
-                  <div className="p-8">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="p-5 md:p-8">
+                    <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
                       <div>
-                        <h2 className="text-2xl font-bold text-white">
+                        <h2 className="text-xl font-bold text-white md:text-2xl">
                           {event.title}
                         </h2>
                         <p className="neon-text-muted mt-2 text-sm">
@@ -171,15 +171,15 @@ export default async function EventsPage({
                       </span>
                     </div>
 
-                    <p className="neon-text-muted mt-5 whitespace-pre-wrap leading-7">
+                    <p className="neon-text-muted mt-4 whitespace-pre-wrap text-sm leading-6 md:mt-5 md:text-base md:leading-7">
                       {event.description}
                     </p>
 
-                    <div className="mt-6 flex flex-wrap gap-3">
+                    <div className="mt-5 flex flex-wrap gap-2.5 md:mt-6 md:gap-3">
                       <form action={setEventPresence}>
                         <input type="hidden" name="eventId" value={event.id} />
                         <input type="hidden" name="action" value="present" />
-                        <button type="submit" className="neon-button px-5 py-3">
+                        <button type="submit" className="neon-button px-4 py-2.5 md:px-5 md:py-3">
                           Je serai présent
                         </button>
                       </form>
@@ -189,22 +189,22 @@ export default async function EventsPage({
                         <input type="hidden" name="action" value="absent" />
                         <button
                           type="submit"
-                          className="neon-button-secondary px-5 py-3"
+                          className="neon-button-secondary px-4 py-2.5 md:px-5 md:py-3"
                         >
                           Je ne serai pas présent
                         </button>
                       </form>
                     </div>
 
-                    <div className="mt-4">
+                    <div className="mt-3 md:mt-4">
                       {myParticipation?.status === "CONFIRMED" ? (
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]">
                           Tu es marqué présent
                         </span>
                       ) : null}
 
                       {myParticipation?.status === "CANCELLED" ? (
-                        <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-rose-300">
+                        <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]">
                           Tu es marqué absent
                         </span>
                       ) : null}
