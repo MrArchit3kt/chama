@@ -293,46 +293,46 @@ export default async function AdminPlayersPage({
       <AdminPlayersRealtime channel="players" />
 
       <div className="grid gap-6">
-        <div className="neon-card p-6 md:p-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="neon-card p-3.5 md:p-8">
+          <div className="flex flex-col gap-3 md:gap-6">
+            <div className="flex flex-col gap-3 md:gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-pink-300/75 md:text-sm">
                   Admin Players
                 </p>
-                <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
+                <h2 className="neon-title neon-gradient-text mt-1 text-lg font-black md:mt-3 md:text-3xl">
                   Suivi des joueurs
                 </h2>
-                <p className="neon-text-muted mt-4 max-w-3xl leading-7">
+                <p className="neon-text-muted mt-1 hidden max-w-3xl leading-7 md:mt-4 md:block">
                   Vue admin de l’activité, de l’inactivité, des membres CHAMA et de
                   la modération des joueurs.
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="neon-card-soft px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                    Total joueurs
+              <div className="grid grid-cols-3 gap-2 md:gap-3">
+                <div className="neon-card-soft px-2 py-1.5 md:px-4 md:py-3">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-cyan-300/75 md:text-xs md:tracking-[0.18em]">
+                    Total
                   </p>
-                  <p className="neon-title neon-gradient-text mt-1 text-xl font-black md:text-2xl">
+                  <p className="neon-title neon-gradient-text mt-0.5 text-base font-black md:mt-1 md:text-2xl">
                     {rows.length}
                   </p>
                 </div>
 
-                <div className="neon-card-soft px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300/75">
-                    Membres CHAMA
+                <div className="neon-card-soft px-2 py-1.5 md:px-4 md:py-3">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-300/75 md:text-xs md:tracking-[0.18em]">
+                    CHAMA
                   </p>
-                  <p className="mt-1 text-xl font-black text-white md:text-2xl">
+                  <p className="mt-0.5 text-base font-black text-white md:mt-1 md:text-2xl">
                     {chamaCount}
                   </p>
                 </div>
 
-                <div className="neon-card-soft px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-300/75">
-                    Alertes 10j+
+                <div className="neon-card-soft px-2 py-1.5 md:px-4 md:py-3">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-pink-300/75 md:text-xs md:tracking-[0.18em]">
+                    Alertes
                   </p>
-                  <p className="mt-1 text-xl font-black text-white md:text-2xl">
+                  <p className="mt-0.5 text-base font-black text-white md:mt-1 md:text-2xl">
                     {alertCount}
                   </p>
                 </div>
@@ -341,46 +341,48 @@ export default async function AdminPlayersPage({
 
             <form
               method="GET"
-              className="grid gap-3 md:grid-cols-[1.6fr_1fr_1fr_auto]"
+              className="grid gap-2 md:gap-3 md:grid-cols-[1.6fr_1fr_1fr_auto]"
             >
               <input
                 type="text"
                 name="q"
                 defaultValue={searchQuery}
                 placeholder="Rechercher un joueur (nom, pseudo, email)"
-                className="w-full px-4 py-3"
+                className="w-full px-3 py-2 text-sm md:px-4 md:py-3 md:text-base"
               />
 
-              <select
-                name="role"
-                defaultValue={roleFilter}
-                className="w-full px-4 py-3"
-              >
-                <option value="">Tous les rôles</option>
-                <option value="PLAYER">Player</option>
-                <option value="ADMIN">Admin</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2 md:contents">
+                <select
+                  name="role"
+                  defaultValue={roleFilter}
+                  className="w-full px-3 py-2 text-sm md:px-4 md:py-3 md:text-base"
+                >
+                  <option value="">Tous les rôles</option>
+                  <option value="PLAYER">Player</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
 
-              <select
-                name="status"
-                defaultValue={statusFilter}
-                className="w-full px-4 py-3"
-              >
-                <option value="">Tous les statuts</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-                <option value="BANNED">BANNED</option>
-              </select>
+                <select
+                  name="status"
+                  defaultValue={statusFilter}
+                  className="w-full px-3 py-2 text-sm md:px-4 md:py-3 md:text-base"
+                >
+                  <option value="">Tous les statuts</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="BANNED">BANNED</option>
+                </select>
+              </div>
 
-              <div className="flex gap-3">
-                <button type="submit" className="neon-button px-5 py-3">
+              <div className="flex gap-2 md:gap-3">
+                <button type="submit" className="neon-button px-5 py-2.5 text-sm md:py-3 md:text-base">
                   Rechercher
                 </button>
 
                 <a
                   href="/admin/players"
-                  className="neon-button-secondary inline-flex items-center justify-center px-5 py-3"
+                  className="neon-button-secondary inline-flex items-center justify-center px-5 py-2.5 text-sm md:py-3 md:text-base"
                 >
                   Reset
                 </a>
