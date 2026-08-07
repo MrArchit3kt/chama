@@ -9,6 +9,7 @@ import {
   Swords,
   Rocket,
   Award,
+  Car,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ export const mainLinks: NavLink[] = [
   { href: "/ranked", label: "Ranked", icon: Trophy },
   { href: "/bo7", label: "BO7", icon: Swords },
   { href: "/rocket-league", label: "Rocket League", icon: Rocket },
+  { href: "/gta6", label: "GTA 6", icon: Car },
 ];
 
 export const adminLinks: NavLink[] = [
