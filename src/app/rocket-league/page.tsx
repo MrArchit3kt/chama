@@ -10,11 +10,16 @@ import { generateMix } from "@/server/mix/generate-mix";
 import { getTeamDisplayName } from "@/lib/team-names";
 import { sortTeamsMineFirst } from "@/lib/mix-teams";
 import { SessionHistory } from "@/components/mix/session-history";
+import { PoolList, type PoolPlayer } from "@/components/mix/pool-list";
+import { canSelfServeMix } from "@/server/mix/mix-access";
+import { rocketLeagueRankLabel } from "@/lib/ranks";
 
 function getErrorMessage(error?: string) {
   switch (error) {
     case "forbidden":
       return "Rejoins d’abord la file Rocket League pour pouvoir générer.";
+    case "pool_forbidden":
+      return "Un admin gère actuellement la file : tu ne peux pas retirer de joueur.";
     case "no_team_size":
       return "Un admin doit d’abord choisir le format 2v2 ou 3v3 avant de pouvoir générer.";
     case "rank_missing":
@@ -39,7 +44,7 @@ function getErrorMessage(error?: string) {
 export default async function RocketLeaguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; session?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; removed?: string; session?: string }>;
 }) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
@@ -53,6 +58,7 @@ export default async function RocketLeaguePage({
   const sp = (await searchParams) ?? {};
   const errorMessage = getErrorMessage(sp.error);
   const isSuccess = sp.success === "1";
+  const isRemoved = sp.removed === "1";
   const sessionId = sp.session;
   const isInQueue = !!user.isAvailableForRocketLeagueMix;
 
@@ -61,13 +67,37 @@ export default async function RocketLeaguePage({
     select: { rocketLeagueTeamSize: true },
   });
 
-  const [queueUserCount, queueTempCount] = await Promise.all([
-    db.user.count({
+  const [queueUsers, queueTempPlayers, canManagePool] = await Promise.all([
+    db.user.findMany({
       where: { status: "ACTIVE", registrationStatus: "APPROVED", isAvailableForRocketLeagueMix: true },
+      select: { id: true, username: true, rocketLeagueRank: true },
+      orderBy: { displayName: "asc" },
     }),
-    db.tempPlayer.count({ where: { game: "ROCKET_LEAGUE", isAvailableForMix: true } }),
+    db.tempPlayer.findMany({
+      where: { game: "ROCKET_LEAGUE", isAvailableForMix: true },
+      select: { id: true, nickname: true, rocketLeagueRank: true },
+      orderBy: { nickname: "asc" },
+    }),
+    canSelfServeMix("ROCKET_LEAGUE", sessionUser.id),
   ]);
-  const queueCount = queueUserCount + queueTempCount;
+
+  const queueCount = queueUsers.length + queueTempPlayers.length;
+
+  const poolPlayers: PoolPlayer[] = [
+    ...queueUsers.map((p) => ({
+      id: p.id,
+      kind: "USER" as const,
+      label: `@${p.username}`,
+      sub: rocketLeagueRankLabel(p.rocketLeagueRank),
+      isSelf: p.id === sessionUser.id,
+    })),
+    ...queueTempPlayers.map((p) => ({
+      id: p.id,
+      kind: "TEMP" as const,
+      label: p.nickname,
+      sub: rocketLeagueRankLabel(p.rocketLeagueRank),
+    })),
+  ];
 
   const includeTeams = {
     teams: {
@@ -198,6 +228,21 @@ export default async function RocketLeaguePage({
             </p>
           </div>
         ) : null}
+
+        {isRemoved ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">
+              Joueur retiré de la file avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="neon-card p-6 md:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300/75">
+            File d’attente
+          </p>
+          <PoolList game="ROCKET_LEAGUE" players={poolPlayers} canManage={canManagePool} />
+        </div>
 
         <div className="neon-card p-6 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
