@@ -1,60 +1,108 @@
 # Déploiement — chama-gaming.site
 
-## 1. Récupérer le code sur le VPS
+Ce site cohabite avec d'autres sites sur le même VPS : chaque site a son
+propre dossier, sa propre base Postgres, son propre process PM2 et son
+propre port local. Adapte `/var/www/chama` si tes autres sites vivent
+ailleurs (garde juste le même parent que les autres).
+
+## 0. Choisir un port libre
+
+Chaque site sur le VPS doit tourner sur un port différent en local (nginx
+fait ensuite le routage par nom de domaine). Vérifie ce qui est déjà pris :
 
 ```bash
-git clone https://github.com/MrArchit3kt/chama.git
-cd chama
+pm2 list
+sudo ss -tlnp | grep LISTEN
 ```
 
-## 2. Variables d'environnement
+Le reste de ce guide suppose le port **3010** — remplace-le partout si déjà
+utilisé par un autre site.
+
+## 1. Prérequis sur le VPS (une seule fois, si pas déjà en place)
+
+```bash
+# Node.js (si pas déjà installé)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+sudo apt-get install -y nodejs
+
+# pnpm via corepack
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# PM2 (gestionnaire de process, garde l'app en vie)
+sudo npm install -g pm2
+
+# nginx + certbot (si pas déjà en place)
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+```
+
+## 2. Base de données dédiée
+
+Un site = une base séparée (comme tes autres sites sur ce VPS) :
+
+```bash
+sudo -u postgres psql -c "CREATE USER chama WITH PASSWORD 'CHOISIS_UN_MOT_DE_PASSE_FORT';"
+sudo -u postgres psql -c "CREATE DATABASE chama OWNER chama;"
+```
+
+## 3. Cloner le projet dans le dossier chama
+
+```bash
+sudo mkdir -p /var/www/chama
+sudo chown $USER:$USER /var/www/chama
+git clone https://github.com/MrArchit3kt/chama.git /var/www/chama
+cd /var/www/chama
+```
+
+## 4. Configuration (.env)
 
 ```bash
 cp .env.example .env
+nano .env
 ```
 
-Puis remplir `.env` :
+Remplir :
 - `NEXTAUTH_URL="https://chama-gaming.site"`
-- `NEXTAUTH_SECRET` : générer une valeur **différente** de celle du dev avec
-  `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`
-- `DATABASE_URL` : pointer vers la base Postgres de prod
+- `NEXTAUTH_SECRET` : générer une valeur **propre à cet environnement**
+  (jamais celle du dev) :
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+  ```
+- `DATABASE_URL="postgresql://chama:CHOISIS_UN_MOT_DE_PASSE_FORT@localhost:5432/chama"`
 - `DISCORD_WEBHOOK_URL`, `TWILIO_*` : vraies valeurs si utilisées
 
-## 3. Installer et builder
+## 5. Installer, migrer, builder
 
 ```bash
-corepack enable
 pnpm install
 pnpm prisma migrate deploy
 pnpm build
 ```
 
-## 4. Lancer le serveur
-
-Le process doit rester actif en permanence (PM2, systemd, ou équivalent) :
+## 6. Lancer avec PM2 (port 3010)
 
 ```bash
-pnpm start   # écoute sur le port 3000 par défaut
-```
-
-Exemple avec PM2 :
-```bash
-pnpm add -g pm2
-pm2 start "pnpm start" --name chama
+PORT=3010 pm2 start "pnpm start" --name chama
 pm2 save
+pm2 startup   # affiche une commande à exécuter une fois pour démarrer PM2 au boot du VPS
 ```
 
-## 5. Reverse proxy + HTTPS (nginx + certbot)
+Vérifier que ça tourne en local :
+```bash
+curl -I http://localhost:3010
+```
 
-Pointer le DNS de `chama-gaming.site` vers l'IP du VPS, puis :
+## 7. nginx — routage par domaine
+
+Créer `/etc/nginx/sites-available/chama` :
 
 ```nginx
 server {
   listen 80;
-  server_name chama-gaming.site;
+  server_name chama-gaming.site www.chama-gaming.site;
 
   location / {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3010;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -67,18 +115,61 @@ server {
 }
 ```
 
-Puis :
+Activer et recharger :
 ```bash
-sudo certbot --nginx -d chama-gaming.site
+sudo ln -s /etc/nginx/sites-available/chama /etc/nginx/sites-enabled/chama
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
-`X-Forwarded-For` doit être transmis par le proxy : le rate limiting
-(inscription/contact) et le tracking de présence en dépendent pour
-identifier les clients correctement.
+`X-Forwarded-For` doit être transmis (c'est le cas ci-dessus) : le rate
+limiting anti-spam (inscription/contact) et le suivi de présence en ligne
+en dépendent pour identifier les visiteurs.
 
-## 6. Mises à jour ultérieures
+## 8. Domaine — configuration DNS chez Ionos
+
+1. Récupère l'IP publique du VPS : `curl -4 ifconfig.me` (exécuté sur le VPS)
+2. Va sur [ionos.fr](https://www.ionos.fr) → connecte-toi → **Domaines & SSL**
+3. Clique sur `chama-gaming.site` → **DNS**
+4. Ajoute/modifie ces enregistrements :
+
+   | Type | Nom (host) | Valeur              | TTL     |
+   |------|-----------|----------------------|---------|
+   | A    | @         | `<IP publique du VPS>` | 1h (défaut) |
+   | A    | www       | `<IP publique du VPS>` | 1h (défaut) |
+
+   (Supprime tout enregistrement A ou CNAME préexistant sur `@`/`www` qui
+   pointerait ailleurs — un domaine ne peut avoir qu'une seule destination.)
+
+5. Sauvegarde. La propagation prend en général de quelques minutes à
+   quelques heures (rarement jusqu'à 24-48h).
+
+Vérifier la propagation :
+```bash
+dig +short chama-gaming.site
+# doit renvoyer l'IP du VPS
+```
+
+## 9. Certificat HTTPS (une fois le DNS propagé)
 
 ```bash
+sudo certbot --nginx -d chama-gaming.site -d www.chama-gaming.site
+```
+
+Certbot modifie automatiquement le bloc nginx pour rediriger en HTTPS et
+programme le renouvellement automatique.
+
+## 10. Vérification finale
+
+```bash
+curl -I https://chama-gaming.site
+```
+→ doit répondre `307` vers `/login` (le site exige une connexion, comme prévu).
+
+## 11. Mises à jour ultérieures
+
+```bash
+cd /var/www/chama
 git pull
 pnpm install
 pnpm prisma migrate deploy
