@@ -70,6 +70,19 @@ Remplir :
   ```
 - `DATABASE_URL="postgresql://chama:CHOISIS_UN_MOT_DE_PASSE_FORT@localhost:5432/chama"`
 - `DISCORD_WEBHOOK_URL`, `TWILIO_*` : vraies valeurs si utilisées
+- `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` (optionnel, pour le badge
+  "EN LIVE" automatique sur la page /lives) :
+  1. Aller sur https://dev.twitch.tv/console/apps → **Register Your Application**
+  2. Name : `CHAMA Squad Manager` (ou autre nom unique)
+  3. OAuth Redirect URLs : `https://chama-gaming.site` (obligatoire dans le
+     formulaire Twitch, mais pas utilisé — cette intégration n'utilise que
+     le flow "app access token", sans connexion utilisateur)
+  4. Category : `Application Integration`
+  5. Une fois créée, copier le **Client ID**, puis cliquer **New Secret**
+     pour générer le **Client Secret** (affiché une seule fois)
+  6. Coller les deux valeurs dans `.env`
+  Sans ces deux valeurs, `/lives` fonctionne quand même (liste des chaînes
+  Twitch renseignées), juste sans détection automatique du live.
 
 ## 5. Installer, migrer, builder
 

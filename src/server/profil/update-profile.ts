@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { normalizeTwitchUsername } from "@/lib/twitch";
 
 const rocketLeagueRankEnum = z.enum([
   "BRONZE",
@@ -40,6 +41,7 @@ const updateProfileSchema = z.object({
     .optional(),
   discordUsername: z.string().max(80).optional(),
   whatsappNumber: z.string().max(30).optional(),
+  twitchUsername: z.string().max(25).optional(),
   micAvailable: z.boolean().optional(),
   whatsappOptIn: z.boolean().optional(),
 
@@ -76,6 +78,18 @@ export async function updateProfile(formData: FormData) {
   const rlRankRaw = emptyToUndefined(formData.get("rocketLeagueRank"));
   const wzRankRaw = emptyToUndefined(formData.get("warzoneRankTier"));
 
+  // Twitch : accepte pseudo brut, URL complète ou "@pseudo" ; "" => pas de chaîne
+  const twitchRaw = emptyToUndefined(formData.get("twitchUsername"));
+  let twitchUsername: string | null | undefined;
+  if (twitchRaw === undefined) {
+    twitchUsername = null;
+  } else {
+    twitchUsername = normalizeTwitchUsername(twitchRaw);
+    if (!twitchUsername) {
+      redirect("/profil?error=twitch_invalid");
+    }
+  }
+
   const parsed = updateProfileSchema.safeParse({
     displayName: String(formData.get("displayName") ?? ""),
     email: String(formData.get("email") ?? ""),
@@ -85,11 +99,12 @@ export async function updateProfile(formData: FormData) {
     preferredRole: emptyToUndefined(formData.get("preferredRole")),
     discordUsername: emptyToUndefined(formData.get("discordUsername")),
     whatsappNumber: emptyToUndefined(formData.get("whatsappNumber")),
+    twitchUsername: twitchUsername ?? undefined,
     micAvailable: formData.get("micAvailable") === "on",
     whatsappOptIn: formData.get("whatsappOptIn") === "on",
 
-    rocketLeagueRank: rlRankRaw as any, // validé par zod enum si présent
-    warzoneRankTier: wzRankRaw as any, // validé par zod enum si présent
+    rocketLeagueRank: rlRankRaw as z.infer<typeof rocketLeagueRankEnum> | undefined, // validé par zod enum si présent
+    warzoneRankTier: wzRankRaw as z.infer<typeof warzoneRankTierEnum> | undefined, // validé par zod enum si présent
   });
 
   if (!parsed.success) {
@@ -119,6 +134,7 @@ export async function updateProfile(formData: FormData) {
         preferredRole: data.preferredRole ?? "NONE",
         discordUsername: data.discordUsername,
         whatsappNumber: data.whatsappNumber,
+        twitchUsername: twitchUsername ?? null,
         micAvailable: Boolean(data.micAvailable),
         whatsappOptIn: Boolean(data.whatsappOptIn),
 

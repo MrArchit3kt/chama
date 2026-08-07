@@ -10,6 +10,7 @@ import {
   Rocket,
   Award,
   Car,
+  Radio,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const mainLinks: NavLink[] = [
   { href: "/bo7", label: "BO7", icon: Swords },
   { href: "/rocket-league", label: "Rocket League", icon: Rocket },
   { href: "/gta6", label: "GTA 6", icon: Car },
+  { href: "/lives", label: "Lives", icon: Radio },
 ];
 
 export const adminLinks: NavLink[] = [
