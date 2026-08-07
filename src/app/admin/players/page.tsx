@@ -10,7 +10,7 @@ import { liftBan } from "@/server/admin/lift-ban";
 import { resetPlayerPassword } from "@/server/admin/reset-player-password";
 import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
-import { deletePlayer } from "@/server/admin/delete-player";
+import { banPlayer } from "@/server/admin/ban-player";
 import { awardBadge } from "@/server/admin/award-badge";
 import { revokeBadge } from "@/server/admin/revoke-badge";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
@@ -50,8 +50,10 @@ function getErrorMessage(error?: string) {
       return "Tu ne peux pas modifier ton propre rôle.";
     case "super_admin_locked":
       return "Le rôle d’un super admin ne peut pas être modifié ici.";
-    case "self_delete":
-      return "Tu ne peux pas supprimer ton propre compte.";
+    case "self_ban":
+      return "Tu ne peux pas te bannir toi-même.";
+    case "already_banned":
+      return "Ce joueur est déjà banni.";
     default:
       return null;
   }
@@ -130,7 +132,7 @@ export default async function AdminPlayersPage({
     password_reset?: string;
     chama?: string;
     role_updated?: string;
-    deleted?: string;
+    manual_banned?: string;
     badge_awarded?: string;
     badge_revoked?: string;
     q?: string;
@@ -154,7 +156,7 @@ export default async function AdminPlayersPage({
   const isChamaEnabled = sp.chama === "1";
   const isChamaDisabled = sp.chama === "0";
   const isRoleUpdated = sp.role_updated === "1";
-  const isDeleted = sp.deleted === "1";
+  const isManuallyBanned = sp.manual_banned === "1";
   const isBadgeAwarded = sp.badge_awarded === "1";
   const isBadgeRevoked = sp.badge_revoked === "1";
 
@@ -462,10 +464,10 @@ export default async function AdminPlayersPage({
           </div>
         ) : null}
 
-        {isDeleted ? (
+        {isManuallyBanned ? (
           <div className="neon-card p-5">
-            <p className="text-sm font-medium text-amber-300">
-              Joueur supprimé avec succès.
+            <p className="text-sm font-medium text-rose-400">
+              Joueur banni avec succès.
             </p>
           </div>
         ) : null}
@@ -699,25 +701,35 @@ export default async function AdminPlayersPage({
                       </form>
                     </div>
 
-                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/[0.04] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">
-                        Suppression du joueur
-                      </p>
+                    {player.status !== "BANNED" ? (
+                      <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">
+                          Bannir le joueur
+                        </p>
 
-                      <p className="mt-2 text-sm leading-6 text-white/75">
-                        Cette action supprime définitivement ce compte et ses données liées en cascade.
-                      </p>
+                        <p className="mt-2 text-sm leading-6 text-white/75">
+                          Le joueur ne pourra plus accéder au site. Il verra le
+                          motif et pourra s’expliquer via la page /banni.
+                        </p>
 
-                      <form action={deletePlayer} className="mt-3">
-                        <input type="hidden" name="userId" value={player.id} />
-                        <button
-                          type="submit"
-                          className="neon-button-secondary w-full px-5 py-3"
-                        >
-                          Supprimer le joueur
-                        </button>
-                      </form>
-                    </div>
+                        <form action={banPlayer} className="mt-3 grid gap-3">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            name="reason"
+                            type="text"
+                            required
+                            placeholder="Motif du bannissement"
+                            className="w-full px-4 py-3"
+                          />
+                          <button
+                            type="submit"
+                            className="neon-button-secondary w-full px-5 py-3"
+                          >
+                            Bannir le joueur
+                          </button>
+                        </form>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
@@ -812,7 +824,7 @@ export default async function AdminPlayersPage({
                   </div>
 
                   {player.status === "BANNED" ? (
-                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/[0.04] p-4">
+                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">
                         Déban du joueur
                       </p>

@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { PartyPopper, X } from "lucide-react";
 import { markChamaWelcomeSeen } from "@/server/profil/mark-chama-welcome-seen";
 
+type Shape = "rect" | "ribbon" | "circle";
+
 type Particle = {
   id: number;
+  kind: "burst" | "rain";
   left: number;
-  top: number;
-  x: number;
-  y: number;
-  rot: number;
-  delay: number;
-  duration: number;
+  w: number;
+  h: number;
   color: string;
-  size: number;
-  radius: string;
+  shape: Shape;
+  duration: number;
+  delay: number;
+  drift: number;
+  rot: number;
+  burstX: number;
+  burstY: number;
 };
 
+// Palette large (dont un blanc nacré) pour des confettis qui scintillent
+// vraiment au lieu de 2-3 couleurs plates qui se répètent.
 const COLORS = [
   "#39f0ff",
   "#ff4fd8",
@@ -25,40 +31,121 @@ const COLORS = [
   "#ffd166",
   "#1ea7ff",
   "#c084fc",
+  "#ffffff",
+  "#ff8a5c",
 ];
 
-function buildParticles(): Particle[] {
-  return Array.from({ length: 70 }, (_, i) => {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = 140 + Math.random() * 260;
+let uid = 0;
+function nextId() {
+  uid += 1;
+  return uid;
+}
 
-    return {
-      id: i,
-      left: 50 + (Math.random() * 10 - 5),
-      top: 50 + (Math.random() * 10 - 5),
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance - 40,
-      rot: Math.random() * 720 - 360,
-      delay: Math.random() * 150,
-      duration: 900 + Math.random() * 700,
-      color: COLORS[i % COLORS.length],
-      size: 6 + Math.random() * 6,
-      radius: Math.random() > 0.5 ? "9999px" : "3px",
-    };
-  });
+function randomShape(): Shape {
+  const r = Math.random();
+  if (r < 0.4) return "rect";
+  if (r < 0.72) return "ribbon";
+  return "circle";
+}
+
+function shapeSize(shape: Shape) {
+  if (shape === "ribbon") return { w: 4 + Math.random() * 3, h: 12 + Math.random() * 7 };
+  if (shape === "rect") return { w: 7 + Math.random() * 5, h: 7 + Math.random() * 5 };
+  const d = 6 + Math.random() * 5;
+  return { w: d, h: d };
+}
+
+function randomColor() {
+  return COLORS[Math.floor(Math.random() * COLORS.length)];
+}
+
+function buildBurstParticle(): Particle {
+  const angle = Math.random() * Math.PI * 2;
+  const distance = 160 + Math.random() * 320;
+  const shape = randomShape();
+  const { w, h } = shapeSize(shape);
+
+  return {
+    id: nextId(),
+    kind: "burst",
+    left: 50,
+    w,
+    h,
+    color: randomColor(),
+    shape,
+    duration: 1100 + Math.random() * 750,
+    delay: Math.random() * 140,
+    drift: 0,
+    rot: Math.random() * 900 - 450,
+    burstX: Math.cos(angle) * distance,
+    burstY: Math.sin(angle) * distance - 70,
+  };
+}
+
+function buildRainParticle(): Particle {
+  const shape = randomShape();
+  const { w, h } = shapeSize(shape);
+
+  return {
+    id: nextId(),
+    kind: "rain",
+    left: Math.random() * 100,
+    w,
+    h,
+    color: randomColor(),
+    shape,
+    duration: 3400 + Math.random() * 2600,
+    delay: Math.random() * 200,
+    drift: Math.random() * 160 - 80,
+    rot: Math.random() * 720 - 360,
+    burstX: 0,
+    burstY: 0,
+  };
+}
+
+function shapeRadius(shape: Shape) {
+  return shape === "circle" ? "9999px" : "2px";
 }
 
 export function ChamaWelcomePopup() {
   const [visible, setVisible] = useState(true);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [, startTransition] = useTransition();
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const countRef = useRef(0);
 
   useEffect(() => {
-    // Généré côté client uniquement (Math.random) : évite tout mismatch
-    // d'hydratation avec le rendu serveur. Volontairement post-mount plutôt
-    // qu'un lazy initializer useState, qui s'exécuterait aussi côté serveur.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setParticles(buildParticles());
+    const MAX_CONCURRENT = 160;
+
+    function removeParticle(id: number) {
+      countRef.current = Math.max(0, countRef.current - 1);
+      setParticles((prev) => prev.filter((p) => p.id !== id));
+    }
+
+    function spawn(particle: Particle) {
+      if (countRef.current >= MAX_CONCURRENT) return;
+      countRef.current += 1;
+      setParticles((prev) => [...prev, particle]);
+      const t = setTimeout(
+        () => removeParticle(particle.id),
+        particle.delay + particle.duration + 60,
+      );
+      timeoutsRef.current.push(t);
+    }
+
+    // Explosion d'ouverture : grosse salve de confettis dès l'apparition.
+    for (let i = 0; i < 90; i += 1) spawn(buildBurstParticle());
+
+    // Puis une pluie continue tant que le pop-up reste ouvert.
+    const rainInterval = setInterval(() => {
+      for (let i = 0; i < 3; i += 1) spawn(buildRainParticle());
+    }, 240);
+
+    return () => {
+      clearInterval(rainInterval);
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+    };
   }, []);
 
   useEffect(() => {
@@ -87,23 +174,33 @@ export function ChamaWelcomePopup() {
         className="absolute inset-0 bg-black/75 backdrop-blur-sm"
       />
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ perspective: 700 }}
+      >
         {particles.map((p) => (
           <span
             key={p.id}
-            className="chama-confetti-particle absolute"
+            className="chama-confetti-particle absolute left-1/2 top-1/2"
             style={
               {
-                left: `${p.left}%`,
-                top: `${p.top}%`,
-                width: p.size,
-                height: p.size,
+                width: p.w,
+                height: p.h,
                 backgroundColor: p.color,
-                borderRadius: p.radius,
-                animation: `chama-confetti-burst ${p.duration}ms cubic-bezier(0.2, 0.8, 0.3, 1) ${p.delay}ms both`,
-                "--chama-confetti-x": `${p.x}px`,
-                "--chama-confetti-y": `${p.y}px`,
-                "--chama-confetti-rot": `${p.rot}deg`,
+                borderRadius: shapeRadius(p.shape),
+                boxShadow: `0 0 6px ${p.color}66`,
+                marginLeft: p.kind === "rain" ? undefined : -p.w / 2,
+                marginTop: p.kind === "rain" ? undefined : -p.h / 2,
+                left: p.kind === "rain" ? `${p.left}%` : "50%",
+                top: p.kind === "rain" ? "-8vh" : "38%",
+                animation:
+                  p.kind === "burst"
+                    ? `chama-confetti-burst ${p.duration}ms cubic-bezier(0.15, 0.7, 0.25, 1) ${p.delay}ms both`
+                    : `chama-confetti-rain ${p.duration}ms linear ${p.delay}ms both`,
+                "--chama-x": `${p.burstX}px`,
+                "--chama-y": `${p.burstY}px`,
+                "--chama-rot": `${p.rot}deg`,
+                "--chama-drift": `${p.drift}px`,
               } as React.CSSProperties
             }
           />
