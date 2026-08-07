@@ -81,11 +81,18 @@ pnpm build
 
 ## 6. Lancer avec PM2 (port 3010)
 
+⚠️ `pm2 start "pnpm start" --name chama` ne fonctionne pas de façon fiable
+(PM2 tente d'interpréter la chaîne comme un script et échoue silencieusement).
+Utiliser le fichier `ecosystem.config.js` fourni dans le repo à la place :
+
 ```bash
-PORT=3010 pm2 start "pnpm start" --name chama
+pm2 start ecosystem.config.js
 pm2 save
 pm2 startup   # affiche une commande à exécuter une fois pour démarrer PM2 au boot du VPS
 ```
+
+Le port et `NODE_ENV` sont définis dans `ecosystem.config.js` — modifier ce
+fichier si le port 3010 est déjà pris par un autre site.
 
 Vérifier que ça tourne en local :
 ```bash
@@ -133,10 +140,10 @@ en dépendent pour identifier les visiteurs.
 3. Clique sur `chama-gaming.site` → **DNS**
 4. Ajoute/modifie ces enregistrements :
 
-   | Type | Nom (host) | Valeur              | TTL     |
-   |------|-----------|----------------------|---------|
-   | A    | @         | `<IP publique du VPS>` | 1h (défaut) |
-   | A    | www       | `<IP publique du VPS>` | 1h (défaut) |
+   | Type | Nom (host) | Valeur          | TTL     |
+   |------|-----------|------------------|---------|
+   | A    | @         | `87.106.25.44`   | 1h (défaut) |
+   | A    | www       | `87.106.25.44`   | 1h (défaut) |
 
    (Supprime tout enregistrement A ou CNAME préexistant sur `@`/`www` qui
    pointerait ailleurs — un domaine ne peut avoir qu'une seule destination.)
