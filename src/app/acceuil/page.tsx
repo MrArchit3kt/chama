@@ -87,7 +87,7 @@ export default async function HomePage() {
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href="/tuto" className="neon-button px-6 py-3">
+                  <Link href="/tuto" className="neon-button-secondary px-6 py-3">
                     Comment ça marche ?
                   </Link>
 
@@ -163,7 +163,7 @@ export default async function HomePage() {
                         {formatDate(event.eventDate)}
                       </p>
 
-                      <p className="neon-text-muted mt-3 text-sm leading-6 line-clamp-4">
+                      <p className="neon-text-muted mt-3 line-clamp-4 whitespace-pre-line text-sm leading-6">
                         {event.description}
                       </p>
                     </div>

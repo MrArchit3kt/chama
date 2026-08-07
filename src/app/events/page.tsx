@@ -171,7 +171,7 @@ export default async function EventsPage({
                       </span>
                     </div>
 
-                    <p className="neon-text-muted mt-5 leading-7">
+                    <p className="neon-text-muted mt-5 whitespace-pre-wrap leading-7">
                       {event.description}
                     </p>
 
