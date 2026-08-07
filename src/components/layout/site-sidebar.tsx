@@ -12,7 +12,11 @@ export async function SiteSidebar() {
       <div className="sticky top-6">
         <div className="neon-card p-5">
           <div className="mb-6 border-b border-white/5 pb-5">
-            <div className="flex items-center gap-3">
+            <Link
+              href="/acceuil"
+              className="flex items-center gap-3 transition hover:opacity-80"
+              title="Retour à l’accueil"
+            >
               {/* ✅ Logo 3D */}
               <div className="logo-3d logo-3d--auto logo-3d--glow">
                 <div className="logo-3d__inner relative h-14 w-14 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
@@ -35,7 +39,7 @@ export async function SiteSidebar() {
                   CHAMA Manager
                 </h2>
               </div>
-            </div>
+            </Link>
           </div>
 
           <nav className="space-y-2">

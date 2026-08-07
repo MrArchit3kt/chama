@@ -23,7 +23,11 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
   return (
     <>
       <div className="mb-4 flex items-center justify-between lg:hidden">
-        <div className="flex items-center gap-3">
+        <Link
+          href="/acceuil"
+          className="flex items-center gap-3 transition hover:opacity-80"
+          title="Retour à l’accueil"
+        >
           {/* ✅ Logo 3D */}
           <div className="logo-3d logo-3d--auto logo-3d--glow">
             <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
@@ -46,7 +50,7 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
               CHAMA Manager
             </h2>
           </div>
-        </div>
+        </Link>
 
         <button
           type="button"
@@ -70,7 +74,12 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
           <aside className="absolute left-0 top-0 h-dvh w-[78%] max-w-[320px]">
             <div className="neon-card flex h-full flex-col rounded-none rounded-r-3xl p-4">
               <div className="mb-4 flex shrink-0 items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
+                <Link
+                  href="/acceuil"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 transition hover:opacity-80"
+                  title="Retour à l’accueil"
+                >
                   {/* ✅ Logo 3D */}
                   <div className="logo-3d logo-3d--auto logo-3d--glow">
                     <div className="logo-3d__inner relative h-14 w-14 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
@@ -93,7 +102,7 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
                       CHAMA Squad Manager
                     </h2>
                   </div>
-                </div>
+                </Link>
 
                 <button
                   type="button"
