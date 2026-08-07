@@ -75,6 +75,7 @@ Remplir :
 
 ```bash
 pnpm install
+pnpm prisma generate      # régénère le client Prisma (dossier ignoré par git)
 pnpm prisma migrate deploy
 pnpm build
 ```
@@ -179,6 +180,7 @@ curl -I https://chama-gaming.site
 cd /var/www/chama
 git pull
 pnpm install
+pnpm prisma generate
 pnpm prisma migrate deploy
 pnpm build
 pm2 restart chama
