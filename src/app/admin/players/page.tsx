@@ -604,15 +604,15 @@ export default async function AdminPlayersPage({
                 </div>
               </summary>
 
-              <div className="border-t border-white/8 px-3 pb-3 pt-3 md:px-4 md:pb-4 md:pt-4">
-                <div className="grid gap-2.5 md:gap-3">
-                  <div className="grid gap-2.5 md:gap-3 xl:grid-cols-4">
-                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-3">
+              <div className="border-t border-white/8 px-2.5 pb-2.5 pt-2.5 md:px-4 md:pb-4 md:pt-4">
+                <div className="grid gap-1.5 md:gap-3">
+                  <div className="grid gap-1.5 md:gap-3 xl:grid-cols-4">
+                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-2.5 md:p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                         Statut team CHAMA
                       </p>
 
-                      <p className="neon-text-muted mt-1.5 text-sm leading-6">
+                      <p className="neon-text-muted mt-1 md:mt-1.5 text-sm leading-6">
                         Ce joueur est actuellement{" "}
                         <span className="font-semibold text-white">
                           {player.isChamaMember ? "dans la team CHAMA" : "hors team CHAMA"}
@@ -620,7 +620,7 @@ export default async function AdminPlayersPage({
                         .
                       </p>
 
-                      <form action={toggleChamaMember} className="mt-2">
+                      <form action={toggleChamaMember} className="mt-1.5 md:mt-2">
                         <input type="hidden" name="userId" value={player.id} />
                         <input
                           type="hidden"
@@ -630,7 +630,7 @@ export default async function AdminPlayersPage({
 
                         <button
                           type="submit"
-                          className={`w-full px-5 py-2.5 ${
+                          className={`w-full px-5 py-2 md:py-2.5 ${
                             player.isChamaMember ? "neon-button-secondary" : "neon-button"
                           }`}
                         >
@@ -639,12 +639,12 @@ export default async function AdminPlayersPage({
                       </form>
                     </div>
 
-                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-3">
+                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-2.5 md:p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                         Rôle du joueur
                       </p>
 
-                      <p className="neon-text-muted mt-1.5 text-sm leading-6">
+                      <p className="neon-text-muted mt-1 md:mt-1.5 text-sm leading-6">
                         Rôle actuel :{" "}
                         <span className="font-semibold text-white">
                           {getRoleLabel(player.role)}
@@ -652,16 +652,16 @@ export default async function AdminPlayersPage({
                       </p>
 
                       {player.role === "SUPER_ADMIN" ? (
-                        <p className="mt-2 text-xs text-white/60">
+                        <p className="mt-1.5 md:mt-2 text-xs text-white/60">
                           Le rôle SUPER_ADMIN est verrouillé ici.
                         </p>
                       ) : (
-                        <form action={toggleUserRole} className="mt-2">
+                        <form action={toggleUserRole} className="mt-1.5 md:mt-2">
                           <input type="hidden" name="userId" value={player.id} />
 
                           <button
                             type="submit"
-                            className={`w-full px-5 py-2.5 ${
+                            className={`w-full px-5 py-2 md:py-2.5 ${
                               player.role === "ADMIN" ? "neon-button-secondary" : "neon-button"
                             }`}
                           >
@@ -671,16 +671,16 @@ export default async function AdminPlayersPage({
                       )}
                     </div>
 
-                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-3">
+                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-2.5 md:p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                         Réinitialiser le mot de passe
                       </p>
 
-                      <p className="neon-text-muted mt-1.5 text-sm leading-6">
+                      <p className="neon-text-muted mt-1 md:mt-1.5 text-sm leading-6">
                         Définit un mot de passe temporaire.
                       </p>
 
-                      <form action={resetPlayerPassword} className="mt-2 grid gap-2">
+                      <form action={resetPlayerPassword} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
                         <input type="hidden" name="userId" value={player.id} />
 
                         <input
@@ -689,20 +689,20 @@ export default async function AdminPlayersPage({
                           minLength={6}
                           required
                           placeholder="Nouveau mot de passe"
-                          className="w-full px-4 py-2.5"
+                          className="w-full px-4 py-2 md:py-2.5"
                         />
 
                         <button
                           type="submit"
-                          className="neon-button-secondary w-full px-5 py-2.5"
+                          className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
                         >
                           Modifier le mot de passe
                         </button>
                       </form>
                     </div>
 
-                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-3">
-                      <div className="flex items-center justify-between gap-2">
+                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-2.5 md:p-3">
+                      <div className="flex items-center justify-between gap-1.5 md:gap-2">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">
                           Bannissement
                         </p>
@@ -711,49 +711,49 @@ export default async function AdminPlayersPage({
                         </span>
                       </div>
 
-                      <form action={banPlayer} className="mt-2 grid gap-2">
+                      <form action={banPlayer} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
                         <input type="hidden" name="userId" value={player.id} />
                         <input
                           name="reason"
                           type="text"
                           required
                           placeholder="Motif du bannissement"
-                          className="w-full px-4 py-2.5"
+                          className="w-full px-4 py-2 md:py-2.5"
                         />
                         <button
                           type="submit"
-                          className="neon-button-secondary w-full px-5 py-2.5"
+                          className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
                         >
                           Bannir le joueur
                         </button>
                       </form>
 
-                      <form action={liftBan} className="mt-2 grid gap-2">
+                      <form action={liftBan} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
                         <input type="hidden" name="userId" value={player.id} />
                         <input
                           name="reason"
                           type="text"
                           placeholder="Motif du déban (optionnel)"
-                          className="w-full px-4 py-2.5"
+                          className="w-full px-4 py-2 md:py-2.5"
                         />
-                        <button type="submit" className="neon-button w-full px-5 py-2.5">
+                        <button type="submit" className="neon-button w-full px-5 py-2 md:py-2.5">
                           Déban
                         </button>
                       </form>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                       Badges
                     </p>
 
                     {player.badges.length === 0 ? (
-                      <p className="neon-text-muted mt-2 text-sm">
+                      <p className="neon-text-muted mt-1.5 md:mt-2 text-sm">
                         Ce joueur n’a aucun badge pour le moment.
                       </p>
                     ) : (
-                      <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="mt-1.5 md:mt-2 flex flex-wrap gap-1.5 md:gap-2">
                         {player.badges.map(({ badge }) => {
                           const Icon = getBadgeIcon(badge.icon);
                           const colorClasses = getBadgeColorClasses(badge.color);
@@ -778,9 +778,9 @@ export default async function AdminPlayersPage({
                     )}
 
                     {badgeCatalog.length > 0 ? (
-                      <form action={awardBadge} className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <form action={awardBadge} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 sm:grid-cols-[1fr_auto]">
                         <input type="hidden" name="userId" value={player.id} />
-                        <select name="badgeId" defaultValue="" required className="w-full px-4 py-2.5">
+                        <select name="badgeId" defaultValue="" required className="w-full px-4 py-2 md:py-2.5">
                           <option value="" disabled>
                             Choisir un badge à attribuer
                           </option>
@@ -790,26 +790,26 @@ export default async function AdminPlayersPage({
                             </option>
                           ))}
                         </select>
-                        <button type="submit" className="neon-button px-5 py-2.5">
+                        <button type="submit" className="neon-button px-5 py-2 md:py-2.5">
                           Attribuer
                         </button>
                       </form>
                     ) : (
-                      <p className="neon-text-muted mt-2 text-xs">
+                      <p className="neon-text-muted mt-1.5 md:mt-2 text-xs">
                         Aucun badge créé pour le moment (Admin → Badges).
                       </p>
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-300/75">
                       Ajouter un avertissement
                     </p>
 
-                    <form action={addWarning} className="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                    <form action={addWarning} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 md:grid-cols-[1fr_1fr_auto]">
                       <input type="hidden" name="userId" value={player.id} />
 
-                      <select name="type" defaultValue="TOXICITY" className="w-full px-4 py-2.5">
+                      <select name="type" defaultValue="TOXICITY" className="w-full px-4 py-2 md:py-2.5">
                         <option value="TOXICITY">Toxicité</option>
                         <option value="ABSENCE">Absence</option>
                         <option value="AFK">AFK</option>
@@ -825,17 +825,17 @@ export default async function AdminPlayersPage({
                         type="text"
                         required
                         placeholder="Raison de l’avertissement"
-                        className="w-full px-4 py-2.5"
+                        className="w-full px-4 py-2 md:py-2.5"
                       />
 
-                      <button type="submit" className="neon-button px-5 py-2.5">
+                      <button type="submit" className="neon-button px-5 py-2 md:py-2.5">
                         Avertir
                       </button>
                     </form>
                   </div>
 
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 md:gap-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                         Historique des avertissements
                       </p>
@@ -843,17 +843,17 @@ export default async function AdminPlayersPage({
                     </div>
 
                     {player.warnings.length === 0 ? (
-                      <p className="neon-text-muted mt-3 text-sm">
+                      <p className="neon-text-muted mt-2 md:mt-3 text-sm">
                         Aucun avertissement pour ce joueur.
                       </p>
                     ) : (
-                      <div className="mt-3 grid gap-2.5">
+                      <div className="mt-2 md:mt-3 grid gap-2 md:gap-2.5">
                         {player.warnings.map((warning) => (
                           <div
                             key={warning.id}
-                            className="rounded-2xl border border-white/8 bg-black/20 p-3"
+                            className="rounded-2xl border border-white/8 bg-black/20 p-2.5 md:p-3"
                           >
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                               <span className="neon-badge">{getWarningTypeLabel(warning.type)}</span>
 
                               <span
@@ -871,17 +871,17 @@ export default async function AdminPlayersPage({
                               </span>
                             </div>
 
-                            <p className="mt-2 text-sm text-white">{warning.message}</p>
+                            <p className="mt-1.5 md:mt-2 text-sm text-white">{warning.message}</p>
 
                             {warning.status === "ACTIVE" ? (
-                              <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                              <div className="mt-2 md:mt-3 rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300/80">
                                   Révoquer cet avertissement
                                 </p>
 
                                 <form
                                   action={revokeWarning}
-                                  className="mt-2 grid gap-2 lg:grid-cols-[1fr_auto]"
+                                  className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 lg:grid-cols-[1fr_auto]"
                                 >
                                   <input type="hidden" name="warningId" value={warning.id} />
 
@@ -889,19 +889,19 @@ export default async function AdminPlayersPage({
                                     name="reason"
                                     type="text"
                                     placeholder="Motif de révocation (optionnel)"
-                                    className="w-full px-4 py-2.5"
+                                    className="w-full px-4 py-2 md:py-2.5"
                                   />
 
                                   <button
                                     type="submit"
-                                    className="neon-button-secondary px-5 py-2.5"
+                                    className="neon-button-secondary px-5 py-2 md:py-2.5"
                                   >
                                     Révoquer
                                   </button>
                                 </form>
                               </div>
                             ) : (
-                              <div className="mt-3 text-xs text-emerald-300/80">
+                              <div className="mt-2 md:mt-3 text-xs text-emerald-300/80">
                                 <p>Révoqué le : {formatDate(warning.revokedAt)}</p>
                                 {warning.revokedReason ? (
                                   <p className="mt-1">Motif : {warning.revokedReason}</p>
