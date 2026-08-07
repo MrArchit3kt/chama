@@ -4,13 +4,20 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 
-const ALLOWED = ["WARZONE", "WARZONE_RANKED", "ROCKET_LEAGUE"] as const;
+const ALLOWED = ["WARZONE", "WARZONE_RANKED", "BO7", "ROCKET_LEAGUE"] as const;
 type MixGame = (typeof ALLOWED)[number];
 
 function gameFrom(v: unknown): MixGame | null {
   if (typeof v !== "string") return null;
   const g = v.trim().toUpperCase();
   return (ALLOWED as readonly string[]).includes(g) ? (g as MixGame) : null;
+}
+
+function backTo(game: MixGame) {
+  if (game === "WARZONE") return "/warzone";
+  if (game === "WARZONE_RANKED") return "/ranked";
+  if (game === "BO7") return "/bo7";
+  return "/rocket-league";
 }
 
 export async function toggleGameQueue(formData: FormData) {
@@ -28,34 +35,36 @@ export async function toggleGameQueue(formData: FormData) {
       registrationStatus: true,
       isAvailableForWarzoneMix: true,
       isAvailableForWarzoneRankedMix: true,
+      isAvailableForBO7Mix: true,
       isAvailableForRocketLeagueMix: true,
     },
   });
 
   if (!me || me.status !== "ACTIVE" || me.registrationStatus !== "APPROVED") {
-    redirect("/profil?error=server");
+    redirect(`${backTo(game)}?error=banned`);
   }
 
-  // toggle la file choisie, et coupe toutes les autres
-  const nextWarzone =
-    game === "WARZONE" ? !me.isAvailableForWarzoneMix : false;
-
+  // toggle la file choisie, et coupe toutes les autres (une seule file à la fois)
+  const nextWarzone = game === "WARZONE" ? !me.isAvailableForWarzoneMix : false;
   const nextWarzoneRanked =
     game === "WARZONE_RANKED" ? !me.isAvailableForWarzoneRankedMix : false;
+  const nextBO7 = game === "BO7" ? !me.isAvailableForBO7Mix : false;
+  const nextRL = game === "ROCKET_LEAGUE" ? !me.isAvailableForRocketLeagueMix : false;
 
-  const nextRL =
-    game === "ROCKET_LEAGUE" ? !me.isAvailableForRocketLeagueMix : false;
+  const nextGlobal = nextWarzone || nextWarzoneRanked || nextBO7 || nextRL;
 
   await db.user.update({
     where: { id: me.id },
     data: {
       isAvailableForWarzoneMix: nextWarzone,
       isAvailableForWarzoneRankedMix: nextWarzoneRanked,
+      isAvailableForBO7Mix: nextBO7,
       isAvailableForRocketLeagueMix: nextRL,
+      isAvailableForMix: nextGlobal,
       isOnline: true,
       lastSeenAt: new Date(),
     },
   });
 
-  redirect("/profil?success=1");
+  redirect(`${backTo(game)}?success=1`);
 }

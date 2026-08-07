@@ -8,10 +8,13 @@ import { addWarning } from "@/server/admin/add-warning";
 import { revokeWarning } from "@/server/admin/revoke-warning";
 import { liftBan } from "@/server/admin/lift-ban";
 import { resetPlayerPassword } from "@/server/admin/reset-player-password";
-import { toggleAC2NMember } from "@/server/admin/toggle-ehpad-member";
+import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
 import { deletePlayer } from "@/server/admin/delete-player";
+import { awardBadge } from "@/server/admin/award-badge";
+import { revokeBadge } from "@/server/admin/revoke-badge";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
+import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 
 function formatDate(value: Date | null) {
   if (!value) return "Jamais";
@@ -125,9 +128,11 @@ export default async function AdminPlayersPage({
     revoked?: string;
     unbanned?: string;
     password_reset?: string;
-    AC2N?: string;
+    chama?: string;
     role_updated?: string;
     deleted?: string;
+    badge_awarded?: string;
+    badge_revoked?: string;
     q?: string;
     role?: string;
     status?: string;
@@ -146,10 +151,12 @@ export default async function AdminPlayersPage({
   const isRevoked = sp.revoked === "1";
   const isUnbanned = sp.unbanned === "1";
   const isPasswordReset = sp.password_reset === "1";
-  const isAC2NEnabled = sp.AC2N === "1";
-  const isAC2NDisabled = sp.AC2N === "0";
+  const isChamaEnabled = sp.chama === "1";
+  const isChamaDisabled = sp.chama === "0";
   const isRoleUpdated = sp.role_updated === "1";
   const isDeleted = sp.deleted === "1";
+  const isBadgeAwarded = sp.badge_awarded === "1";
+  const isBadgeRevoked = sp.badge_revoked === "1";
 
   const searchQuery = (sp.q ?? "").trim();
   const roleFilter = (sp.role ?? "").trim();
@@ -200,7 +207,13 @@ export default async function AdminPlayersPage({
       status: true,
       createdAt: true,
       lastSeenAt: true,
-      isEhpadMember: true,
+      isChamaMember: true,
+      badges: {
+        select: {
+          badgeId: true,
+          badge: { select: { id: true, name: true, icon: true, color: true } },
+        },
+      },
       warningsReceived: {
         orderBy: {
           createdAt: "desc",
@@ -255,12 +268,8 @@ export default async function AdminPlayersPage({
       status: player.status,
       createdAt: player.createdAt,
       lastSeenAt: player.lastSeenAt,
-
-      // champ DB
-      isEhpadMember: player.isEhpadMember,
-
-      // alias UI AC2N
-      isAC2NMember: player.isEhpadMember,
+      isChamaMember: player.isChamaMember,
+      badges: player.badges,
 
       inactiveDays,
       totalWarnings,
@@ -272,7 +281,12 @@ export default async function AdminPlayersPage({
   });
 
   const alertCount = rows.filter((row) => row.shouldAlert).length;
-  const AC2NCount = rows.filter((row) => row.isAC2NMember).length;
+  const chamaCount = rows.filter((row) => row.isChamaMember).length;
+
+  const badgeCatalog = await db.badge.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   return (
     <SiteShell>
@@ -290,7 +304,7 @@ export default async function AdminPlayersPage({
                   Suivi des joueurs
                 </h2>
                 <p className="neon-text-muted mt-4 max-w-3xl leading-7">
-                  Vue admin de l’activité, de l’inactivité, des membres AC2N et de
+                  Vue admin de l’activité, de l’inactivité, des membres CHAMA et de
                   la modération des joueurs.
                 </p>
               </div>
@@ -307,10 +321,10 @@ export default async function AdminPlayersPage({
 
                 <div className="neon-card-soft px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300/75">
-                    Membres AC2N
+                    Membres CHAMA
                   </p>
                   <p className="mt-1 text-xl font-black text-white md:text-2xl">
-                    {AC2NCount}
+                    {chamaCount}
                   </p>
                 </div>
 
@@ -422,18 +436,18 @@ export default async function AdminPlayersPage({
           </div>
         ) : null}
 
-        {isAC2NEnabled ? (
+        {isChamaEnabled ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-emerald-300">
-              Membre AC2N activé avec succès.
+              Membre CHAMA activé avec succès.
             </p>
           </div>
         ) : null}
 
-        {isAC2NDisabled ? (
+        {isChamaDisabled ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-amber-300">
-              Membre AC2N désactivé avec succès.
+              Membre CHAMA désactivé avec succès.
             </p>
           </div>
         ) : null}
@@ -450,6 +464,22 @@ export default async function AdminPlayersPage({
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-amber-300">
               Joueur supprimé avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        {isBadgeAwarded ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-emerald-300">
+              Badge attribué avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        {isBadgeRevoked ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">
+              Badge retiré avec succès.
             </p>
           </div>
         ) : null}
@@ -486,12 +516,12 @@ export default async function AdminPlayersPage({
 
                       <span
                         className={
-                          player.isEhpadMember
+                          player.isChamaMember
                             ? "rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-300"
                             : "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/70"
                         }
                       >
-                        {player.isEhpadMember ? "Membre AC2N" : "Externe"}
+                        {player.isChamaMember ? "Membre CHAMA" : "Externe"}
                       </span>
 
                       {player.shouldAlert ? (
@@ -559,32 +589,32 @@ export default async function AdminPlayersPage({
                   <div className="grid gap-4 xl:grid-cols-4">
                     <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                        Statut team AC2N
+                        Statut team CHAMA
                       </p>
 
                       <p className="neon-text-muted mt-2 text-sm leading-6">
                         Ce joueur est actuellement{" "}
                         <span className="font-semibold text-white">
-                          {player.isEhpadMember ? "dans la team AC2N" : "hors team AC2N"}
+                          {player.isChamaMember ? "dans la team CHAMA" : "hors team CHAMA"}
                         </span>
                         .
                       </p>
 
-                      <form action={toggleAC2NMember} className="mt-3">
+                      <form action={toggleChamaMember} className="mt-3">
                         <input type="hidden" name="userId" value={player.id} />
                         <input
                           type="hidden"
                           name="nextValue"
-                          value={player.isEhpadMember ? "false" : "true"}
+                          value={player.isChamaMember ? "false" : "true"}
                         />
 
                         <button
                           type="submit"
                           className={`w-full px-5 py-3 ${
-                            player.isEhpadMember ? "neon-button-secondary" : "neon-button"
+                            player.isChamaMember ? "neon-button-secondary" : "neon-button"
                           }`}
                         >
-                          {player.isEhpadMember ? "Retirer de la team" : "Activer membre AC2N"}
+                          {player.isChamaMember ? "Retirer de la team" : "Activer membre CHAMA"}
                         </button>
                       </form>
                     </div>
@@ -670,6 +700,64 @@ export default async function AdminPlayersPage({
                         </button>
                       </form>
                     </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                      Badges
+                    </p>
+
+                    {player.badges.length === 0 ? (
+                      <p className="neon-text-muted mt-3 text-sm">
+                        Ce joueur n’a aucun badge pour le moment.
+                      </p>
+                    ) : (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {player.badges.map(({ badge }) => {
+                          const Icon = getBadgeIcon(badge.icon);
+                          const colorClasses = getBadgeColorClasses(badge.color);
+
+                          return (
+                            <form key={badge.id} action={revokeBadge}>
+                              <input type="hidden" name="userId" value={player.id} />
+                              <input type="hidden" name="badgeId" value={badge.id} />
+                              <button
+                                type="submit"
+                                title="Cliquer pour retirer"
+                                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition hover:opacity-70 ${colorClasses}`}
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                                {badge.name}
+                                <span className="ml-0.5 text-white/50">×</span>
+                              </button>
+                            </form>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {badgeCatalog.length > 0 ? (
+                      <form action={awardBadge} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                        <input type="hidden" name="userId" value={player.id} />
+                        <select name="badgeId" defaultValue="" required className="w-full px-4 py-3">
+                          <option value="" disabled>
+                            Choisir un badge à attribuer
+                          </option>
+                          {badgeCatalog.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button type="submit" className="neon-button px-5 py-3">
+                          Attribuer
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="neon-text-muted mt-3 text-xs">
+                        Aucun badge créé pour le moment (Admin → Badges).
+                      </p>
+                    )}
                   </div>
 
                   <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">

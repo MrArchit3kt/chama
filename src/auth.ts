@@ -9,6 +9,9 @@ const credentialsSchema = z.object({
   password: z.string().min(6),
 });
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -43,6 +46,8 @@ export const authOptions: NextAuthOptions = {
             role: true,
             status: true,
             registrationStatus: true,
+            failedLoginAttempts: true,
+            lockedUntil: true,
           },
         });
 
@@ -50,22 +55,51 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+          throw new Error("ACCOUNT_LOCKED");
+        }
+
         if (user.status === "BANNED") {
-          return null;
+          throw new Error("ACCOUNT_BANNED");
         }
 
         if (user.registrationStatus === "PENDING") {
-          return null;
+          throw new Error("ACCOUNT_PENDING_APPROVAL");
         }
 
         if (user.registrationStatus === "REJECTED") {
-          return null;
+          throw new Error("ACCOUNT_REJECTED");
         }
 
         const isValid = await compare(password, user.passwordHash);
 
         if (!isValid) {
+          const nextAttempts = user.failedLoginAttempts + 1;
+
+          if (nextAttempts >= MAX_LOGIN_ATTEMPTS) {
+            await db.user.update({
+              where: { id: user.id },
+              data: {
+                failedLoginAttempts: 0,
+                lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS),
+              },
+            });
+            throw new Error("ACCOUNT_LOCKED");
+          }
+
+          await db.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: nextAttempts },
+          });
+
           return null;
+        }
+
+        if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0, lockedUntil: null },
+          });
         }
 
         return {

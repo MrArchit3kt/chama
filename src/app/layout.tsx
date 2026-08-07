@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EHPAD Squad Manager",
+  title: "CHAMA Squad Manager",
   description: "Gestion de team Warzone, mix, événements, admin et règlement.",
 };
 

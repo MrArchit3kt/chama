@@ -4,10 +4,19 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { createContactRequest } from "@/server/contact/create-contact-request";
 
+const VALID_TYPES = [
+  "ADMIN_REQUEST",
+  "PLAYER_REPORT",
+  "BUG",
+  "IMPROVEMENT",
+  "RECRUITMENT",
+  "LEAVE_TEAM",
+];
+
 export default async function ContactPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; type?: string }>;
 }) {
   const user = await requireAuth();
 
@@ -18,7 +27,11 @@ export default async function ContactPage({
   const sp = (await searchParams) ?? {};
   const hasValidationError = sp.error === "validation";
   const hasServerError = sp.error === "server";
+  const hasRateLimitError = sp.error === "rate_limit";
   const isSuccess = sp.success === "1";
+  const preselectedType = VALID_TYPES.includes(sp.type ?? "")
+    ? (sp.type as string)
+    : "ADMIN_REQUEST";
 
   return (
     <SiteShell>
@@ -42,9 +55,11 @@ export default async function ContactPage({
               <label className="mb-2 block text-sm font-semibold text-white">
                 Type de demande
               </label>
-              <select name="type" defaultValue="ADMIN_REQUEST" className="w-full px-4 py-3">
+              <select name="type" defaultValue={preselectedType} className="w-full px-4 py-3">
                 <option value="ADMIN_REQUEST">Demande aux admins</option>
-                <option value="PLAYER_REPORT">Signalement de joueur</option>
+                <option value="PLAYER_REPORT">Signalement d’un problème (joueur, logs, Discord…)</option>
+                <option value="RECRUITMENT">Demande de recrutement CHAMA</option>
+                <option value="LEAVE_TEAM">Je veux quitter la team</option>
                 <option value="BUG">Bug du site</option>
                 <option value="IMPROVEMENT">Amélioration du site</option>
               </select>
@@ -79,6 +94,12 @@ export default async function ContactPage({
             {hasValidationError ? (
               <p className="text-sm font-medium text-rose-400">
                 Formulaire invalide. Vérifie les champs.
+              </p>
+            ) : null}
+
+            {hasRateLimitError ? (
+              <p className="text-sm font-medium text-rose-400">
+                Trop de demandes envoyées récemment. Réessaie dans un moment.
               </p>
             ) : null}
 

@@ -16,8 +16,20 @@ const rocketLeagueRankEnum = z.enum([
   "SSL",
 ]);
 
+const warzoneRankTierEnum = z.enum([
+  "BRONZE",
+  "SILVER",
+  "GOLD",
+  "PLATINUM",
+  "DIAMOND",
+  "CRIMSON",
+  "IRIDESCENT",
+  "TOP_250",
+]);
+
 const updateProfileSchema = z.object({
   displayName: z.string().min(2).max(40),
+  email: z.string().trim().email(),
   warzoneUsername: z.string().min(2).max(40),
   activisionId: z.string().max(80).optional(),
   platform: z
@@ -33,11 +45,24 @@ const updateProfileSchema = z.object({
 
   // ✅ Rocket League
   rocketLeagueRank: rocketLeagueRankEnum.optional(),
+
+  // ✅ Warzone Ranked
+  warzoneRankTier: warzoneRankTierEnum.optional(),
 });
 
 function emptyToUndefined(value: FormDataEntryValue | null) {
   const str = String(value ?? "").trim();
   return str === "" ? undefined : str;
+}
+
+function isNextRedirectError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
 }
 
 export async function updateProfile(formData: FormData) {
@@ -47,11 +72,13 @@ export async function updateProfile(formData: FormData) {
     redirect("/login");
   }
 
-  // RL rank : on accepte "" => undefined
+  // RL rank / Warzone Ranked tier : on accepte "" => undefined
   const rlRankRaw = emptyToUndefined(formData.get("rocketLeagueRank"));
+  const wzRankRaw = emptyToUndefined(formData.get("warzoneRankTier"));
 
   const parsed = updateProfileSchema.safeParse({
     displayName: String(formData.get("displayName") ?? ""),
+    email: String(formData.get("email") ?? ""),
     warzoneUsername: String(formData.get("warzoneUsername") ?? ""),
     activisionId: emptyToUndefined(formData.get("activisionId")),
     platform: emptyToUndefined(formData.get("platform")),
@@ -62,6 +89,7 @@ export async function updateProfile(formData: FormData) {
     whatsappOptIn: formData.get("whatsappOptIn") === "on",
 
     rocketLeagueRank: rlRankRaw as any, // validé par zod enum si présent
+    warzoneRankTier: wzRankRaw as any, // validé par zod enum si présent
   });
 
   if (!parsed.success) {
@@ -70,11 +98,21 @@ export async function updateProfile(formData: FormData) {
 
   try {
     const data = parsed.data;
+    const normalizedEmail = data.email.toLowerCase().trim();
+
+    const existingEmail = await db.user.findFirst({
+      where: { email: normalizedEmail, id: { not: user.id } },
+      select: { id: true },
+    });
+    if (existingEmail) {
+      redirect("/profil?error=email_taken");
+    }
 
     await db.user.update({
       where: { id: user.id },
       data: {
         displayName: data.displayName.trim(),
+        email: normalizedEmail,
         warzoneUsername: data.warzoneUsername.trim(),
         activisionId: data.activisionId,
         platform: data.platform,
@@ -86,9 +124,13 @@ export async function updateProfile(formData: FormData) {
 
         // ✅ Rocket League
         rocketLeagueRank: data.rocketLeagueRank ?? null,
+
+        // ✅ Warzone Ranked
+        warzoneRankTier: data.warzoneRankTier ?? null,
       },
     });
   } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     console.error("UPDATE_PROFILE_ERROR", error);
     redirect("/profil?error=server");
   }

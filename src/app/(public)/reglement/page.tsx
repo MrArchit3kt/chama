@@ -1,8 +1,13 @@
 export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
+import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 
 export default async function RulesPage() {
+  const sessionUser = await requireAuth();
+  if (!sessionUser) redirect("/login");
+
   const rules = await db.rulesVersion.findFirst({
     where: {
       isActive: true,
@@ -30,7 +35,7 @@ export default async function RulesPage() {
             Règlement officiel de la communauté
           </h1>
           <p className="neon-text-muted mt-4 max-w-3xl leading-7">
-            Lis attentivement les règles de jeu, de comportement et de vie de la communauté EHPAD.
+            Lis attentivement les règles de jeu, de comportement et de vie de la communauté CHAMA.
           </p>
         </div>
 

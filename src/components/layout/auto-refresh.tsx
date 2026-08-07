@@ -3,11 +3,16 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-type ProfileAutoRefreshProps = {
+type AutoRefreshProps = {
   intervalMs?: number;
 };
 
-export function ProfileAutoRefresh({ intervalMs = 5000 }: ProfileAutoRefreshProps) {
+/**
+ * Rafraîchit silencieusement les Server Components de la page à intervalle
+ * régulier (utile pour voir apparaître un mix généré par un admin sans
+ * recharger la page à la main). Se met en pause si l'onglet n'est pas visible.
+ */
+export function AutoRefresh({ intervalMs = 5000 }: AutoRefreshProps) {
   const router = useRouter();
 
   useEffect(() => {
@@ -16,7 +21,6 @@ export function ProfileAutoRefresh({ intervalMs = 5000 }: ProfileAutoRefreshProp
     const start = () => {
       stop();
       timer = window.setInterval(() => {
-        // Re-fetch les Server Components de la page (donc DB re-lue)
         router.refresh();
       }, intervalMs);
     };
@@ -29,7 +33,6 @@ export function ProfileAutoRefresh({ intervalMs = 5000 }: ProfileAutoRefreshProp
     };
 
     const onVisibilityChange = () => {
-      // Si l’utilisateur revient sur l’onglet, refresh immédiat
       if (document.visibilityState === "visible") {
         router.refresh();
         start();
@@ -38,10 +41,7 @@ export function ProfileAutoRefresh({ intervalMs = 5000 }: ProfileAutoRefreshProp
       }
     };
 
-    // Start au montage
     start();
-
-    // Refresh immédiat aussi (utile si la page vient d’être ouverte)
     router.refresh();
 
     document.addEventListener("visibilitychange", onVisibilityChange);

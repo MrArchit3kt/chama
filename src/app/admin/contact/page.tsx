@@ -22,6 +22,10 @@ function getTypeLabel(type: string) {
       return "Bug";
     case "IMPROVEMENT":
       return "Amélioration";
+    case "RECRUITMENT":
+      return "Demande de recrutement";
+    case "LEAVE_TEAM":
+      return "Départ de la team";
     default:
       return type;
   }

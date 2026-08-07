@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 type RocketLeagueTeamSize = "TWO" | "THREE";
 
 function isNextRedirectError(error: unknown) {
@@ -20,21 +20,55 @@ function isNextRedirectError(error: unknown) {
 function gameFrom(v: unknown): MixGame | null {
   if (typeof v !== "string") return null;
   const g = v.trim().toUpperCase();
-  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "ROCKET_LEAGUE") {
+  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "BO7" || g === "ROCKET_LEAGUE") {
     return g as MixGame;
   }
   return null;
 }
 
+// ✅ Routes joueur (plus les routes admin : sinon un joueur non-admin
+// se fait rebondir vers /dashboard après une génération réussie)
 function redirectToGame(game: MixGame, qs: string): never {
   const path =
     game === "WARZONE"
-      ? "/admin/mix/warzone"
+      ? "/warzone"
       : game === "WARZONE_RANKED"
-        ? "/admin/mix/warzone-ranked"
-        : "/admin/mix/rocket-league";
+        ? "/ranked"
+        : game === "BO7"
+          ? "/bo7"
+          : "/rocket-league";
 
   redirect(`${path}${qs}`);
+}
+
+function gameLabel(game: MixGame) {
+  switch (game) {
+    case "WARZONE":
+      return "Warzone";
+    case "WARZONE_RANKED":
+      return "Warzone Ranked";
+    case "BO7":
+      return "BO7";
+    case "ROCKET_LEAGUE":
+      return "Rocket League";
+  }
+}
+
+/** Notifie les joueurs (comptes réels uniquement) que leur équipe est prête. */
+async function notifyMixReady(game: MixGame, userIds: string[]) {
+  const uniqueIds = [...new Set(userIds)];
+  if (uniqueIds.length === 0) return;
+
+  await db.notification.createMany({
+    data: uniqueIds.map((userId) => ({
+      userId,
+      type: "INFO",
+      channel: "IN_APP",
+      status: "PENDING",
+      title: "Ton équipe est prête",
+      message: `Le mix ${gameLabel(game)} vient d’être généré, va voir ton équipe.`,
+    })),
+  });
 }
 
 function shuffle<T>(items: T[]) {
@@ -46,8 +80,8 @@ function shuffle<T>(items: T[]) {
   return arr;
 }
 
-/** WARZONE normal: tailles 4/3 */
-function getTeamSizesWarzone(total: number): number[] | null {
+/** WARZONE / BO7 : tailles 4/3 */
+function getTeamSizesFourThree(total: number): number[] | null {
   if (total < 3) return null;
   if (total === 5) return null;
 
@@ -185,6 +219,105 @@ function teamSizeFromLock(
   return null;
 }
 
+/** WARZONE et BO7 partagent exactement la même logique de génération (4/3). */
+async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
+  const availabilityField =
+    game === "WARZONE" ? "isAvailableForWarzoneMix" : "isAvailableForBO7Mix";
+
+  const users = await db.user.findMany({
+    where: {
+      status: "ACTIVE",
+      registrationStatus: "APPROVED",
+      [availabilityField]: true,
+    },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const tempPlayers = await db.tempPlayer.findMany({
+    where: { game, isAvailableForMix: true },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const pool = [
+    ...users.map((u) => ({ kind: "USER" as const, id: u.id })),
+    ...tempPlayers.map((t) => ({ kind: "TEMP" as const, id: t.id })),
+  ];
+
+  const sizes = getTeamSizesFourThree(pool.length);
+  if (!sizes) redirectToGame(game, "?error=invalid_count");
+
+  const shuffled = shuffle(pool);
+
+  const session = await db.mixSession.create({
+    data: {
+      game,
+      status: "GENERATED",
+      allowTeamsOfThree: true,
+      keepRemainderAsBench: false,
+      createdById: sessionUserId,
+    },
+  });
+
+  if (shuffled.length > 0) {
+    await db.mixSessionPlayer.createMany({
+      data: shuffled.map((p) => ({
+        sessionId: session.id,
+        userId: p.kind === "USER" ? p.id : null,
+        tempPlayerId: p.kind === "TEMP" ? p.id : null,
+        status: "WAITING",
+      })),
+    });
+  }
+
+  let cursor = 0;
+  const allUserIds: string[] = [];
+
+  for (let idx = 0; idx < sizes.length; idx += 1) {
+    const size = sizes[idx];
+    const chunk = shuffled.slice(cursor, cursor + size);
+
+    const team = await db.team.create({
+      data: { sessionId: session.id, teamNumber: idx + 1 },
+    });
+
+    if (chunk.length > 0) {
+      await db.teamMember.createMany({
+        data: chunk.map((p) => ({
+          teamId: team.id,
+          userId: p.kind === "USER" ? p.id : null,
+          tempPlayerId: p.kind === "TEMP" ? p.id : null,
+        })),
+      });
+
+      const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
+      const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
+      allUserIds.push(...userIds);
+
+      if (userIds.length > 0) {
+        await db.mixSessionPlayer.updateMany({
+          where: { sessionId: session.id, userId: { in: userIds } },
+          data: { status: "ASSIGNED", assignedAt: new Date() },
+        });
+      }
+
+      if (tempIds.length > 0) {
+        await db.mixSessionPlayer.updateMany({
+          where: { sessionId: session.id, tempPlayerId: { in: tempIds } },
+          data: { status: "ASSIGNED", assignedAt: new Date() },
+        });
+      }
+    }
+
+    cursor += size;
+  }
+
+  await notifyMixReady(game, allUserIds);
+
+  redirectToGame(game, `?success=1&session=${session.id}`);
+}
+
 export async function generateMix(formData: FormData) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
@@ -221,6 +354,7 @@ export async function generateMix(formData: FormData) {
       select: {
         isAvailableForWarzoneMix: true,
         isAvailableForWarzoneRankedMix: true,
+        isAvailableForBO7Mix: true,
         isAvailableForRocketLeagueMix: true,
       },
     });
@@ -230,109 +364,21 @@ export async function generateMix(formData: FormData) {
         ? !!me?.isAvailableForWarzoneMix
         : game === "WARZONE_RANKED"
           ? !!me?.isAvailableForWarzoneRankedMix
-          : !!me?.isAvailableForRocketLeagueMix;
+          : game === "BO7"
+            ? !!me?.isAvailableForBO7Mix
+            : !!me?.isAvailableForRocketLeagueMix;
 
     if (!inQueue) {
-      redirect("/profil?error=forbidden");
+      redirectToGame(game, "?error=forbidden");
     }
   }
 
   try {
     // =========================
-    // WARZONE NORMAL
+    // WARZONE NORMAL & BO7 (mêmes règles 4/3)
     // =========================
-    if (game === "WARZONE") {
-      const users = await db.user.findMany({
-        where: {
-          status: "ACTIVE",
-          registrationStatus: "APPROVED",
-          isAvailableForWarzoneMix: true,
-        },
-        select: { id: true },
-        orderBy: { createdAt: "asc" },
-      });
-
-      const tempPlayers = await db.tempPlayer.findMany({
-        where: { game: "WARZONE", isAvailableForMix: true },
-        select: { id: true },
-        orderBy: { createdAt: "asc" },
-      });
-
-      const pool = [
-        ...users.map((u) => ({ kind: "USER" as const, id: u.id })),
-        ...tempPlayers.map((t) => ({ kind: "TEMP" as const, id: t.id })),
-      ];
-
-      const sizes = getTeamSizesWarzone(pool.length);
-      if (!sizes) redirectToGame(game, "?error=invalid_count");
-
-      const shuffled = shuffle(pool);
-
-      const session = await db.mixSession.create({
-        data: {
-          game,
-          status: "GENERATED",
-          allowTeamsOfThree: true,
-          keepRemainderAsBench: false,
-          createdById: sessionUser.id,
-        },
-      });
-
-      if (shuffled.length > 0) {
-        await db.mixSessionPlayer.createMany({
-          data: shuffled.map((p) => ({
-            sessionId: session.id,
-            userId: p.kind === "USER" ? p.id : null,
-            tempPlayerId: p.kind === "TEMP" ? p.id : null,
-            status: "WAITING",
-          })),
-        });
-      }
-
-      let cursor = 0;
-      for (let idx = 0; idx < sizes.length; idx += 1) {
-        const size = sizes[idx];
-        const chunk = shuffled.slice(cursor, cursor + size);
-
-        const team = await db.team.create({
-          data: { sessionId: session.id, teamNumber: idx + 1 },
-        });
-
-        if (chunk.length > 0) {
-          await db.teamMember.createMany({
-            data: chunk.map((p) => ({
-              teamId: team.id,
-              userId: p.kind === "USER" ? p.id : null,
-              tempPlayerId: p.kind === "TEMP" ? p.id : null,
-            })),
-          });
-
-          const userIds = chunk
-            .filter((p) => p.kind === "USER")
-            .map((p) => p.id);
-          const tempIds = chunk
-            .filter((p) => p.kind === "TEMP")
-            .map((p) => p.id);
-
-          if (userIds.length > 0) {
-            await db.mixSessionPlayer.updateMany({
-              where: { sessionId: session.id, userId: { in: userIds } },
-              data: { status: "ASSIGNED", assignedAt: new Date() },
-            });
-          }
-
-          if (tempIds.length > 0) {
-            await db.mixSessionPlayer.updateMany({
-              where: { sessionId: session.id, tempPlayerId: { in: tempIds } },
-              data: { status: "ASSIGNED", assignedAt: new Date() },
-            });
-          }
-        }
-
-        cursor += size;
-      }
-
-      redirectToGame(game, `?success=1&session=${session.id}`);
+    if (game === "WARZONE" || game === "BO7") {
+      await runFourThreeMix(game, sessionUser.id);
     }
 
     // =========================
@@ -387,6 +433,8 @@ export async function generateMix(formData: FormData) {
       }
 
       let cursor = 0;
+      const allUserIds: string[] = [];
+
       for (let idx = 0; idx < sizes.length; idx += 1) {
         const chunk = shuffled.slice(cursor, cursor + 3);
 
@@ -404,6 +452,7 @@ export async function generateMix(formData: FormData) {
 
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
+        allUserIds.push(...userIds);
 
         if (userIds.length > 0) {
           await db.mixSessionPlayer.updateMany({
@@ -421,8 +470,12 @@ export async function generateMix(formData: FormData) {
         cursor += 3;
       }
 
+      await notifyMixReady(game, allUserIds);
+
       redirectToGame(game, `?success=1&session=${session.id}`);
     }
+
+    if (game !== "ROCKET_LEAGUE") return;
 
     // =========================
     // ROCKET LEAGUE (strict + invités RL inclus)
@@ -492,6 +545,8 @@ export async function generateMix(formData: FormData) {
       })),
     });
 
+    const allUserIds: string[] = [];
+
     for (let idx = 0; idx < teams.length; idx += 1) {
       const team = await db.team.create({
         data: { sessionId: session.id, teamNumber: idx + 1 },
@@ -512,6 +567,7 @@ export async function generateMix(formData: FormData) {
 
       const userIds = members.filter((m) => m.kind === "USER").map((m) => m.id);
       const tempIds = members.filter((m) => m.kind === "TEMP").map((m) => m.id);
+      allUserIds.push(...userIds);
 
       if (userIds.length > 0) {
         await db.mixSessionPlayer.updateMany({
@@ -526,6 +582,8 @@ export async function generateMix(formData: FormData) {
         });
       }
     }
+
+    await notifyMixReady(game, allUserIds);
 
     redirectToGame(game, `?success=1&session=${session.id}`);
   } catch (error) {

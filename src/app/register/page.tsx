@@ -13,6 +13,8 @@ function getErrorMessage(error?: string) {
       return "Le formulaire est invalide. Vérifie les champs.";
     case "server":
       return "Erreur serveur pendant la création du compte. Réessaie.";
+    case "rate_limit":
+      return "Trop de tentatives d’inscription. Réessaie dans un moment.";
     default:
       return null;
   }

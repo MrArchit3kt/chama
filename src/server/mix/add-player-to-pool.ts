@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -20,12 +20,14 @@ function gameFrom(v: unknown): MixGame {
   const g = String(v ?? "").trim().toUpperCase();
   if (g === "ROCKET_LEAGUE") return "ROCKET_LEAGUE";
   if (g === "WARZONE_RANKED") return "WARZONE_RANKED";
+  if (g === "BO7") return "BO7";
   return "WARZONE";
 }
 
 function backTo(game: MixGame) {
   if (game === "ROCKET_LEAGUE") return "/admin/mix/rocket-league";
   if (game === "WARZONE_RANKED") return "/admin/mix/warzone-ranked";
+  if (game === "BO7") return "/admin/mix/bo7";
   return "/admin/mix/warzone";
 }
 
@@ -54,6 +56,7 @@ export async function addPlayerToPool(formData: FormData) {
           isAvailableForRocketLeagueMix: true,
           isAvailableForWarzoneMix: false,
           isAvailableForWarzoneRankedMix: false,
+          isAvailableForBO7Mix: false,
         },
       });
     } else if (game === "WARZONE_RANKED") {
@@ -62,6 +65,17 @@ export async function addPlayerToPool(formData: FormData) {
         data: {
           isAvailableForWarzoneRankedMix: true,
           isAvailableForWarzoneMix: false,
+          isAvailableForBO7Mix: false,
+          isAvailableForRocketLeagueMix: false,
+        },
+      });
+    } else if (game === "BO7") {
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          isAvailableForBO7Mix: true,
+          isAvailableForWarzoneMix: false,
+          isAvailableForWarzoneRankedMix: false,
           isAvailableForRocketLeagueMix: false,
         },
       });
@@ -71,6 +85,7 @@ export async function addPlayerToPool(formData: FormData) {
         data: {
           isAvailableForWarzoneMix: true,
           isAvailableForWarzoneRankedMix: false,
+          isAvailableForBO7Mix: false,
           isAvailableForRocketLeagueMix: false,
         },
       });

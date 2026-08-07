@@ -53,32 +53,17 @@ export default async function AdminSettingsPage({
 
         <div className="neon-card p-8">
           <form action={saveSiteConfig} className="grid gap-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
-                  Nom du site
-                </label>
-                <input
-                  name="siteName"
-                  type="text"
-                  required
-                  defaultValue={config?.siteName ?? "EHPAD Squad Manager"}
-                  className="w-full px-4 py-3"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
-                  Mot de passe d’accès au site
-                </label>
-                <input
-                  name="siteAccessPassword"
-                  type="text"
-                  defaultValue={config?.siteAccessPassword ?? ""}
-                  placeholder="Laisser vide pour désactiver"
-                  className="w-full px-4 py-3"
-                />
-              </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white">
+                Nom du site
+              </label>
+              <input
+                name="siteName"
+                type="text"
+                required
+                defaultValue={config?.siteName ?? "CHAMA Squad Manager"}
+                className="w-full px-4 py-3"
+              />
             </div>
 
             <div>
@@ -89,7 +74,7 @@ export default async function AdminSettingsPage({
                 name="homeHeadline"
                 type="text"
                 required
-                defaultValue={config?.homeHeadline ?? "EHPAD Warzone Squad"}
+                defaultValue={config?.homeHeadline ?? "CHAMA Warzone Squad"}
                 className="w-full px-4 py-3"
               />
             </div>
@@ -117,8 +102,8 @@ export default async function AdminSettingsPage({
               <input
                 name="homeHeroImageUrl"
                 type="text"
-                defaultValue={config?.homeHeroImageUrl ?? "/images/AC2N-hero.png"}
-                placeholder="/images/AC2N-hero.png"
+                defaultValue={config?.homeHeroImageUrl ?? "/images/CHAMA-hero.jpg"}
+                placeholder="/images/CHAMA-hero.jpg"
                 className="w-full px-4 py-3"
               />
             </div>

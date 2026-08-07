@@ -5,7 +5,7 @@ import { addWarning } from "@/server/admin/add-warning";
 import { revokeWarning } from "@/server/admin/revoke-warning";
 import { liftBan } from "@/server/admin/lift-ban";
 import { resetPlayerPassword } from "@/server/admin/reset-player-password";
-import { toggleEhpadMember } from "@/server/admin/toggle-ehpad-member";
+import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
 
 type WarningItem = {
@@ -27,7 +27,7 @@ type PlayerRow = {
   status: string;
   createdAt: Date;
   lastSeenAt: Date | null;
-  isEhpadMember: boolean; // On garde ce champ DB (renommage DB possible plus tard)
+  isChamaMember: boolean;
   inactiveDays: number | null;
   totalWarnings: number;
   activeWarnings: number;
@@ -94,7 +94,7 @@ function getStatusBadgeClass(status: string) {
   return "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/75";
 }
 
-type MembershipFilter = "ALL" | "AC2N" | "EXTERNAL";
+type MembershipFilter = "ALL" | "CHAMA" | "EXTERNAL";
 
 export function AdminPlayersList({ rows }: Props) {
   const [search, setSearch] = useState("");
@@ -120,8 +120,8 @@ export function AdminPlayersList({ rows }: Props) {
 
       const matchesMembership =
         membershipFilter === "ALL" ||
-        (membershipFilter === "AC2N" && player.isEhpadMember) ||
-        (membershipFilter === "EXTERNAL" && !player.isEhpadMember);
+        (membershipFilter === "CHAMA" && player.isChamaMember) ||
+        (membershipFilter === "EXTERNAL" && !player.isChamaMember);
 
       return matchesSearch && matchesRole && matchesStatus && matchesMembership;
     });
@@ -169,7 +169,7 @@ export function AdminPlayersList({ rows }: Props) {
             className="w-full px-4 py-3"
           >
             <option value="ALL">Tous les profils</option>
-            <option value="AC2N">Membres AC2N</option>
+            <option value="CHAMA">Membres CHAMA</option>
             <option value="EXTERNAL">Externes</option>
           </select>
         </div>
@@ -210,12 +210,12 @@ export function AdminPlayersList({ rows }: Props) {
 
                       <span
                         className={
-                          player.isEhpadMember
+                          player.isChamaMember
                             ? "rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300"
                             : "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/70"
                         }
                       >
-                        {player.isEhpadMember ? "Membre AC2N" : "Externe"}
+                        {player.isChamaMember ? "Membre CHAMA" : "Externe"}
                       </span>
 
                       {player.shouldAlert ? (
@@ -276,38 +276,38 @@ export function AdminPlayersList({ rows }: Props) {
                   <div className="grid gap-4 xl:grid-cols-4">
                     <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                        Statut team AC2N
+                        Statut team CHAMA
                       </p>
 
                       <p className="mt-2 text-sm leading-6 text-white/75">
                         Ce joueur est actuellement{" "}
                         <span className="font-semibold text-white">
-                          {player.isEhpadMember
-                            ? "dans la team AC2N"
-                            : "hors team AC2N"}
+                          {player.isChamaMember
+                            ? "dans la team CHAMA"
+                            : "hors team CHAMA"}
                         </span>
                         .
                       </p>
 
-                      <form action={toggleEhpadMember} className="mt-3">
+                      <form action={toggleChamaMember} className="mt-3">
                         <input type="hidden" name="userId" value={player.id} />
                         <input
                           type="hidden"
                           name="nextValue"
-                          value={player.isEhpadMember ? "false" : "true"}
+                          value={player.isChamaMember ? "false" : "true"}
                         />
 
                         <button
                           type="submit"
                           className={`w-full px-5 py-3 ${
-                            player.isEhpadMember
+                            player.isChamaMember
                               ? "neon-button-secondary"
                               : "neon-button"
                           }`}
                         >
-                          {player.isEhpadMember
+                          {player.isChamaMember
                             ? "Retirer de la team"
-                            : "Activer membre AC2N"}
+                            : "Activer membre CHAMA"}
                         </button>
                       </form>
                     </div>

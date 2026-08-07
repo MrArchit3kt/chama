@@ -3,12 +3,17 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function createContactRequest(formData: FormData) {
   const user = await requireAuth();
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (!rateLimit(`contact:${user.id}`, 10, 60 * 60 * 1000)) {
+    redirect("/contact?error=rate_limit");
   }
 
   const type = String(formData.get("type") ?? "").trim();

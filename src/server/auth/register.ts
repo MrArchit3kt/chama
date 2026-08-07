@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const registerSchema = z
   .object({
@@ -19,8 +20,18 @@ const registerSchema = z
     path: ["confirmPassword"],
   });
 
+function isNextRedirectError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 function normalizeBaseUsername(displayName: string) {
-  // -> "Pénélope AC2N" => "penelope_ac2n"
+  // -> "Pénélope CHAMA" => "penelope_chama"
   const base = displayName
     .toLowerCase()
     .normalize("NFD")
@@ -29,7 +40,7 @@ function normalizeBaseUsername(displayName: string) {
     .replace(/^_+|_+$/g, "") // trim _
     .slice(0, 20);
 
-  return base.length >= 3 ? base : `player_${base || "ac2n"}`;
+  return base.length >= 3 ? base : `player_${base || "chama"}`;
 }
 
 async function makeUniqueUsername(base: string) {
@@ -50,6 +61,11 @@ async function makeUniqueUsername(base: string) {
 }
 
 export async function registerUser(formData: FormData) {
+  const ip = await getClientIp();
+  if (!rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)) {
+    redirect("/register?error=rate_limit");
+  }
+
   const parsed = registerSchema.safeParse({
     displayName: String(formData.get("displayName") ?? ""),
     email: String(formData.get("email") ?? ""),
@@ -88,7 +104,7 @@ export async function registerUser(formData: FormData) {
 
     const passwordHash = await hash(data.password, 12);
 
-    await db.user.create({
+    const newUser = await db.user.create({
       data: {
         email: normalizedEmail,
         passwordHash,
@@ -103,7 +119,27 @@ export async function registerUser(formData: FormData) {
         acceptedRulesVersionId: activeRules?.id ?? null,
       },
     });
+
+    // ✅ Prévenir les admins qu'une inscription attend une validation
+    const admins = await db.user.findMany({
+      where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await db.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: "INFO",
+          channel: "IN_APP",
+          status: "PENDING",
+          title: "Nouvelle inscription à valider",
+          message: `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription.`,
+        })),
+      });
+    }
   } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     console.error("REGISTER_ERROR", error);
     redirect("/register?error=server");
   }

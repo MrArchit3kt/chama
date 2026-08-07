@@ -103,7 +103,7 @@ export default async function EventsPage({
             Événements de la communauté
           </h1>
           <p className="neon-text-muted mt-4 max-w-3xl leading-7">
-            Tous les événements publiés de la team EHPAD.
+            Tous les événements publiés de la team CHAMA.
           </p>
         </div>
 

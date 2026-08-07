@@ -7,16 +7,18 @@ import {
   CalendarDays,
   Shield,
   Users,
-  LayoutDashboard,
   Share2,
   Mail,
   SlidersHorizontal,
   UserCheck,
   Target,
   Gamepad2,
+  Swords,
+  Award,
 } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
+import { db } from "@/lib/prisma";
 
 const cards = [
   {
@@ -44,10 +46,22 @@ const cards = [
     icon: Target,
   },
   {
+    href: "/admin/mix/bo7",
+    title: "BO7 Mix",
+    description: "Pool BO7, invités, sélection admin générateur, génération équipes.",
+    icon: Swords,
+  },
+  {
     href: "/admin/mix/rocket-league",
     title: "Rocket League Mix",
     description: "File RL, 2v2 / 3v3, rangs, génération par niveau.",
     icon: Gamepad2,
+  },
+  {
+    href: "/admin/badges",
+    title: "Badges",
+    description: "Créer des badges et les attribuer aux joueurs.",
+    icon: Award,
   },
   {
     href: "/admin/events",
@@ -88,6 +102,23 @@ export default async function AdminHomePage() {
     redirect("/dashboard");
   }
 
+  const [activePlayers, pendingRegistrations, openContactRequests, chamaMembers, bannedPlayers] =
+    await Promise.all([
+      db.user.count({ where: { status: "ACTIVE", registrationStatus: "APPROVED" } }),
+      db.user.count({ where: { registrationStatus: "PENDING" } }),
+      db.contactRequest.count({ where: { status: "OPEN" } }),
+      db.user.count({ where: { isChamaMember: true } }),
+      db.user.count({ where: { status: "BANNED" } }),
+    ]);
+
+  const stats = [
+    { href: "/admin/players", label: "Joueurs actifs", value: activePlayers, color: "text-cyan-300" },
+    { href: "/admin/registrations", label: "Inscriptions en attente", value: pendingRegistrations, color: "text-amber-300" },
+    { href: "/admin/contact", label: "Demandes ouvertes", value: openContactRequests, color: "text-pink-300" },
+    { href: "/admin/players", label: "Membres CHAMA", value: chamaMembers, color: "text-emerald-300" },
+    { href: "/admin/players", label: "Joueurs bannis", value: bannedPlayers, color: "text-rose-300" },
+  ];
+
   return (
     <SiteShell>
       <div className="grid gap-6">
@@ -104,9 +135,24 @@ export default async function AdminHomePage() {
           </h1>
 
           <p className="neon-text-muted mt-4 max-w-3xl leading-7">
-            Gère la communauté AC2N : joueurs, inscriptions, mix, événements,
+            Gère la communauté CHAMA : joueurs, inscriptions, mix, événements,
             demandes de contact, règlement et configuration globale du site.
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {stats.map((stat) => (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="neon-card-soft p-4 transition hover:-translate-y-0.5"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+                {stat.label}
+              </p>
+              <p className={`mt-1 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+            </Link>
+          ))}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

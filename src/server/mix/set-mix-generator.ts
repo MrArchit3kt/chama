@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 type RLTeamSize = "TWO" | "THREE";
 
 function isNextRedirectError(error: unknown) {
@@ -20,7 +20,9 @@ function isNextRedirectError(error: unknown) {
 function gameFrom(v: unknown): MixGame | null {
   if (typeof v !== "string") return null;
   const g = v.trim().toUpperCase();
-  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "ROCKET_LEAGUE") return g as MixGame;
+  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "BO7" || g === "ROCKET_LEAGUE") {
+    return g as MixGame;
+  }
   return null;
 }
 
@@ -37,7 +39,9 @@ function redirectTo(game: MixGame, qs: string): never {
       ? "/admin/mix/warzone"
       : game === "WARZONE_RANKED"
         ? "/admin/mix/warzone-ranked"
-        : "/admin/mix/rocket-league";
+        : game === "BO7"
+          ? "/admin/mix/bo7"
+          : "/admin/mix/rocket-league";
 
   redirect(`${backTo}${qs}`);
 }

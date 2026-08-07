@@ -17,7 +17,6 @@ export async function saveSiteConfig(formData: FormData) {
   const homeHeroImageUrl = String(formData.get("homeHeroImageUrl") ?? "").trim();
   const discordInviteUrl = String(formData.get("discordInviteUrl") ?? "").trim();
   const whatsappInviteUrl = String(formData.get("whatsappInviteUrl") ?? "").trim();
-  const siteAccessPassword = String(formData.get("siteAccessPassword") ?? "").trim();
 
   if (!siteName || !homeHeadline || !homeDescription) {
     redirect("/admin/settings?error=validation");
@@ -33,7 +32,6 @@ export async function saveSiteConfig(formData: FormData) {
         homeHeroImageUrl: homeHeroImageUrl || null,
         discordInviteUrl: discordInviteUrl || null,
         whatsappInviteUrl: whatsappInviteUrl || null,
-        siteAccessPassword: siteAccessPassword || null,
         socialsEnabled: formData.get("socialsEnabled") === "on",
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",
@@ -47,7 +45,6 @@ export async function saveSiteConfig(formData: FormData) {
         homeHeroImageUrl: homeHeroImageUrl || null,
         discordInviteUrl: discordInviteUrl || null,
         whatsappInviteUrl: whatsappInviteUrl || null,
-        siteAccessPassword: siteAccessPassword || null,
         socialsEnabled: formData.get("socialsEnabled") === "on",
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",

@@ -129,6 +129,8 @@ enum ContactRequestType {
   PLAYER_REPORT
   BUG
   IMPROVEMENT
+  RECRUITMENT
+  LEAVE_TEAM
 }
 
 enum ContactRequestStatus {
@@ -143,6 +145,7 @@ enum ContactRequestStatus {
 enum MixGame {
   WARZONE
   WARZONE_RANKED
+  BO7
   ROCKET_LEAGUE
 }
 
@@ -192,13 +195,12 @@ enum BadgeCategory {
 model SiteConfig {
   id String @id @default("main")
 
-  siteName           String  @default("AC2N Squad Manager")
-  homeHeadline       String  @default("AC2N Warzone Squad")
+  siteName           String  @default("CHAMA Squad Manager")
+  homeHeadline       String  @default("CHAMA Warzone Squad")
   homeDescription    String  @db.Text
   homeHeroImageUrl   String?
   discordInviteUrl   String?
   whatsappInviteUrl  String?
-  siteAccessPassword String?
 
   socialsEnabled       Boolean @default(true)
   eventsEnabled        Boolean @default(true)
@@ -254,7 +256,7 @@ model User {
 
   micAvailable  Boolean @default(true)
   notes         String?
-  isEhpadMember Boolean @default(false) // champ DB conservé, UI affiche "AC2N"
+  isChamaMember Boolean @default(false)
 
   // Rocket League
   rocketLeagueRank RocketLeagueRank?
@@ -271,10 +273,15 @@ model User {
   // flags par jeu
   isAvailableForWarzoneMix       Boolean @default(false)
   isAvailableForWarzoneRankedMix Boolean @default(false)
+  isAvailableForBO7Mix           Boolean @default(false)
   isAvailableForRocketLeagueMix  Boolean @default(false)
 
   lastSeenAt  DateTime?
   lastLoginAt DateTime?
+
+  // Verrouillage anti brute-force
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
 
   acceptedRulesAt        DateTime?
   acceptedRulesVersionId String?
@@ -324,6 +331,7 @@ model User {
 
   @@index([isAvailableForWarzoneMix])
   @@index([isAvailableForWarzoneRankedMix])
+  @@index([isAvailableForBO7Mix])
   @@index([isAvailableForRocketLeagueMix])
 
   @@index([rocketLeagueRank])
@@ -655,11 +663,11 @@ model MixGenerationLock {
 
 model Badge {
   id          String        @id @default(cuid())
-  code        String        @unique // ex: AC2N_MEMBER, TOP_FRAGGER
+  code        String        @unique // ex: CHAMA_MEMBER, TOP_FRAGGER
   name        String
   description String        @db.Text
   category    BadgeCategory
-  icon        String?       // mapping UI (ex: "ac2n", "trophy", "shield")
+  icon        String?       // mapping UI (ex: "chama", "trophy", "shield")
   color       String?       // mapping UI (ex: "cyan", "pink")
 
   createdAt DateTime @default(now())

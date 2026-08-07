@@ -26,7 +26,7 @@ export default async function LoginPage() {
           <div className="mb-6">
             <div className="mb-3 flex items-center gap-2">
               <span className="neon-badge">Connexion</span>
-              <span className="neon-badge">EHPAD</span>
+              <span className="neon-badge">CHAMA</span>
             </div>
 
             <h1 className="neon-title neon-gradient-text text-3xl font-black">

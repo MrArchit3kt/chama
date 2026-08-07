@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
+import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 
 function formatDate(value: Date) {
@@ -12,6 +14,9 @@ function formatDate(value: Date) {
 }
 
 export default async function HomePage() {
+  const sessionUser = await requireAuth();
+  if (!sessionUser) redirect("/login");
+
   const [config, events] = await Promise.all([
     db.siteConfig.findUnique({
       where: { id: "main" },
@@ -44,12 +49,12 @@ export default async function HomePage() {
     }),
   ]);
 
-  const homeHeadline = config?.homeHeadline ?? "AC2N Gaming Squad";
+  const homeHeadline = config?.homeHeadline ?? "CHAMA Gaming Squad";
   const homeDescription =
     config?.homeDescription ??
     "Plateforme de gestion de team, mix automatique, événements, modération et organisation complète de la communauté.";
 
-  const heroImageUrl = config?.homeHeroImageUrl?.trim() || "/images/AC2N-hero.png";
+  const heroImageUrl = config?.homeHeroImageUrl?.trim() || "/images/CHAMA-hero.jpg";
   const eventsEnabled = config?.eventsEnabled ?? true;
   const socialsEnabled = config?.socialsEnabled ?? true;
   const contactEnabled = config?.contactEnabled ?? true;
@@ -82,8 +87,16 @@ export default async function HomePage() {
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href="/profil" className="neon-button px-6 py-3">
-                    Accéder à mon profil
+                  <Link href="/tuto" className="neon-button px-6 py-3">
+                    Comment ça marche ?
+                  </Link>
+
+                  <Link href="/membres" className="neon-button-secondary px-6 py-3">
+                    Voir les membres
+                  </Link>
+
+                  <Link href="/reglement" className="neon-button-secondary px-6 py-3">
+                    Règlement
                   </Link>
 
                   {socialsEnabled ? (

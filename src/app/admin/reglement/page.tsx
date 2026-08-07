@@ -81,7 +81,7 @@ export default async function AdminReglementPage({
                 <input
                   name="title"
                   type="text"
-                  defaultValue={activeRules?.title ?? "Règlement officiel EHPAD"}
+                  defaultValue={activeRules?.title ?? "Règlement officiel CHAMA"}
                   className="w-full px-4 py-3"
                   required
                 />

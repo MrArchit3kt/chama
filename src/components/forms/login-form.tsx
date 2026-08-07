@@ -13,6 +13,8 @@ function getLoginErrorMessage(error?: string | null) {
       return "Ton inscription a été refusée. Contacte un admin si besoin.";
     case "ACCOUNT_BANNED":
       return "Ton compte est banni et ne peut pas se connecter.";
+    case "ACCOUNT_LOCKED":
+      return "Trop de tentatives échouées. Réessaie dans 15 minutes.";
     case "CredentialsSignin":
       return "Identifiants invalides.";
     default:

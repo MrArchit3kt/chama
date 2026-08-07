@@ -14,11 +14,7 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-/**
- * ✅ Nouveau nom (AC2N)
- * Utilisé par les imports récents.
- */
-export async function toggleAC2NMember(formData: FormData) {
+export async function toggleChamaMember(formData: FormData) {
   const admin = await requireAdmin();
 
   if (!admin) {
@@ -36,22 +32,15 @@ export async function toggleAC2NMember(formData: FormData) {
     await db.user.update({
       where: { id: userId },
       data: {
-        // ⚠️ on garde le champ DB tel quel pour l’instant
-        isEhpadMember: nextValue === "true",
+        isChamaMember: nextValue === "true",
       },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
 
-    console.error("TOGGLE_AC2N_MEMBER_ERROR", error);
+    console.error("TOGGLE_CHAMA_MEMBER_ERROR", error);
     redirect("/admin/players?error=server");
   }
 
-  redirect(`/admin/players?ehpad=${nextValue === "true" ? "1" : "0"}`);
+  redirect(`/admin/players?chama=${nextValue === "true" ? "1" : "0"}`);
 }
-
-/**
- * ✅ Ancien nom (EHPAD)
- * Alias pour ne rien casser ailleurs.
- */
-export const toggleEhpadMember = toggleAC2NMember;
