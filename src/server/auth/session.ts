@@ -106,6 +106,30 @@ export async function requireAuth() {
   }
 }
 
+/**
+ * True si l'utilisateur connecté vient de devenir membre CHAMA et n'a pas
+ * encore vu le pop-up de bienvenue (voir toggleChamaMember / markChamaWelcomeSeen).
+ * Requête dédiée et minimale : on ne veut pas alourdir SessionUser (utilisé
+ * partout) avec des champs qui ne servent qu'à ce pop-up.
+ */
+export async function getChamaWelcomeState(): Promise<boolean> {
+  try {
+    const session = await getServerSession(authOptions);
+    const id = (session?.user as { id?: string } | undefined)?.id;
+    if (!id) return false;
+
+    const user = await db.user.findUnique({
+      where: { id },
+      select: { isChamaMember: true, chamaWelcomeSeenAt: true, status: true },
+    });
+
+    return Boolean(user?.isChamaMember && !user.chamaWelcomeSeenAt && user.status === "ACTIVE");
+  } catch (error) {
+    console.error("GET_CHAMA_WELCOME_STATE_ERROR", error);
+    return false;
+  }
+}
+
 export async function requireAdmin() {
   try {
     const user = await requireAuth();

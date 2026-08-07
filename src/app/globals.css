@@ -507,3 +507,40 @@ button {
       animation: none !important;
     }
   }
+
+/* ✅ Pop-up de bienvenue "membre CHAMA" : confettis en explosion */
+@keyframes chama-confetti-burst {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.4);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--chama-confetti-x), var(--chama-confetti-y)) rotate(var(--chama-confetti-rot))
+      scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes chama-welcome-pop-in {
+  0% {
+    transform: scale(0.85) translateY(12px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chama-confetti-particle {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .chama-welcome-card {
+    animation: none !important;
+  }
+}

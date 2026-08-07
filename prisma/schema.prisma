@@ -261,6 +261,10 @@ model User {
   notes         String?
   isChamaMember Boolean @default(false)
 
+  // ✅ Pop-up de bienvenue "membre CHAMA" : null => pas encore vu, réinitialisé
+  // à chaque fois qu'un admin active le statut membre.
+  chamaWelcomeSeenAt DateTime?
+
   // Rocket League
   rocketLeagueRank RocketLeagueRank?
 

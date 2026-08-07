@@ -33,6 +33,9 @@ export async function toggleChamaMember(formData: FormData) {
       where: { id: userId },
       data: {
         isChamaMember: nextValue === "true",
+        // ✅ Réactive le pop-up de bienvenue à chaque passage à true
+        // (nouveau membre, ou ré-ajout après un retrait).
+        ...(nextValue === "true" ? { chamaWelcomeSeenAt: null } : {}),
       },
     });
   } catch (error) {
