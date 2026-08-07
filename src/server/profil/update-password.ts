@@ -9,8 +9,8 @@ import { requireAuth } from "@/server/auth/session";
 const updatePasswordSchema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z.string().min(6),
-    confirmPassword: z.string().min(6),
+    newPassword: z.string().min(8),
+    confirmPassword: z.string().min(8),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",

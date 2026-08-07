@@ -5,6 +5,34 @@ import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+// ⚠️ Defense-in-depth : NextAuth valide déjà les callbackUrl côté serveur
+// (redirect callback par défaut, restreint au même domaine), mais on
+// s'assure aussi côté client que ce n'est jamais utilisé pour rediriger
+// vers un autre site — un chemin commençant par "//" est en fait une URL
+// absolue (protocole implicite) que le navigateur suit comme externe.
+function isSafeCallbackPath(value: string | null): value is string {
+  return Boolean(value) && value!.startsWith("/") && !value!.startsWith("//");
+}
+
+/**
+ * result.url (renvoyé par signIn({ redirect: false })) est une URL absolue
+ * construite par le redirect callback de NextAuth (déjà restreinte au même
+ * domaine par défaut). On revérifie ici que l'origine correspond bien à la
+ * page courante avant de l'utiliser, et on retombe sur "/profil" sinon.
+ */
+function resolveSafeDestination(url: string | null | undefined): string {
+  if (!url) return "/profil";
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.origin === window.location.origin
+      ? `${parsed.pathname}${parsed.search}${parsed.hash}`
+      : "/profil";
+  } catch {
+    return "/profil";
+  }
+}
+
 function getLoginErrorMessage(error?: string | null) {
   switch (error) {
     case "ACCOUNT_PENDING_APPROVAL":
@@ -15,6 +43,8 @@ function getLoginErrorMessage(error?: string | null) {
       return "Ton compte est banni et ne peut pas se connecter.";
     case "ACCOUNT_LOCKED":
       return "Trop de tentatives échouées. Réessaie dans 15 minutes.";
+    case "RATE_LIMITED":
+      return "Trop de tentatives de connexion depuis ta connexion. Réessaie dans quelques minutes.";
     case "CredentialsSignin":
       return "Identifiants invalides.";
     default:
@@ -28,7 +58,8 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
 
   const registered = searchParams.get("registered") === "1";
-  const callbackUrl = searchParams.get("callbackUrl") || "/profil";
+  const requestedCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = isSafeCallbackPath(requestedCallbackUrl) ? requestedCallbackUrl : "/profil";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +87,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push(result.url || "/profil");
+      router.push(resolveSafeDestination(result.url));
       router.refresh();
     });
   };

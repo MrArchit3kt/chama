@@ -365,7 +365,7 @@ export function AdminPlayersList({ rows }: Props) {
                         <input
                           name="password"
                           type="password"
-                          minLength={6}
+                          minLength={8}
                           required
                           placeholder="Nouveau mot de passe"
                           className="w-full px-4 py-3"

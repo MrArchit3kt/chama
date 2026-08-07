@@ -99,7 +99,8 @@ export default async function RegisterPage({
                 name="password"
                 type="password"
                 required
-                placeholder="Minimum 6 caractères"
+                minLength={8}
+                placeholder="Minimum 8 caractères"
                 className="w-full px-4 py-3"
               />
             </div>
@@ -112,6 +113,7 @@ export default async function RegisterPage({
                 name="confirmPassword"
                 type="password"
                 required
+                minLength={8}
                 placeholder="Confirme le mot de passe"
                 className="w-full px-4 py-3"
               />

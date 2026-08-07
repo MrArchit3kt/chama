@@ -41,7 +41,7 @@ function getErrorMessage(error?: string) {
     case "validation":
       return "Requête invalide.";
     case "password_validation":
-      return "Le nouveau mot de passe est invalide (minimum 6 caractères).";
+      return "Le nouveau mot de passe est invalide (minimum 8 caractères).";
     case "player_not_found":
       return "Joueur introuvable.";
     case "forbidden":
@@ -686,7 +686,7 @@ export default async function AdminPlayersPage({
                         <input
                           name="password"
                           type="password"
-                          minLength={6}
+                          minLength={8}
                           required
                           placeholder="Nouveau mot de passe"
                           className="w-full px-4 py-2 md:py-2.5"

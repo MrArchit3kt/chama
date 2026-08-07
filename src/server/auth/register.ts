@@ -11,8 +11,8 @@ const registerSchema = z
     displayName: z.string().trim().min(2).max(40),
     email: z.string().trim().email(),
     activisionId: z.string().trim().max(64).optional().or(z.literal("")),
-    password: z.string().min(6),
-    confirmPassword: z.string().min(6),
+    password: z.string().min(8),
+    confirmPassword: z.string().min(8),
     acceptRules: z.literal("on"),
   })
   .refine((data) => data.password === data.confirmPassword, {

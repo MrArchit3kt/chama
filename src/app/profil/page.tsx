@@ -21,7 +21,7 @@ function getErrorMessage(error?: string) {
     case "twitch_invalid":
       return "Pseudo Twitch invalide. Colle juste ton pseudo ou le lien de ta chaîne.";
     case "password_validation":
-      return "Mot de passe invalide (minimum 6 caractères, confirmation identique).";
+      return "Mot de passe invalide (minimum 8 caractères, confirmation identique).";
     case "password_mismatch":
       return "Le mot de passe actuel est incorrect.";
     default:
@@ -353,7 +353,7 @@ export default async function ProfilePage({
           </p>
           <h3 className="mt-2 text-xl font-bold text-white">Changer mon mot de passe</h3>
           <p className="neon-text-muted mt-2 text-sm">
-            Saisis ton mot de passe actuel puis le nouveau (minimum 6 caractères).
+            Saisis ton mot de passe actuel puis le nouveau (minimum 8 caractères).
           </p>
 
           <form action={updatePassword} className="mt-6 grid gap-4 md:grid-cols-3">
@@ -377,7 +377,7 @@ export default async function ProfilePage({
                 name="newPassword"
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full px-4 py-3"
               />
             </div>
@@ -390,7 +390,7 @@ export default async function ProfilePage({
                 name="confirmPassword"
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full px-4 py-3"
               />
             </div>

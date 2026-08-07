@@ -3,14 +3,27 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
+// ⚠️ Ne pas remonter ce minimum : c'est la validation du LOGIN, elle doit
+// accepter n'importe quel mot de passe déjà en base (potentiellement créé
+// sous une politique plus permissive), pas la politique actuelle de création
+// de mot de passe (voir min(8) dans register.ts / update-password.ts /
+// reset-player-password.ts). Un mismatch bloquerait des comptes existants.
 const credentialsSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(1),
 });
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+// ⚠️ Le lock par compte (ci-dessus) ne protège pas contre un attaquant qui
+// essaie beaucoup de comptes différents depuis une seule IP. Ce garde-fou
+// complémentaire limite le nombre total de tentatives de connexion par IP,
+// tous comptes confondus.
+const MAX_LOGIN_ATTEMPTS_PER_IP = 20;
+const IP_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -27,6 +40,12 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(rawCredentials) {
+        const clientIp = await getClientIp();
+
+        if (!rateLimit(`login-ip:${clientIp}`, MAX_LOGIN_ATTEMPTS_PER_IP, IP_RATE_LIMIT_WINDOW_MS)) {
+          throw new Error("RATE_LIMITED");
+        }
+
         const parsed = credentialsSchema.safeParse(rawCredentials);
 
         if (!parsed.success) {
