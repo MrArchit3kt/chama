@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
-import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { toggleGameQueue } from "@/server/mix/toggle-game-queue";
@@ -129,8 +128,6 @@ export default async function WarzonePage({
 
   return (
     <SiteShell>
-      <AutoRefresh intervalMs={6000} />
-
       <div className="grid gap-6">
         <div className="neon-card p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
@@ -282,8 +279,20 @@ export default async function WarzonePage({
                         const platform = member.user?.platform ?? "Temporaire";
 
                         return (
-                          <div key={member.id} className="rounded-xl border border-white/8 bg-white/[0.02] p-2.5">
-                            <p className="truncate text-sm font-semibold text-white">{name}</p>
+                          <div
+                            key={member.id}
+                            className={
+                              member.isHost
+                                ? "rounded-xl border border-amber-400/30 bg-amber-400/6 p-2.5"
+                                : "rounded-xl border border-white/8 bg-white/2 p-2.5"
+                            }
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <p className="truncate text-sm font-semibold text-white">{name}</p>
+                              {member.isHost ? (
+                                <span title="Hôte de la partie" className="text-sm leading-none">👑</span>
+                              ) : null}
+                            </div>
                             <p className="neon-text-muted mt-0.5 truncate text-[11px]">{sub}</p>
                             <p className="neon-text-muted mt-1 truncate text-[11px]">
                               Warzone : <span className="text-white">{wz}</span> · {platform}

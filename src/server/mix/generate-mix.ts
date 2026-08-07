@@ -283,11 +283,14 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
     });
 
     if (chunk.length > 0) {
+      const hostIdx = Math.floor(Math.random() * chunk.length);
+
       await db.teamMember.createMany({
-        data: chunk.map((p) => ({
+        data: chunk.map((p, i) => ({
           teamId: team.id,
           userId: p.kind === "USER" ? p.id : null,
           tempPlayerId: p.kind === "TEMP" ? p.id : null,
+          isHost: i === hostIdx,
         })),
       });
 
@@ -442,11 +445,14 @@ export async function generateMix(formData: FormData) {
           data: { sessionId: session.id, teamNumber: idx + 1 },
         });
 
+        const hostIdx = Math.floor(Math.random() * chunk.length);
+
         await db.teamMember.createMany({
-          data: chunk.map((p) => ({
+          data: chunk.map((p, i) => ({
             teamId: team.id,
             userId: p.kind === "USER" ? p.id : null,
             tempPlayerId: p.kind === "TEMP" ? p.id : null,
+            isHost: i === hostIdx,
           })),
         });
 
@@ -557,11 +563,14 @@ export async function generateMix(formData: FormData) {
         .map((k) => pool.find((p) => p.key === k))
         .filter(Boolean) as typeof pool;
 
+      const hostIdx = Math.floor(Math.random() * members.length);
+
       await db.teamMember.createMany({
-        data: members.map((m) => ({
+        data: members.map((m, i) => ({
           teamId: team.id,
           userId: m.kind === "USER" ? m.id : null,
           tempPlayerId: m.kind === "TEMP" ? m.id : null,
+          isHost: i === hostIdx,
         })),
       });
 

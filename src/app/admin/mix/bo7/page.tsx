@@ -530,9 +530,21 @@ export default async function AdminMixBO7Page({
                       const pseudo = member.user ? member.user.warzoneUsername : member.tempPlayer?.note ?? "Invité";
 
                       return (
-                        <div key={member.id} className="rounded-xl border border-white/8 bg-white/[0.02] p-2.5">
+                        <div
+                          key={member.id}
+                          className={
+                            member.isHost
+                              ? "rounded-xl border border-amber-400/30 bg-amber-400/6 p-2.5"
+                              : "rounded-xl border border-white/8 bg-white/2 p-2.5"
+                          }
+                        >
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-xs font-semibold text-white md:text-sm">{label}</p>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <p className="truncate text-xs font-semibold text-white md:text-sm">{label}</p>
+                              {member.isHost ? (
+                                <span title="Hôte de la partie" className="text-xs leading-none">👑</span>
+                              ) : null}
+                            </div>
                             {!member.user ? <span className="neon-badge text-[10px]">INVITÉ</span> : null}
                           </div>
                           <p className="neon-text-muted mt-0.5 truncate text-[11px]">{subLabel}</p>

@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
-import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { updateProfile } from "@/server/profil/update-profile";
@@ -54,8 +53,6 @@ export default async function ProfilePage({
 
   return (
     <SiteShell>
-      <AutoRefresh intervalMs={8000} />
-
       <div className="grid gap-6">
         {/* HEADER */}
         <div className="neon-card p-8">
