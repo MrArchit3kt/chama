@@ -6,6 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { generateMix } from "@/server/mix/generate-mix";
 import { setMixGenerator } from "@/server/mix/set-mix-generator";
+import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 import { createTempPlayer } from "@/server/mix/create-temp-player";
 
 function getErrorMessage(error?: string) {
@@ -116,6 +117,8 @@ export default async function AdminRocketLeagueMixPage({
     (lock.rocketLeagueTeamSize === "TWO"
       ? totalPoolCount % 2 === 0
       : totalPoolCount % 3 === 0);
+
+  await cleanupOldMixSessions();
 
   const latestSession = sessionId
     ? await db.mixSession.findUnique({

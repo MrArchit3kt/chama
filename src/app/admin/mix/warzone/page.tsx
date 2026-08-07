@@ -9,6 +9,7 @@ import { removePlayerFromPool } from "@/server/mix/remove-player-from-pool";
 import { addPlayerToPool } from "@/server/mix/add-player-to-pool";
 import { createTempPlayer } from "@/server/mix/create-temp-player";
 import { setMixGenerator } from "@/server/mix/set-mix-generator";
+import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -154,6 +155,8 @@ export default async function AdminMixWarzonePage({
     !!mixLock?.selectedUserId && mixLock.selectedUserId === admin.id;
 
   const canGenerate = canGenerateByCount && canCurrentAdminGenerate;
+
+  await cleanupOldMixSessions();
 
   const latestSession = sessionId
     ? await db.mixSession.findUnique({

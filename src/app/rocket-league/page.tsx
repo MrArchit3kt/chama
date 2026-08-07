@@ -11,6 +11,7 @@ import { sortTeamsMineFirst } from "@/lib/mix-teams";
 import { SessionHistory } from "@/components/mix/session-history";
 import { PoolList, type PoolPlayer } from "@/components/mix/pool-list";
 import { canSelfServeMix } from "@/server/mix/mix-access";
+import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 import { rocketLeagueRankLabel } from "@/lib/ranks";
 
 function getErrorMessage(error?: string) {
@@ -118,6 +119,8 @@ export default async function RocketLeaguePage({
       },
     },
   };
+
+  await cleanupOldMixSessions();
 
   const latestSession = sessionId
     ? await db.mixSession.findUnique({ where: { id: sessionId }, include: includeTeams })
