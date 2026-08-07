@@ -3,6 +3,21 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/prisma";
 
+// ⚠️ redirect() de Next.js fonctionne en lançant une erreur spéciale pour
+// interrompre le rendu. Il ne faut jamais l'avaler dans un try/catch, sinon
+// la redirection est silencieusement annulée (bug constaté en conditions
+// réelles : /approval-pending, /approval-rejected et /banni tombaient en
+// boucle de redirection au lieu de s'afficher).
+function isNextRedirectError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 type SessionUser = {
   id: string;
   email: string;
@@ -80,11 +95,12 @@ export async function requireAuth() {
     }
 
     if (user.status === "BANNED") {
-      return null;
+      redirect("/banni");
     }
 
     return user;
   } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     console.error("REQUIRE_AUTH_ERROR", error);
     return null;
   }
@@ -106,6 +122,7 @@ export async function requireAdmin() {
 
     return user;
   } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     console.error("REQUIRE_ADMIN_ERROR", error);
     return null;
   }

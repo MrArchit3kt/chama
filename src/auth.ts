@@ -59,10 +59,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("ACCOUNT_LOCKED");
         }
 
-        if (user.status === "BANNED") {
-          throw new Error("ACCOUNT_BANNED");
-        }
-
         if (user.registrationStatus === "PENDING") {
           throw new Error("ACCOUNT_PENDING_APPROVAL");
         }
@@ -71,6 +67,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("ACCOUNT_REJECTED");
         }
 
+        // ⚠️ Un compte banni doit quand même pouvoir prouver son identité
+        // (mot de passe correct) pour accéder à la page /banni où il voit
+        // la raison et peut s'expliquer. On ne bloque donc pas ici : le
+        // statut BANNED est renvoyé dans la session, et requireAuth()
+        // redirige ensuite systématiquement vers /banni.
         const isValid = await compare(password, user.passwordHash);
 
         if (!isValid) {
