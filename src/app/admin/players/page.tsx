@@ -495,24 +495,28 @@ export default async function AdminPlayersPage({
 
         <div className="grid gap-4">
           {rows.map((player) => (
-            <details key={player.id} className="group neon-card overflow-hidden p-0">
-              <summary className="list-none cursor-pointer p-3 md:p-5">
-                <div className="flex flex-col gap-2 md:gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <details key={player.id} className="group neon-card relative overflow-hidden p-0">
+              <span className="pointer-events-none absolute right-3 top-3 text-xs text-white/40 transition-transform duration-200 group-open:rotate-180 md:hidden">
+                ▼
+              </span>
+
+              <summary className="list-none cursor-pointer p-2.5 pr-8 md:p-5">
+                <div className="flex flex-col gap-1 md:gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                      <h3 className="truncate text-sm font-bold text-white md:text-lg">
+                    <div className="flex flex-wrap items-center gap-1 md:gap-2">
+                      <h3 className="truncate text-[13px] font-bold text-white md:text-lg">
                         {player.displayName}
                       </h3>
 
-                      <span className="neon-badge px-2 py-0.5 text-[10px] md:px-3 md:py-1 md:text-xs">
+                      <span className="neon-badge px-1.5 py-0.5 text-[9px] md:px-3 md:py-1 md:text-xs">
                         @{player.username}
                       </span>
 
-                      <span className={`${getRoleBadgeClass(player.role)} px-2 py-0.5 text-[9px] md:px-3 md:py-1 md:text-xs`}>
+                      <span className={`${getRoleBadgeClass(player.role)} px-1.5 py-0.5 text-[8px] md:px-3 md:py-1 md:text-xs`}>
                         {getRoleLabel(player.role)}
                       </span>
 
-                      <span className={`${getStatusBadgeClass(player.status)} px-2 py-0.5 text-[9px] md:px-3 md:py-1 md:text-xs`}>
+                      <span className={`${getStatusBadgeClass(player.status)} px-1.5 py-0.5 text-[8px] md:px-3 md:py-1 md:text-xs`}>
                         {player.status}
                       </span>
 
@@ -521,30 +525,30 @@ export default async function AdminPlayersPage({
                           (player.isChamaMember
                             ? "rounded-full border border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
                             : "rounded-full border border-white/10 bg-white/[0.04] text-white/70") +
-                          " px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]"
+                          " px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]"
                         }
                       >
                         {player.isChamaMember ? "Membre CHAMA" : "Externe"}
                       </span>
 
                       {player.shouldAlert ? (
-                        <span className="rounded-full border border-amber-400/20 bg-amber-300/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-300 md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]">
+                        <span className="rounded-full border border-amber-400/20 bg-amber-300/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-amber-300 md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]">
                           Inactif 10j+
                         </span>
                       ) : null}
                     </div>
 
-                    <p className="neon-text-muted mt-1.5 truncate text-[11px] md:mt-2 md:text-sm">
+                    <p className="neon-text-muted mt-2 hidden truncate text-sm md:block">
                       {player.email}
                     </p>
 
                     {/* Résumé compact, mobile uniquement */}
-                    <p className="neon-text-muted mt-1.5 truncate text-[11px] md:hidden">
-                      {formatDate(player.lastSeenAt)} ·{" "}
+                    <p className="neon-text-muted mt-1 truncate text-[10px] md:hidden">
+                      {player.email} · {formatDate(player.lastSeenAt)} ·{" "}
                       {player.inactiveDays === null
-                        ? "Jamais vu"
+                        ? "jamais vu"
                         : `${player.inactiveDays}j inactif`}{" "}
-                      · Warnings {player.activeWarnings}/{player.totalWarnings}
+                      · warn {player.activeWarnings}/{player.totalWarnings}
                     </p>
                   </div>
 
@@ -592,16 +596,6 @@ export default async function AdminPlayersPage({
                         ▼
                       </span>
                     </div>
-                  </div>
-
-                  {/* Chevron seul, mobile uniquement */}
-                  <div className="flex items-center justify-end md:hidden">
-                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
-                      Détails
-                    </span>
-                    <span className="ml-2 text-sm text-white/70 transition-transform duration-200 group-open:rotate-180">
-                      ▼
-                    </span>
                   </div>
                 </div>
               </summary>
