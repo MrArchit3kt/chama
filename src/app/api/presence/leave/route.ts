@@ -17,5 +17,14 @@ export async function POST() {
     },
   });
 
+  // ⚠️ Si cet utilisateur était désigné générateur (prioritaire) sur un ou
+  // plusieurs jeux, on libère le verrou : sinon la file resterait bloquée
+  // indéfiniment (plus personne ne pourrait générer ni gérer le pool) tant
+  // qu'un autre admin ne vient pas le déverrouiller manuellement.
+  await db.mixGenerationLock.updateMany({
+    where: { selectedUserId: user.id },
+    data: { selectedUserId: null },
+  });
+
   return NextResponse.json({ ok: true });
 }

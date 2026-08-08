@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { PresenceHeartbeat } from "@/components/layout/presence-heartbeat";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { AutoRefresh } from "@/components/layout/auto-refresh";
+import { ScrollRestoration } from "@/components/layout/scroll-restoration";
 import { ChamaWelcomePopup } from "@/components/layout/chama-welcome-popup";
 import { getSessionUser, getChamaWelcomeState } from "@/server/auth/session";
 
@@ -23,6 +24,7 @@ export async function SiteShell({ children }: SiteShellProps) {
     <div className="min-h-screen px-4 py-6 md:px-6">
       <PresenceHeartbeat />
       <AutoRefresh intervalMs={4000} />
+      <ScrollRestoration />
       {showChamaWelcome ? <ChamaWelcomePopup /> : null}
 
       <div className="mx-auto max-w-7xl">
