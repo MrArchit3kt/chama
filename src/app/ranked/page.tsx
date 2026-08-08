@@ -10,7 +10,7 @@ import { getTeamDisplayName } from "@/lib/team-names";
 import { sortTeamsMineFirst } from "@/lib/mix-teams";
 import { SessionHistory } from "@/components/mix/session-history";
 import { PoolList, type PoolPlayer } from "@/components/mix/pool-list";
-import { canSelfServeMix } from "@/server/mix/mix-access";
+import { canSelfServeMix, getMixManagingAdminName } from "@/server/mix/mix-access";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 
 function getErrorMessage(error?: string) {
@@ -55,7 +55,7 @@ export default async function RankedPage({
   const sessionId = sp.session;
   const isInQueue = !!user.isAvailableForWarzoneRankedMix;
 
-  const [queueUsers, queueTempPlayers, canManagePool] = await Promise.all([
+  const [queueUsers, queueTempPlayers, canManagePool, managingAdminName] = await Promise.all([
     db.user.findMany({
       where: { status: "ACTIVE", registrationStatus: "APPROVED", isAvailableForWarzoneRankedMix: true },
       select: { id: true, username: true, platform: true },
@@ -67,6 +67,7 @@ export default async function RankedPage({
       orderBy: { nickname: "asc" },
     }),
     canSelfServeMix("WARZONE_RANKED", sessionUser.id),
+    getMixManagingAdminName("WARZONE_RANKED"),
   ]);
 
   const queueCount = queueUsers.length + queueTempPlayers.length;
@@ -216,7 +217,12 @@ export default async function RankedPage({
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
             File d’attente
           </p>
-          <PoolList game="WARZONE_RANKED" players={poolPlayers} canManage={canManagePool} />
+          <PoolList
+            game="WARZONE_RANKED"
+            players={poolPlayers}
+            canManage={canManagePool}
+            managingAdminName={managingAdminName}
+          />
         </div>
 
         <div className="neon-card p-6 md:p-8">
@@ -294,7 +300,12 @@ export default async function RankedPage({
                             <div className="flex items-center gap-1.5">
                               <p className="truncate text-sm font-semibold text-white">{name}</p>
                               {member.isHost ? (
-                                <span title="Hôte de la partie" className="text-sm leading-none">👑</span>
+                                <span
+                                  title="Hôte de la partie : c’est chez lui qu’il faut rejoindre"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-amber-300"
+                                >
+                                  👑 Hôte à rejoindre
+                                </span>
                               ) : null}
                             </div>
                             <p className="neon-text-muted mt-0.5 truncate text-[11px]">{sub}</p>

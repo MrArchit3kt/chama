@@ -15,6 +15,7 @@ export default async function MembresPage() {
     select: {
       id: true,
       username: true,
+      role: true,
       isOnline: true,
       isChamaMember: true,
       rocketLeagueRank: true,
@@ -66,11 +67,23 @@ export default async function MembresPage() {
                       <p className="truncate text-sm font-bold text-white">@{member.username}</p>
                     </div>
 
-                    {member.isChamaMember ? (
-                      <span className="shrink-0 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-300">
-                        CHAMA
-                      </span>
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {member.role === "SUPER_ADMIN" ? (
+                        <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-fuchsia-300">
+                          Admin
+                        </span>
+                      ) : member.role === "ADMIN" ? (
+                        <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-300">
+                          Admin
+                        </span>
+                      ) : null}
+
+                      {member.isChamaMember ? (
+                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-300">
+                          CHAMA
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <p className="neon-text-muted mt-2 truncate text-[11px]">

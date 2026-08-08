@@ -546,7 +546,12 @@ export default async function AdminMixWarzonePage({
                             <div className="flex min-w-0 items-center gap-1.5">
                               <p className="truncate text-xs font-semibold text-white md:text-sm">{label}</p>
                               {member.isHost ? (
-                                <span title="Hôte de la partie" className="text-xs leading-none">👑</span>
+                                <span
+                                  title="Hôte de la partie : c’est chez lui qu’il faut rejoindre"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-amber-300"
+                                >
+                                  👑 Hôte à rejoindre
+                                </span>
                               ) : null}
                             </div>
                             {!member.user ? <span className="neon-badge text-[10px]">INVITÉ</span> : null}

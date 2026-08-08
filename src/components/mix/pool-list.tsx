@@ -12,6 +12,7 @@ type PoolListProps = {
   game: "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
   players: PoolPlayer[];
   canManage: boolean;
+  managingAdminName?: string | null;
 };
 
 /**
@@ -20,7 +21,7 @@ type PoolListProps = {
  * peut être retiré — utile pour débloquer une génération quand quelqu'un
  * est resté coincé dans la file (AFK, oubli).
  */
-export function PoolList({ game, players, canManage }: PoolListProps) {
+export function PoolList({ game, players, canManage, managingAdminName }: PoolListProps) {
   return (
     <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -30,7 +31,9 @@ export function PoolList({ game, players, canManage }: PoolListProps) {
 
         {!canManage && players.length > 0 ? (
           <span className="text-[11px] text-white/45">
-            Un admin gère la file : seul lui peut retirer un joueur.
+            {managingAdminName
+              ? `${managingAdminName} gère la file : seul lui peut retirer un joueur.`
+              : "Un admin gère la file : seul lui peut retirer un joueur."}
           </span>
         ) : null}
       </div>

@@ -31,3 +31,18 @@ export async function canSelfServeMix(game: MixGame, userId: string): Promise<bo
 
   return onlineAdminsCount === 0;
 }
+
+/**
+ * Nom de l'admin actuellement désigné pour générer ce jeu (s'il y en a
+ * un), pour personnaliser le message "un admin gère la file" affiché aux
+ * joueurs. Renvoie null s'il n'y a pas de désignation explicite (aucun
+ * admin en ligne, ou plusieurs admins en ligne sans sélection).
+ */
+export async function getMixManagingAdminName(game: MixGame): Promise<string | null> {
+  const lock = await db.mixGenerationLock.findUnique({
+    where: { game },
+    select: { selectedUser: { select: { displayName: true } } },
+  });
+
+  return lock?.selectedUser?.displayName ?? null;
+}
