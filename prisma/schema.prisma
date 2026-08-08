@@ -84,6 +84,15 @@ enum EventParticipantStatus {
   NO_SHOW
 }
 
+/**
+ * ✅ Composition d'équipe pour un événement, choisie par un admin
+ * (indépendant de la réponse du joueur lui-même via EventParticipantStatus).
+ */
+enum EventRosterRole {
+  TITULAIRE
+  REMPLACANT
+}
+
 enum NotificationType {
   EVENT_PUBLISHED
   EVENT_UPDATED
@@ -455,12 +464,13 @@ model Event {
 }
 
 model EventParticipant {
-  id        String                 @id @default(cuid())
-  eventId   String
-  userId    String
-  status    EventParticipantStatus @default(REGISTERED)
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
+  id         String                 @id @default(cuid())
+  eventId    String
+  userId     String
+  status     EventParticipantStatus @default(REGISTERED)
+  rosterRole EventRosterRole?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

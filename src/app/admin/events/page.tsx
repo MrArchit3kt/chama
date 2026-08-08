@@ -7,6 +7,7 @@ import { db } from "@/lib/prisma";
 import { createEvent } from "@/server/events/create-event";
 import { updateEvent } from "@/server/events/update-event";
 import { deleteEvent } from "@/server/events/delete-event";
+import { EventRosterModal } from "@/components/admin/event-roster-modal";
 
 function formatDateForInput(value: Date | null) {
   if (!value) return "";
@@ -95,6 +96,7 @@ export default async function AdminEventsPage({
     success?: string;
     updated?: string;
     deleted?: string;
+    roster_updated?: string;
   }>;
 }) {
   const user = await requireAdmin();
@@ -108,44 +110,54 @@ export default async function AdminEventsPage({
   const isSuccess = sp.success === "1";
   const isUpdated = sp.updated === "1";
   const isDeleted = sp.deleted === "1";
+  const isRosterUpdated = sp.roster_updated === "1";
 
-  const events = await db.event.findMany({
-    orderBy: {
-      eventDate: "desc",
-    },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      eventDate: true,
-      endDate: true,
-      status: true,
-      coverImageUrl: true,
-      publishInApp: true,
-      publishToDiscord: true,
-      publishToWhatsApp: true,
-      isPublished: true,
-      createdAt: true,
-      participants: {
-        orderBy: {
-          createdAt: "asc",
-        },
-        select: {
-          id: true,
-          status: true,
-          user: {
-            select: {
-              id: true,
-              displayName: true,
-              username: true,
-              warzoneUsername: true,
-              platform: true,
+  const [events, rosterCandidates] = await Promise.all([
+    db.event.findMany({
+      orderBy: {
+        eventDate: "desc",
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        eventDate: true,
+        endDate: true,
+        status: true,
+        coverImageUrl: true,
+        publishInApp: true,
+        publishToDiscord: true,
+        publishToWhatsApp: true,
+        isPublished: true,
+        createdAt: true,
+        participants: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            rosterRole: true,
+            user: {
+              select: {
+                id: true,
+                displayName: true,
+                username: true,
+                warzoneUsername: true,
+                platform: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+    db.user.findMany({
+      where: { status: "ACTIVE", registrationStatus: "APPROVED" },
+      select: { id: true, displayName: true, username: true },
+      orderBy: { displayName: "asc" },
+    }),
+  ]);
 
   return (
     <SiteShell>
@@ -303,6 +315,12 @@ export default async function AdminEventsPage({
               </p>
             ) : null}
 
+            {isRosterUpdated ? (
+              <p className="text-sm font-medium text-emerald-400">
+                Composition de l’équipe mise à jour avec succès.
+              </p>
+            ) : null}
+
             <div>
               <button type="submit" className="neon-button px-4 py-2.5 md:px-6 md:py-3">
                 Publier l’événement
@@ -327,6 +345,13 @@ export default async function AdminEventsPage({
               const cancelledCount = event.participants.filter(
                 (participant) => participant.status === "CANCELLED",
               ).length;
+
+              const titulaires = event.participants.filter(
+                (participant) => participant.rosterRole === "TITULAIRE",
+              );
+              const remplacants = event.participants.filter(
+                (participant) => participant.rosterRole === "REMPLACANT",
+              );
 
               const imageSrc = getEventImageSrc(event.coverImageUrl);
 
@@ -374,7 +399,70 @@ export default async function AdminEventsPage({
                       </div>
                     ) : null}
 
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-5">
+                    <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-4 md:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                          Composition de l’équipe
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                          <EventRosterModal
+                            eventId={event.id}
+                            role="TITULAIRE"
+                            label="Titulaires"
+                            candidates={rosterCandidates}
+                            selectedIds={titulaires.map((p) => p.userId)}
+                            accentClassName="border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
+                          />
+                          <EventRosterModal
+                            eventId={event.id}
+                            role="REMPLACANT"
+                            label="Remplaçants"
+                            candidates={rosterCandidates}
+                            selectedIds={remplacants.map((p) => p.userId)}
+                            accentClassName="border-amber-400/25 bg-amber-400/10 text-amber-300"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                            Titulaires ({titulaires.length})
+                          </p>
+                          {titulaires.length === 0 ? (
+                            <p className="neon-text-muted mt-2 text-xs">Aucun titulaire désigné.</p>
+                          ) : (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {titulaires.map((p) => (
+                                <span key={p.id} className="neon-badge text-[10px]">
+                                  {p.user.displayName}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                            Remplaçants ({remplacants.length})
+                          </p>
+                          {remplacants.length === 0 ? (
+                            <p className="neon-text-muted mt-2 text-xs">Aucun remplaçant désigné.</p>
+                          ) : (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {remplacants.map((p) => (
+                                <span key={p.id} className="neon-badge text-[10px]">
+                                  {p.user.displayName}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/8 bg-white/2 p-5">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300/75">
                           Réponses des joueurs
