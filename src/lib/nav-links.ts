@@ -11,6 +11,7 @@ import {
   Award,
   Car,
   Radio,
+  Headphones,
   type LucideIcon,
 } from "lucide-react";
 
@@ -42,6 +43,7 @@ export const adminLinks: NavLink[] = [
   { href: "/admin/registrations", label: "Admin Inscriptions", icon: Users },
   { href: "/admin/contact", label: "Admin Contact", icon: Mail },
   { href: "/admin/badges", label: "Admin Badges", icon: Award },
+  { href: "/admin/discord", label: "Admin Discord", icon: Headphones },
 ];
 
 export const adminMixLinks: NavLink[] = [

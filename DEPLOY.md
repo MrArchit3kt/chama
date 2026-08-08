@@ -81,6 +81,25 @@ Remplir :
   5. Une fois créée, copier le **Client ID**, puis cliquer **New Secret**
      pour générer le **Client Secret** (affiché une seule fois)
   6. Coller les deux valeurs dans `.env`
+- `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` / `DISCORD_BOT_TOKEN` /
+  `DISCORD_GUILD_ID` (optionnel, pour la connexion Discord des joueurs
+  + le déplacement automatique en vocal à la génération d'un mix) :
+  1. Aller sur https://discord.com/developers/applications → **New Application**
+  2. Onglet **OAuth2** : copier le **Client ID** et générer/copier le
+     **Client Secret**. Dans **Redirects**, ajouter
+     `https://chama-gaming.site/api/discord/callback`
+  3. Onglet **Bot** : **Reset Token** pour générer le **Bot Token**
+     (affiché une seule fois, à copier tout de suite). Désactiver
+     "Public Bot" si tu ne veux pas qu'il soit ajoutable par d'autres.
+  4. Inviter le bot sur ton serveur : onglet **OAuth2** → **URL Generator**
+     → scope `bot` → permission **Move Members** → ouvrir l'URL générée
+     et sélectionner ton serveur
+  5. `DISCORD_GUILD_ID` : sur Discord, activer le mode développeur
+     (Réglages → Avancés), puis clic droit sur le serveur → **Copier
+     l'identifiant du serveur**
+  6. Une fois les 4 valeurs dans `.env`, configurer les salons vocaux
+     par jeu depuis `/admin/discord` (l'ID de chaque salon vocal
+     s'obtient pareil : clic droit sur le salon → Copier l'ID)
   Sans ces deux valeurs, `/lives` fonctionne quand même (liste des chaînes
   Twitch renseignées), juste sans détection automatique du live.
 

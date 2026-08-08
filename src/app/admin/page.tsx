@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Swords,
   Award,
+  Headphones,
 } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
@@ -62,6 +63,12 @@ const cards = [
     title: "Badges",
     description: "Créer des badges et les attribuer aux joueurs.",
     icon: Award,
+  },
+  {
+    href: "/admin/discord",
+    title: "Discord",
+    description: "Salons vocaux par équipe et déplacement automatique des joueurs.",
+    icon: Headphones,
   },
   {
     href: "/admin/events",

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/discord";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 type RocketLeagueTeamSize = "TWO" | "THREE";
@@ -69,6 +70,56 @@ async function notifyMixReady(game: MixGame, userIds: string[]) {
       message: `Le mix ${gameLabel(game)} vient d’être généré, va voir ton équipe.`,
     })),
   });
+}
+
+/**
+ * Déplace automatiquement les joueurs (comptes réels avec un Discord lié
+ * via OAuth) dans le salon vocal configuré pour leur équipe. Best-effort
+ * total : jamais bloquant, jamais d'erreur remontée — un mix généré doit
+ * toujours réussir même si Discord est down, mal configuré, ou qu'un
+ * joueur n'est pas connecté à un vocal du serveur.
+ */
+async function moveTeamsToDiscordVoice(game: MixGame, teamsUserIds: string[][]) {
+  if (!isDiscordBotConfigured()) return;
+
+  try {
+    const allUserIds = [...new Set(teamsUserIds.flat())];
+    if (allUserIds.length === 0) return;
+
+    const [channels, users] = await Promise.all([
+      db.discordVoiceChannel.findMany({
+        where: { game },
+        orderBy: { createdAt: "asc" },
+        select: { channelId: true },
+      }),
+      db.user.findMany({
+        where: { id: { in: allUserIds }, discordUserId: { not: null } },
+        select: { id: true, discordUserId: true },
+      }),
+    ]);
+
+    if (channels.length === 0) return;
+
+    const discordIdByUserId = new Map(users.map((u) => [u.id, u.discordUserId as string]));
+
+    const moves: Promise<boolean>[] = [];
+
+    teamsUserIds.forEach((userIds, teamIndex) => {
+      const channel = channels[teamIndex];
+      if (!channel) return;
+
+      for (const userId of userIds) {
+        const discordUserId = discordIdByUserId.get(userId);
+        if (discordUserId) {
+          moves.push(moveGuildMemberToVoiceChannel(discordUserId, channel.channelId));
+        }
+      }
+    });
+
+    await Promise.allSettled(moves);
+  } catch (error) {
+    console.error("MOVE_TEAMS_TO_DISCORD_VOICE_ERROR", error);
+  }
 }
 
 function shuffle<T>(items: T[]) {
@@ -273,6 +324,7 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
 
   let cursor = 0;
   const allUserIds: string[] = [];
+  const teamsUserIds: string[][] = [];
 
   for (let idx = 0; idx < sizes.length; idx += 1) {
     const size = sizes[idx];
@@ -297,6 +349,7 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
       const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
       const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
       allUserIds.push(...userIds);
+      teamsUserIds.push(userIds);
 
       if (userIds.length > 0) {
         await db.mixSessionPlayer.updateMany({
@@ -311,12 +364,15 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
           data: { status: "ASSIGNED", assignedAt: new Date() },
         });
       }
+    } else {
+      teamsUserIds.push([]);
     }
 
     cursor += size;
   }
 
   await notifyMixReady(game, allUserIds);
+  await moveTeamsToDiscordVoice(game, teamsUserIds);
 
   redirectToGame(game, `?success=1&session=${session.id}`);
 }
@@ -437,6 +493,7 @@ export async function generateMix(formData: FormData) {
 
       let cursor = 0;
       const allUserIds: string[] = [];
+      const teamsUserIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
         const chunk = shuffled.slice(cursor, cursor + 3);
@@ -459,6 +516,7 @@ export async function generateMix(formData: FormData) {
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
         allUserIds.push(...userIds);
+        teamsUserIds.push(userIds);
 
         if (userIds.length > 0) {
           await db.mixSessionPlayer.updateMany({
@@ -477,6 +535,7 @@ export async function generateMix(formData: FormData) {
       }
 
       await notifyMixReady(game, allUserIds);
+      await moveTeamsToDiscordVoice(game, teamsUserIds);
 
       redirectToGame(game, `?success=1&session=${session.id}`);
     }
@@ -552,6 +611,7 @@ export async function generateMix(formData: FormData) {
     });
 
     const allUserIds: string[] = [];
+    const teamsUserIds: string[][] = [];
 
     for (let idx = 0; idx < teams.length; idx += 1) {
       const team = await db.team.create({
@@ -577,6 +637,7 @@ export async function generateMix(formData: FormData) {
       const userIds = members.filter((m) => m.kind === "USER").map((m) => m.id);
       const tempIds = members.filter((m) => m.kind === "TEMP").map((m) => m.id);
       allUserIds.push(...userIds);
+      teamsUserIds.push(userIds);
 
       if (userIds.length > 0) {
         await db.mixSessionPlayer.updateMany({
@@ -593,6 +654,7 @@ export async function generateMix(formData: FormData) {
     }
 
     await notifyMixReady(game, allUserIds);
+    await moveTeamsToDiscordVoice(game, teamsUserIds);
 
     redirectToGame(game, `?success=1&session=${session.id}`);
   } catch (error) {

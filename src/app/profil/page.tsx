@@ -1,12 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { SiDiscord } from "react-icons/si";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { updateProfile } from "@/server/profil/update-profile";
 import { updatePassword } from "@/server/profil/update-password";
+import { disconnectDiscord } from "@/server/profil/disconnect-discord";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
+import { isDiscordOAuthConfigured } from "@/lib/discord";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -24,6 +28,16 @@ function getErrorMessage(error?: string) {
       return "Mot de passe invalide (minimum 8 caractères, confirmation identique).";
     case "password_mismatch":
       return "Le mot de passe actuel est incorrect.";
+    case "discord_not_configured":
+      return "La connexion Discord n’est pas encore configurée côté admin.";
+    case "discord_denied":
+      return "Connexion Discord annulée.";
+    case "discord_state":
+      return "Session Discord expirée, réessaie.";
+    case "discord_exchange":
+      return "Erreur pendant la connexion à Discord. Réessaie.";
+    case "discord_taken":
+      return "Ce compte Discord est déjà lié à un autre profil CHAMA.";
     default:
       return null;
   }
@@ -32,7 +46,12 @@ function getErrorMessage(error?: string) {
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; password_success?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    success?: string;
+    password_success?: string;
+    discord?: string;
+  }>;
 }) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
@@ -52,6 +71,9 @@ export default async function ProfilePage({
   const errorMessage = getErrorMessage(sp.error);
   const isSuccess = sp.success === "1";
   const isPasswordSuccess = sp.password_success === "1";
+  const isDiscordConnected = sp.discord === "connected";
+  const isDiscordDisconnected = sp.discord === "disconnected";
+  const discordConfigured = isDiscordOAuthConfigured();
 
   return (
     <SiteShell>
@@ -271,19 +293,6 @@ export default async function ProfilePage({
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-white">
-                Discord
-              </label>
-              <input
-                name="discordUsername"
-                type="text"
-                defaultValue={user.discordUsername ?? ""}
-                placeholder="pseudo_discord"
-                className="w-full px-4 py-3"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-white">
                 WhatsApp
               </label>
               <input
@@ -342,6 +351,69 @@ export default async function ProfilePage({
               </button>
             </div>
           </form>
+        </div>
+
+        {/* ===================== */}
+        {/* DISCORD */}
+        {/* ===================== */}
+        <div className="neon-card p-6 md:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-300/75">
+            Discord
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-white">Connexion Discord</h3>
+          <p className="neon-text-muted mt-2 text-sm leading-6">
+            Connecte ton compte Discord pour être reconnu automatiquement et
+            placé dans le bon vocal quand un admin génère les équipes.
+          </p>
+
+          {isDiscordConnected ? (
+            <p className="mt-4 text-sm font-medium text-emerald-400">
+              Discord connecté avec succès.
+            </p>
+          ) : null}
+
+          {isDiscordDisconnected ? (
+            <p className="mt-4 text-sm font-medium text-amber-300">
+              Discord déconnecté.
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/8 bg-white/2 p-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-indigo-400/20 bg-indigo-400/10">
+              <SiDiscord className="h-5 w-5 text-indigo-300" />
+            </span>
+
+            <div className="min-w-0 flex-1">
+              {user.discordUserId ? (
+                <>
+                  <p className="truncate text-sm font-semibold text-white">
+                    Connecté : {user.discordUsername ?? "Compte Discord"}
+                  </p>
+                  <p className="neon-text-muted mt-0.5 text-xs">
+                    ID Discord vérifié
+                  </p>
+                </>
+              ) : (
+                <p className="truncate text-sm font-semibold text-white/70">
+                  Aucun compte Discord connecté
+                </p>
+              )}
+            </div>
+
+            {user.discordUserId ? (
+              <form action={disconnectDiscord}>
+                <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
+                  Déconnecter
+                </button>
+              </form>
+            ) : discordConfigured ? (
+              <Link href="/api/discord/connect" className="neon-button px-4 py-2.5 text-sm">
+                Connecter
+              </Link>
+            ) : (
+              <span className="text-xs text-white/40">Indisponible</span>
+            )}
+          </div>
         </div>
 
         {/* ===================== */}

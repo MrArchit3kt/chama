@@ -259,7 +259,7 @@ model User {
   preferredRole   PreferredRole @default(NONE)
 
   discordUsername String?
-  discordUserId   String?
+  discordUserId   String? @unique
   whatsappNumber  String?
   whatsappOptIn   Boolean @default(false)
 
@@ -677,6 +677,22 @@ model MixGenerationLock {
   selectedUser User? @relation("MixGenerationLockSelectedUser", fields: [selectedUserId], references: [id], onDelete: SetNull)
 
   @@index([selectedUserId])
+}
+
+/**
+ * ✅ Salon vocal Discord associé à un numéro d'équipe pour un jeu donné.
+ * Utilisé pour déplacer automatiquement les joueurs (comptes Discord liés
+ * via OAuth) dans le bon vocal à la génération d'un mix. L'ordre de
+ * création détermine le numéro d'équipe (1er créé = équipe 1, etc).
+ */
+model DiscordVoiceChannel {
+  id        String   @id @default(cuid())
+  game      MixGame
+  label     String
+  channelId String
+  createdAt DateTime @default(now())
+
+  @@index([game, createdAt])
 }
 
 /* ===========================
