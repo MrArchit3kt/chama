@@ -14,9 +14,9 @@ const GAME_TO_PATH: Record<string, string> = {
 
 /**
  * Enregistre les kills/morts d'un membre d'équipe. Facultatif, auto-déclaré :
- * n'importe quel membre de l'équipe peut renseigner ses stats ou celles
- * d'un coéquipier (utile si tout le monde ne pense pas à le faire).
- * Sert au classement K/D (/classement).
+ * n'importe quel joueur connecté peut renseigner les stats de n'importe
+ * quel membre de n'importe quelle équipe (utile si tout le monde ne pense
+ * pas à le faire pour lui-même). Sert au classement K/D (/classement).
  */
 export async function setPlayerStats(formData: FormData) {
   const sessionUser = await requireAuth();
@@ -32,7 +32,6 @@ export async function setPlayerStats(formData: FormData) {
       team: {
         select: {
           session: { select: { id: true, game: true } },
-          members: { select: { userId: true } },
         },
       },
     },
@@ -42,9 +41,6 @@ export async function setPlayerStats(formData: FormData) {
 
   const backPath = GAME_TO_PATH[member.team.session.game] ?? "/dashboard";
   const backUrl = `${backPath}?session=${member.team.session.id}`;
-
-  const isTeammate = member.team.members.some((m) => m.userId === sessionUser.id);
-  if (!isTeammate) redirect(`${backUrl}&error=result_forbidden`);
 
   const killsRaw = String(formData.get("kills") ?? "").trim();
   const deathsRaw = String(formData.get("deaths") ?? "").trim();

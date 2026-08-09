@@ -14,10 +14,12 @@ const GAME_TO_PATH: Record<string, string> = {
 
 /**
  * Enregistre (ou efface) le résultat d'une équipe pour une session donnée.
- * Auto-déclaré par les joueurs eux-mêmes : n'importe quel membre de
- * l'équipe concernée peut renseigner le résultat, pas besoin d'un admin.
- * Sert de base au classement (/classement) et à l'historique perso sur
- * le Profil.
+ * Auto-déclaré par les joueurs eux-mêmes : n'importe quel joueur connecté
+ * peut renseigner le résultat de n'importe quelle équipe générée (pas
+ * besoin d'un admin, ni d'en faire partie — les équipes se forment et se
+ * dissolvent trop vite pour restreindre ça, la communauté reste petite
+ * et de confiance). Sert de base au classement (/classement) et à
+ * l'historique perso sur le Profil.
  */
 export async function setTeamResult(formData: FormData) {
   const sessionUser = await requireAuth();
@@ -35,7 +37,6 @@ export async function setTeamResult(formData: FormData) {
     select: {
       id: true,
       session: { select: { id: true, game: true } },
-      members: { select: { userId: true } },
     },
   });
 
@@ -43,9 +44,6 @@ export async function setTeamResult(formData: FormData) {
 
   const backPath = GAME_TO_PATH[team.session.game] ?? "/dashboard";
   const backUrl = `${backPath}?session=${team.session.id}`;
-
-  const isTeammate = team.members.some((m) => m.userId === sessionUser.id);
-  if (!isTeammate) redirect(`${backUrl}&error=result_forbidden`);
 
   try {
     await db.team.update({

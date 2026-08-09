@@ -299,42 +299,40 @@ export default async function WarzonePage({
                       ) : null}
                     </div>
 
-                    {isMine ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <form action={setTeamResult}>
+                        <input type="hidden" name="teamId" value={team.id} />
+                        <input type="hidden" name="result" value="WIN" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                        >
+                          Victoire
+                        </button>
+                      </form>
+                      <form action={setTeamResult}>
+                        <input type="hidden" name="teamId" value={team.id} />
+                        <input type="hidden" name="result" value="LOSS" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/30 hover:bg-rose-400/10"
+                        >
+                          Défaite
+                        </button>
+                      </form>
+                      {team.result ? (
                         <form action={setTeamResult}>
                           <input type="hidden" name="teamId" value={team.id} />
-                          <input type="hidden" name="result" value="WIN" />
+                          <input type="hidden" name="result" value="CLEAR" />
                           <button
                             type="submit"
-                            className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                            className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/50 transition hover:border-white/20 hover:bg-white/5"
                           >
-                            Victoire
+                            Effacer
                           </button>
                         </form>
-                        <form action={setTeamResult}>
-                          <input type="hidden" name="teamId" value={team.id} />
-                          <input type="hidden" name="result" value="LOSS" />
-                          <button
-                            type="submit"
-                            className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/30 hover:bg-rose-400/10"
-                          >
-                            Défaite
-                          </button>
-                        </form>
-                        {team.result ? (
-                          <form action={setTeamResult}>
-                            <input type="hidden" name="teamId" value={team.id} />
-                            <input type="hidden" name="result" value="CLEAR" />
-                            <button
-                              type="submit"
-                              className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/50 transition hover:border-white/20 hover:bg-white/5"
-                            >
-                              Effacer
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    ) : null}
+                      ) : null}
+                    </div>
 
                     <div className="mt-3 grid gap-2">
                       {team.members.map((member) => {
@@ -368,40 +366,34 @@ export default async function WarzonePage({
                               Warzone : <span className="text-white">{wz}</span> · {platform}
                             </p>
 
-                            {isMine ? (
-                              <form action={setPlayerStats} className="mt-2 flex items-center gap-1.5">
-                                <input type="hidden" name="teamMemberId" value={member.id} />
-                                <input
-                                  type="number"
-                                  name="kills"
-                                  min={0}
-                                  max={999}
-                                  defaultValue={member.kills ?? ""}
-                                  placeholder="Kills"
-                                  className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
-                                />
-                                <span className="text-[10px] text-white/30">/</span>
-                                <input
-                                  type="number"
-                                  name="deaths"
-                                  min={0}
-                                  max={999}
-                                  defaultValue={member.deaths ?? ""}
-                                  placeholder="Morts"
-                                  className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
-                                />
-                                <button
-                                  type="submit"
-                                  className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-semibold text-cyan-300/80 transition hover:border-cyan-400/30 hover:bg-cyan-400/10"
-                                >
-                                  OK
-                                </button>
-                              </form>
-                            ) : member.kills !== null || member.deaths !== null ? (
-                              <p className="neon-text-muted mt-1.5 text-[11px]">
-                                {member.kills ?? 0} kills / {member.deaths ?? 0} morts
-                              </p>
-                            ) : null}
+                            <form action={setPlayerStats} className="mt-2 flex items-center gap-1.5">
+                              <input type="hidden" name="teamMemberId" value={member.id} />
+                              <input
+                                type="number"
+                                name="kills"
+                                min={0}
+                                max={999}
+                                defaultValue={member.kills ?? ""}
+                                placeholder="Kills"
+                                className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
+                              />
+                              <span className="text-[10px] text-white/30">/</span>
+                              <input
+                                type="number"
+                                name="deaths"
+                                min={0}
+                                max={999}
+                                defaultValue={member.deaths ?? ""}
+                                placeholder="Morts"
+                                className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
+                              />
+                              <button
+                                type="submit"
+                                className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-semibold text-cyan-300/80 transition hover:border-cyan-400/30 hover:bg-cyan-400/10"
+                              >
+                                OK
+                              </button>
+                            </form>
                           </div>
                         );
                       })}
