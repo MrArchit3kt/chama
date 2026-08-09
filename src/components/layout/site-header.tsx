@@ -9,7 +9,7 @@ import { HeaderActionsCarousel } from "@/components/layout/header-actions-carous
 // carrousel, quelle que soit la longueur du texte (qui tronque avec
 // "truncate" plutôt que de casser la mise en page).
 const ACTION_CLASS =
-  "relative flex h-11 w-[130px] shrink-0 snap-start items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] px-2 text-xs font-medium text-white transition hover:border-cyan-400/20 hover:bg-white/[0.05] md:h-12 md:w-[150px] md:px-3 md:text-sm";
+  "relative flex h-11 w-[130px] shrink-0 items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] px-2 text-xs font-medium text-white transition hover:border-cyan-400/20 hover:bg-white/[0.05] md:h-12 md:w-[150px] md:px-3 md:text-sm";
 
 export async function SiteHeader() {
   const [user, config] = await Promise.all([
