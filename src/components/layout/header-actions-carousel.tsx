@@ -13,8 +13,9 @@ const RESUME_DELAY_MS = 10000;
 /**
  * Carrousel horizontal pour les boutons de la bannière :
  * - défilement automatique CONTINU (bandeau défilant, sans à-coups ni pause
- *   entre chaque étape) ; le contenu est dupliqué une fois pour reboucler
- *   sans saut visible
+ *   entre chaque étape) uniquement si les boutons dépassent la largeur
+ *   visible ; le contenu n'est alors dupliqué qu'une fois pour reboucler
+ *   sans saut visible (sinon pas de duplication, pas de défilement)
  * - glisser au doigt / molette / flèches pour naviguer manuellement, ce qui
  *   met le défilement auto en pause pendant 10s après le dernier geste
  * - dégradé + flèches sur les bords tant qu'il reste du contenu caché
@@ -25,6 +26,11 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
   const firstSetRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  // ✅ Le contenu n'est dupliqué (pour le rebouclage sans saut) que si les
+  // boutons dépassent réellement la largeur visible. Sinon tout tient déjà
+  // à l'écran et dupliquer donnerait l'impression que chaque bouton
+  // apparaît deux fois.
+  const [needsLoop, setNeedsLoop] = useState(false);
   const pausedRef = useRef(false);
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loopWidthRef = useRef(0);
@@ -42,6 +48,7 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
     if (!el || !firstSet) return;
     const gap = parseFloat(window.getComputedStyle(el).columnGap || "0") || 0;
     loopWidthRef.current = firstSet.offsetWidth + gap;
+    setNeedsLoop(firstSet.offsetWidth > el.clientWidth + 4);
   }, []);
 
   useEffect(() => {
@@ -143,9 +150,11 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
         <div ref={firstSetRef} className="flex shrink-0 items-center gap-2">
           {children}
         </div>
-        <div aria-hidden="true" inert className="flex shrink-0 items-center gap-2">
-          {children}
-        </div>
+        {needsLoop ? (
+          <div aria-hidden="true" inert className="flex shrink-0 items-center gap-2">
+            {children}
+          </div>
+        ) : null}
       </div>
 
       {canScrollRight ? (
