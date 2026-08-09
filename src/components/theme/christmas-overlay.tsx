@@ -9,8 +9,12 @@ import { Snowflake, Gift, TreePine } from "lucide-react";
 // automatiquement tant que gifts et traîneau utilisent la même durée.
 const SANTA_CYCLE_SECONDS = 30;
 
-const FAR_SNOWFLAKE_COUNT = 22;
-const NEAR_SNOWFLAKE_COUNT = 16;
+// ✅ Comptes volontairement modestes + filtres non empilés : chaque
+// drop-shadow/blur force un passage de rendu GPU supplémentaire répété à
+// chaque frame d'animation. Trop d'éléments filtrés en même temps sur un
+// mobile d'entrée de gamme peut se voir comme des saccades/clignotements.
+const FAR_SNOWFLAKE_COUNT = 14;
+const NEAR_SNOWFLAKE_COUNT = 10;
 const GIFT_KEYFRAMES = [
   "theme-gift-fall-1",
   "theme-gift-fall-2",
