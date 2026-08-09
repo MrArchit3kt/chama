@@ -15,8 +15,11 @@ import {
   LogOut,
   KeyRound,
   Mail,
+  Crown,
+  Car,
+  Sparkles,
 } from "lucide-react";
-import { SiDiscord } from "react-icons/si";
+import { SiDiscord, SiTwitch } from "react-icons/si";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 
@@ -42,11 +45,14 @@ function Step({ n, title, children }: StepProps) {
 
 const toc = [
   { href: "#profil", label: "Profil", icon: UserCircle2 },
+  { href: "#discord", label: "Discord", icon: SiDiscord },
   { href: "#mix", label: "Files & équipes", icon: Crosshair },
   { href: "#warzone", label: "Warzone", icon: Crosshair },
   { href: "#ranked", label: "Ranked", icon: Trophy },
   { href: "#bo7", label: "BO7", icon: Swords },
   { href: "#rocket-league", label: "Rocket League", icon: Rocket },
+  { href: "#lives", label: "Lives", icon: SiTwitch },
+  { href: "#gta6", label: "GTA 6", icon: Car },
   { href: "#assistance", label: "Réseaux & Assistance", icon: Share2 },
 ];
 
@@ -64,9 +70,10 @@ export default async function TutoPage() {
             Comment utiliser le site
           </h1>
           <p className="neon-text-muted mt-4 max-w-2xl text-sm leading-7 md:text-base">
-            Un tour rapide de chaque page pour t’y retrouver : ton profil, les
-            files de mix par jeu, et comment contacter les admins. Deux minutes
-            de lecture, promis.
+            Un tour rapide de chaque page pour t’y retrouver : ton profil, la
+            connexion Discord, les files de mix par jeu, les lives Twitch de
+            la communauté et comment contacter les admins. Deux minutes de
+            lecture, promis.
           </p>
 
           {/* Sommaire */}
@@ -125,8 +132,9 @@ export default async function TutoPage() {
               </div>
               <p className="neon-text-muted mt-2 text-sm leading-6">
                 Nom affiché, email, pseudo Warzone, Activision ID, plateforme,
-                rôle préféré, rang Rocket League, Discord, WhatsApp. Modifie ce
-                que tu veux puis clique sur « Enregistrer les modifications ».
+                rôle préféré, rang Rocket League, rang Warzone, pseudo Twitch,
+                numéro WhatsApp. Modifie ce que tu veux puis clique sur
+                « Enregistrer les modifications ».
               </p>
             </div>
 
@@ -137,11 +145,40 @@ export default async function TutoPage() {
               </div>
               <p className="neon-text-muted mt-2 text-sm leading-6">
                 Saisis ton mot de passe actuel, puis le nouveau deux fois
-                (minimum 6 caractères). Il faut connaître l’ancien pour pouvoir
+                (minimum 8 caractères). Il faut connaître l’ancien pour pouvoir
                 le changer.
               </p>
             </div>
           </div>
+        </div>
+
+        {/* DISCORD */}
+        <div id="discord" className="neon-card scroll-mt-24 p-5 md:p-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-indigo-400/20 bg-indigo-400/10">
+              <SiDiscord className="h-5 w-5 text-indigo-300" />
+            </span>
+            <h2 className="text-lg font-bold text-white md:text-xl">
+              Connexion Discord
+            </h2>
+          </div>
+          <p className="neon-text-muted mt-4 text-sm leading-7">
+            Depuis ton Profil, le bouton « Connecter » ouvre une vraie
+            connexion Discord officielle (aucun mot de passe partagé avec le
+            site) et lie ton compte Discord à ton compte CHAMA.
+          </p>
+          <p className="neon-text-muted mt-3 text-sm leading-7">
+            Une fois connecté,{" "}
+            <span className="text-white">
+              dès qu’un admin génère les équipes, le bot CHAMA te déplace
+              automatiquement dans le salon vocal de ta team
+            </span>
+            . Petite condition technique : il faut déjà être connecté à un
+            vocal du serveur Discord au moment de la génération — le bot peut
+            te déplacer, mais pas venir te chercher si tu n’es dans aucun
+            vocal. Tu peux déconnecter ton Discord à tout moment depuis ton
+            profil.
+          </p>
         </div>
 
         {/* MIX / FILES - explication générale */}
@@ -170,6 +207,43 @@ export default async function TutoPage() {
               Une fois les équipes générées, elles s’affichent toutes sur la
               page — la tienne apparaît en premier avec un badge « TON ÉQUIPE ».
             </Step>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="neon-card-soft p-4">
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-300" />
+                <p className="text-sm font-semibold text-white">
+                  Qui est l’hôte de l’équipe ?
+                </p>
+              </div>
+              <p className="neon-text-muted mt-2 text-sm leading-6">
+                Dans chaque équipe générée, un joueur est tiré au sort et
+                repéré par le badge{" "}
+                <span className="whitespace-nowrap text-amber-300">
+                  👑 Hôte à rejoindre
+                </span>
+                . C’est chez lui que le reste de l’équipe doit rejoindre la
+                partie (lobby, invitation…).
+              </p>
+            </div>
+
+            <div className="neon-card-soft p-4">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-cyan-300" />
+                <p className="text-sm font-semibold text-white">
+                  File bloquée ? Débloque-la toi-même
+                </p>
+              </div>
+              <p className="neon-text-muted mt-2 text-sm leading-6">
+                Tant qu’aucun admin ne gère la file (ou si un admin t’a
+                désigné générateur), un bouton « Retirer » apparaît sur
+                chaque joueur de la file : pratique pour virer un AFK ou
+                quelqu’un resté coincé par erreur. Dès qu’un admin prend la
+                main, un message t’indique son nom et seul lui peut retirer
+                un joueur.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -231,6 +305,44 @@ export default async function TutoPage() {
             et ton <span className="text-white">rang Rocket League</span> doit
             être renseigné dans ton profil pour pouvoir être placé dans une
             équipe équilibrée. Sans rang, impossible de générer.
+          </p>
+        </div>
+
+        {/* LIVES */}
+        <div id="lives" className="neon-card scroll-mt-24 p-5 md:p-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-purple-400/20 bg-purple-400/10">
+              <SiTwitch className="h-5 w-5 text-purple-300" />
+            </span>
+            <h2 className="text-lg font-bold text-white md:text-xl">Lives</h2>
+          </div>
+          <p className="neon-text-muted mt-4 text-sm leading-7">
+            La page « Lives » liste tous les joueurs qui ont renseigné leur
+            pseudo Twitch dans leur Profil. Dès que l’un d’eux lance son
+            stream, un badge{" "}
+            <span className="text-rose-300">EN LIVE</span> apparaît
+            automatiquement et sa carte remonte en haut de la liste — aucune
+            action à faire de ton côté une fois le pseudo renseigné.
+          </p>
+        </div>
+
+        {/* GTA 6 */}
+        <div id="gta6" className="neon-card scroll-mt-24 p-5 md:p-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10">
+              <Car className="h-5 w-5 text-amber-300" />
+            </span>
+            <h2 className="text-lg font-bold text-white md:text-xl">GTA 6</h2>
+          </div>
+          <p className="neon-text-muted mt-4 text-sm leading-7">
+            Un onglet dédié au futur serveur GTA 6 de la communauté. Pour
+            l’instant c’est une page{" "}
+            <span className="inline-flex items-center gap-1 text-amber-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              Prochainement
+            </span>
+            , mais c’est là que les infos, le recrutement et les annonces
+            arriveront dès que le serveur sera prêt.
           </p>
         </div>
 
