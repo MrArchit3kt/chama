@@ -9,6 +9,7 @@ import { generateMix } from "@/server/mix/generate-mix";
 import { getTeamDisplayName } from "@/lib/team-names";
 import { sortTeamsMineFirst } from "@/lib/mix-teams";
 import { SessionHistory } from "@/components/mix/session-history";
+import { TeamPager } from "@/components/mix/team-pager";
 import { PoolList, type PoolPlayer } from "@/components/mix/pool-list";
 import { canSelfServeMix, getMixManagingAdminName } from "@/server/mix/mix-access";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
@@ -261,7 +262,7 @@ export default async function BO7Page({
               Aucune équipe BO7 pour le moment.
             </p>
           ) : (
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <TeamPager>
               {teams.map((team) => {
                 const isMine = team.members.some((m) => m.userId === sessionUser.id);
 
@@ -401,7 +402,7 @@ export default async function BO7Page({
                   </div>
                 );
               })}
-            </div>
+            </TeamPager>
           )}
         </div>
       </div>
