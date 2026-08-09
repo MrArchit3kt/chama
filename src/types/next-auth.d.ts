@@ -10,6 +10,7 @@ declare module "next-auth" {
       role: string;
       username: string;
       status: string;
+      registrationStatus: string;
     };
   }
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
     role?: string;
     username?: string;
     status?: string;
+    registrationStatus?: string;
   }
 }
 
@@ -26,5 +28,6 @@ declare module "next-auth/jwt" {
     role?: string;
     username?: string;
     status?: string;
+    registrationStatus?: string;
   }
 }

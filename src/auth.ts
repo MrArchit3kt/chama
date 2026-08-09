@@ -130,29 +130,29 @@ export const authOptions: NextAuthOptions = {
           username: user.username,
           status: user.status,
           registrationStatus: user.registrationStatus,
-        } as any;
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.username = (user as any).username;
-        token.status = (user as any).status;
-        token.registrationStatus = (user as any).registrationStatus;
+        token.id = user.id;
+        token.role = user.role;
+        token.username = user.username;
+        token.status = user.status;
+        token.registrationStatus = user.registrationStatus;
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = String(token.id ?? "");
-        (session.user as any).role = String(token.role ?? "PLAYER");
-        (session.user as any).username = String(token.username ?? "");
-        (session.user as any).status = String(token.status ?? "ACTIVE");
-        (session.user as any).registrationStatus = String(
+        session.user.id = String(token.id ?? "");
+        session.user.role = String(token.role ?? "PLAYER");
+        session.user.username = String(token.username ?? "");
+        session.user.status = String(token.status ?? "ACTIVE");
+        session.user.registrationStatus = String(
           token.registrationStatus ?? "APPROVED",
         );
       }

@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
+import { ContactRequestType } from "@/generated/prisma/enums";
+
+const CONTACT_REQUEST_TYPES = new Set<string>(Object.values(ContactRequestType));
 
 export async function createContactRequest(formData: FormData) {
   const user = await requireAuth();
@@ -20,7 +23,7 @@ export async function createContactRequest(formData: FormData) {
   const subject = String(formData.get("subject") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
 
-  if (!type || !subject || !message) {
+  if (!type || !subject || !message || !CONTACT_REQUEST_TYPES.has(type)) {
     redirect("/contact?error=validation");
   }
 
@@ -28,7 +31,7 @@ export async function createContactRequest(formData: FormData) {
     await db.contactRequest.create({
       data: {
         userId: user.id,
-        type: type as any,
+        type: type as ContactRequestType,
         subject,
         message,
       },
