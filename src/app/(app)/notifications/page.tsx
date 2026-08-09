@@ -90,14 +90,14 @@ export default async function NotificationsPage() {
   return (
     <SiteShell>
       <div className="grid gap-4 md:gap-6">
-        <div className="neon-card p-5 md:p-8">
+        <div className="neon-card p-4 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
             Alertes
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
+          <h1 className="neon-title neon-gradient-text mt-2 text-xl font-black md:mt-3 md:text-3xl">
             Mes notifications
           </h1>
-          <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
+          <p className="neon-text-muted mt-2 hidden max-w-3xl text-sm leading-6 md:mt-4 md:block md:text-base md:leading-7">
             Toutes les notifications non lues ont été marquées comme lues à
             l’ouverture de cette page.
           </p>
@@ -110,45 +110,46 @@ export default async function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 md:gap-4">
+          <div className="grid gap-2 md:gap-2.5">
             {notifications.map((notification) => (
-              <div key={notification.id} className="neon-card p-4 md:p-6">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                      <span className="neon-badge">
-                        {getNotificationTypeLabel(notification.type)}
-                      </span>
+              <details key={notification.id} className="group neon-card relative overflow-hidden p-0">
+                <summary className="list-none cursor-pointer p-3 pr-8 md:p-4">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="neon-badge">
+                      {getNotificationTypeLabel(notification.type)}
+                    </span>
 
-                      <span className="neon-badge">{notification.channel}</span>
-
-                      <span
-                        className={
-                          notification.status === "READ"
-                            ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
-                            : "rounded-full border border-pink-400/20 bg-pink-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-pink-300 md:px-3 md:py-1 md:text-xs md:tracking-[0.18em]"
-                        }
-                      >
-                        {getNotificationStatusLabel(notification.status)}
-                      </span>
-                    </div>
-
-                    <h2 className="mt-3 text-base font-bold text-white md:mt-4 md:text-lg">
-                      {notification.title}
-                    </h2>
-
-                    <p className="neon-text-muted mt-2 text-sm leading-6 md:mt-3 md:leading-7">
-                      {notification.message}
-                    </p>
+                    <span
+                      className={
+                        notification.status === "READ"
+                          ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300"
+                          : "rounded-full border border-pink-400/20 bg-pink-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-pink-300"
+                      }
+                    >
+                      {getNotificationStatusLabel(notification.status)}
+                    </span>
                   </div>
 
-                  <div className="shrink-0">
-                    <p className="text-xs text-white/50">
-                      {formatDate(notification.createdAt)}
-                    </p>
-                  </div>
+                  <p className="mt-1.5 truncate text-sm font-bold text-white md:text-base">
+                    {notification.title}
+                  </p>
+
+                  <p className="neon-text-muted mt-0.5 truncate text-xs">
+                    {formatDate(notification.createdAt)}
+                  </p>
+
+                  <span className="pointer-events-none absolute right-3 top-3 text-xs text-white/40 transition group-open:rotate-180 md:right-4 md:top-4">
+                    ▼
+                  </span>
+                </summary>
+
+                <div className="border-t border-white/8 px-3 pb-3 pt-3 md:px-4 md:pb-4">
+                  <p className="neon-text-muted text-xs">Canal : {notification.channel}</p>
+                  <p className="neon-text-muted mt-2 text-sm leading-6">
+                    {notification.message}
+                  </p>
                 </div>
-              </div>
+              </details>
             ))}
           </div>
         )}
