@@ -56,8 +56,12 @@ export function AutoRefresh({ intervalMs = 8000 }: AutoRefreshProps) {
       }
     };
 
+    // ⚠️ Pas de refresh() immédiat ici : la page vient tout juste d'être
+    // rendue côté serveur au chargement, en redemander une quasi
+    // immédiatement ne sert à rien et peut se voir comme un flash. On se
+    // contente de démarrer l'intervalle.
+    lastRefreshRef.current = Date.now();
     start();
-    refresh();
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
