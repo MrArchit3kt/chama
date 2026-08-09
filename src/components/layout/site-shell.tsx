@@ -6,16 +6,19 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { ScrollRestoration } from "@/components/layout/scroll-restoration";
 import { ChamaWelcomePopup } from "@/components/layout/chama-welcome-popup";
+import { SiteThemeOverlay } from "@/components/theme/site-theme-overlay";
 import { getSessionUser, getChamaWelcomeState } from "@/server/auth/session";
+import { db } from "@/lib/prisma";
 
 type SiteShellProps = {
   children: ReactNode;
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
-  const [user, showChamaWelcome] = await Promise.all([
+  const [user, showChamaWelcome, config] = await Promise.all([
     getSessionUser(),
     getChamaWelcomeState(),
+    db.siteConfig.findUnique({ where: { id: "main" }, select: { theme: true } }),
   ]);
   const canSeeAdmin =
     user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
@@ -25,6 +28,7 @@ export async function SiteShell({ children }: SiteShellProps) {
       <PresenceHeartbeat />
       <AutoRefresh intervalMs={4000} />
       <ScrollRestoration />
+      <SiteThemeOverlay theme={config?.theme ?? "DEFAULT"} />
       {showChamaWelcome ? <ChamaWelcomePopup /> : null}
 
       <div className="mx-auto max-w-7xl">

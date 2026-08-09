@@ -207,6 +207,13 @@ enum BadgeCategory {
   SPECIAL
 }
 
+/** ✅ Thème événementiel affiché sur tout le site (réglable dans /admin/settings). */
+enum SiteTheme {
+  DEFAULT
+  HALLOWEEN
+  CHRISTMAS
+}
+
 model SiteConfig {
   id String @id @default("main")
 
@@ -221,6 +228,9 @@ model SiteConfig {
   eventsEnabled        Boolean @default(true)
   contactEnabled       Boolean @default(true)
   registrationsEnabled Boolean @default(true)
+
+  // ✅ Thème événementiel (Halloween, Noël...) affiché sur tout le site.
+  theme SiteTheme @default(DEFAULT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

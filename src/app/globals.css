@@ -565,3 +565,177 @@ button {
     animation: none !important;
   }
 }
+
+/* ===========================
+   ✅ THÈMES ÉVÉNEMENTIELS (réglable dans /admin/settings)
+   =========================== */
+
+/* --- Noël : neige --- */
+@keyframes theme-snow-fall {
+  0% {
+    transform: translateY(-10vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--snow-opacity, 0.85);
+  }
+  50% {
+    transform: translateY(55vh) translateX(var(--snow-drift)) rotate(180deg);
+  }
+  90% {
+    opacity: var(--snow-opacity, 0.85);
+  }
+  100% {
+    transform: translateY(120vh) translateX(calc(var(--snow-drift) * -1)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* --- Noël : le père Noël traverse l'écran de temps en temps --- */
+@keyframes theme-santa-fly {
+  0%,
+  14% {
+    left: -12%;
+    opacity: 0;
+    transform: translateY(0);
+  }
+  18% {
+    opacity: 1;
+  }
+  50% {
+    left: 50%;
+    transform: translateY(-10px);
+  }
+  82% {
+    opacity: 1;
+  }
+  86%,
+  100% {
+    left: 112%;
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+/* --- Noël : cadeaux lâchés au passage du père Noël (une fenêtre chacun) --- */
+@keyframes theme-gift-fall-1 {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  24% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  32% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes theme-gift-fall-2 {
+  0%,
+  32% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  36% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  44% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes theme-gift-fall-3 {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  48% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  56% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes theme-gift-fall-4 {
+  0%,
+  56% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  68% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes theme-gift-fall-5 {
+  0%,
+  68% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Halloween : chauves-souris --- */
+@keyframes theme-bat-fly {
+  0% {
+    transform: translate(-10vw, var(--bat-y1, 10vh)) rotate(-8deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(55vw, var(--bat-y2, 30vh)) rotate(8deg);
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(115vw, var(--bat-y1, 10vh)) rotate(-8deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-snowflake,
+  .theme-santa,
+  .theme-gift,
+  .theme-bat {
+    animation: none !important;
+    display: none !important;
+  }
+}

@@ -5,6 +5,8 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 
+const SITE_THEMES = ["DEFAULT", "HALLOWEEN", "CHRISTMAS"] as const;
+
 export async function saveSiteConfig(formData: FormData) {
   const admin = await requireAdmin();
 
@@ -18,6 +20,10 @@ export async function saveSiteConfig(formData: FormData) {
   const homeHeroImageUrl = String(formData.get("homeHeroImageUrl") ?? "").trim();
   const discordInviteUrl = String(formData.get("discordInviteUrl") ?? "").trim();
   const whatsappInviteUrl = String(formData.get("whatsappInviteUrl") ?? "").trim();
+  const themeRaw = String(formData.get("theme") ?? "DEFAULT").trim();
+  const theme = SITE_THEMES.includes(themeRaw as (typeof SITE_THEMES)[number])
+    ? (themeRaw as (typeof SITE_THEMES)[number])
+    : "DEFAULT";
 
   if (!siteName || !homeHeadline || !homeDescription) {
     redirect("/admin/settings?error=validation");
@@ -37,6 +43,7 @@ export async function saveSiteConfig(formData: FormData) {
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",
         registrationsEnabled: formData.get("registrationsEnabled") === "on",
+        theme,
       },
       create: {
         id: "main",
@@ -50,6 +57,7 @@ export async function saveSiteConfig(formData: FormData) {
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",
         registrationsEnabled: formData.get("registrationsEnabled") === "on",
+        theme,
       },
     });
   } catch (error) {
