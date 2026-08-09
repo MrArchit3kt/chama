@@ -206,7 +206,52 @@ curl -I https://chama-gaming.site
 ```
 → doit répondre `307` vers `/login` (le site exige une connexion, comme prévu).
 
-## 11. Mises à jour ultérieures
+## 11. Sauvegardes automatiques de la base
+
+Le script `scripts/backup-db.sh` (fourni dans le repo) fait un dump
+compressé de la base (`pg_dump -Fc`) et supprime automatiquement les dumps
+de plus de 14 jours. Il lit `DATABASE_URL` depuis `.env`, pas besoin de
+config supplémentaire.
+
+Test manuel :
+```bash
+cd /var/www/chama
+./scripts/backup-db.sh
+# écrit dans /var/backups/chama/ par défaut
+```
+
+Programmer une sauvegarde quotidienne à 4h du matin via cron :
+```bash
+sudo mkdir -p /var/backups/chama
+sudo chown $USER:$USER /var/backups/chama
+crontab -e
+```
+Ajouter cette ligne :
+```cron
+0 4 * * * /var/www/chama/scripts/backup-db.sh >> /var/log/chama-backup.log 2>&1
+```
+
+Pour changer le dossier ou la rétention, définir `BACKUP_DIR` /
+`RETENTION_DAYS` avant l'appel dans le cron :
+```cron
+0 4 * * * BACKUP_DIR=/mnt/backups/chama RETENTION_DAYS=30 /var/www/chama/scripts/backup-db.sh >> /var/log/chama-backup.log 2>&1
+```
+
+⚠️ Ces dumps restent sur le même serveur : en cas de perte totale du VPS
+(disque HS, résiliation…) ils sont perdus avec le reste. Idéalement,
+copier périodiquement `/var/backups/chama` ailleurs (autre machine, espace
+de stockage externe type S3/Backblaze via `rclone`, etc.) — pas fait ici
+par manque d'accès à un compte de stockage externe.
+
+**Restaurer un dump** (efface et recrée la base — à ne faire qu'en cas de
+besoin réel, jamais sur la prod sans être sûr) :
+```bash
+sudo -u postgres dropdb chama
+sudo -u postgres createdb chama --owner=chama
+pg_restore -U chama -h localhost -d chama /var/backups/chama/chama_AAAA-MM-JJ_HH-MM-SS.dump
+```
+
+## 12. Mises à jour ultérieures
 
 ```bash
 cd /var/www/chama
