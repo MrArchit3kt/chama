@@ -10,6 +10,7 @@ import { addPlayerToPool } from "@/server/mix/add-player-to-pool";
 import { createTempPlayer } from "@/server/mix/create-temp-player";
 import { setMixGenerator } from "@/server/mix/set-mix-generator";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
+import { setTeamResult } from "@/server/mix/set-team-result";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -586,6 +587,53 @@ export default async function AdminMixWarzoneRankedPage({
                     <span className="neon-badge text-[10px]">
                       {team.members.length} joueur{team.members.length > 1 ? "s" : ""}
                     </span>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {team.result ? (
+                      <span
+                        className={
+                          team.result === "WIN"
+                            ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300"
+                            : "rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-300"
+                        }
+                      >
+                        {team.result === "WIN" ? "Victoire" : "Défaite"}
+                      </span>
+                    ) : null}
+
+                    <form action={setTeamResult}>
+                      <input type="hidden" name="teamId" value={team.id} />
+                      <input type="hidden" name="result" value="WIN" />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                      >
+                        Victoire
+                      </button>
+                    </form>
+                    <form action={setTeamResult}>
+                      <input type="hidden" name="teamId" value={team.id} />
+                      <input type="hidden" name="result" value="LOSS" />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/30 hover:bg-rose-400/10"
+                      >
+                        Défaite
+                      </button>
+                    </form>
+                    {team.result ? (
+                      <form action={setTeamResult}>
+                        <input type="hidden" name="teamId" value={team.id} />
+                        <input type="hidden" name="result" value="CLEAR" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/50 transition hover:border-white/20 hover:bg-white/5"
+                        >
+                          Effacer
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
 
                   <div className="mt-2.5 grid gap-2">

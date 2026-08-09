@@ -158,6 +158,12 @@ enum MixGame {
   ROCKET_LEAGUE
 }
 
+/** ✅ Résultat d'une partie renseigné par un admin après coup (facultatif). */
+enum MatchResult {
+  WIN
+  LOSS
+}
+
 enum RocketLeagueRank {
   BRONZE
   SILVER
@@ -618,11 +624,16 @@ model Team {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // ✅ Résultat renseigné après coup par un admin (victoire/défaite), sert
+  // au classement des joueurs. null = non renseigné.
+  result MatchResult?
+
   session MixSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   members TeamMember[]
 
   @@unique([sessionId, teamNumber])
   @@index([sessionId])
+  @@index([result])
 }
 
 model TeamMember {

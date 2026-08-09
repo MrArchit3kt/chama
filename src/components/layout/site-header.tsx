@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Share2, UserCircle2, HelpCircle, Users, Shield, Mail } from "lucide-react";
+import { Bell, Share2, UserCircle2, HelpCircle, Users, Shield, Mail, Trophy } from "lucide-react";
 import { getSessionUser } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { LogoutButton } from "@/components/layout/logout-button";
@@ -47,6 +47,11 @@ export async function SiteHeader() {
           <Link href="/reglement" className={ACTION_CLASS}>
             <Shield className="h-4 w-4 shrink-0 text-cyan-300" />
             <span className="truncate">Règlement</span>
+          </Link>
+
+          <Link href="/classement" className={ACTION_CLASS}>
+            <Trophy className="h-4 w-4 shrink-0 text-amber-300" />
+            <span className="truncate">Classement</span>
           </Link>
 
           {socialsEnabled ? (

@@ -43,6 +43,28 @@ function getErrorMessage(error?: string) {
   }
 }
 
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(value);
+}
+
+function mixGameLabel(game: string) {
+  switch (game) {
+    case "WARZONE":
+      return "Warzone";
+    case "WARZONE_RANKED":
+      return "Ranked";
+    case "BO7":
+      return "BO7";
+    case "ROCKET_LEAGUE":
+      return "Rocket League";
+    default:
+      return game;
+  }
+}
+
 export default async function ProfilePage({
   searchParams,
 }: {
@@ -66,6 +88,23 @@ export default async function ProfilePage({
     },
   });
   if (!user) redirect("/login");
+
+  const recentMixHistory = await db.teamMember.findMany({
+    where: { userId: user.id },
+    orderBy: { addedAt: "desc" },
+    take: 10,
+    select: {
+      isHost: true,
+      addedAt: true,
+      team: {
+        select: {
+          teamNumber: true,
+          result: true,
+          session: { select: { game: true } },
+        },
+      },
+    },
+  });
 
   const sp = (await searchParams) ?? {};
   const errorMessage = getErrorMessage(sp.error);
@@ -142,6 +181,52 @@ export default async function ProfilePage({
                   </span>
                 );
               })}
+            </div>
+          </div>
+        ) : null}
+
+        {/* ===================== */}
+        {/* HISTORIQUE DE MIX */}
+        {/* ===================== */}
+        {recentMixHistory.length > 0 ? (
+          <div className="neon-card p-6 md:p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+              Activité
+            </p>
+            <h3 className="mt-2 text-xl font-bold text-white">Mon historique de mix</h3>
+            <p className="neon-text-muted mt-2 text-sm">
+              Tes 10 dernières équipes, tous jeux confondus.
+            </p>
+
+            <div className="mt-4 grid gap-2">
+              {recentMixHistory.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/8 bg-white/2 px-4 py-2.5"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="neon-badge text-[10px]">{mixGameLabel(entry.team.session.game)}</span>
+                    <span className="text-sm text-white/80">Équipe #{entry.team.teamNumber}</span>
+                    {entry.isHost ? (
+                      <span className="text-xs" title="Tu étais l’hôte">
+                        👑
+                      </span>
+                    ) : null}
+                    {entry.team.result ? (
+                      <span
+                        className={
+                          entry.team.result === "WIN"
+                            ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300"
+                            : "rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-rose-300"
+                        }
+                      >
+                        {entry.team.result === "WIN" ? "Victoire" : "Défaite"}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="neon-text-muted text-xs">{formatDate(entry.addedAt)}</span>
+                </div>
+              ))}
             </div>
           </div>
         ) : null}

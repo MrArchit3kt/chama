@@ -279,7 +279,20 @@ export default async function RankedPage({
                       </h4>
                       {isMine ? <span className="neon-badge text-[10px]">TON ÉQUIPE</span> : null}
                     </div>
-                    <p className="mt-1 text-xs text-white/60">Équipe #{team.teamNumber}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <p className="text-xs text-white/60">Équipe #{team.teamNumber}</p>
+                      {team.result ? (
+                        <span
+                          className={
+                            team.result === "WIN"
+                              ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300"
+                              : "rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-rose-300"
+                          }
+                        >
+                          {team.result === "WIN" ? "Victoire" : "Défaite"}
+                        </span>
+                      ) : null}
+                    </div>
 
                     <div className="mt-3 grid gap-2">
                       {team.members.map((member) => {
