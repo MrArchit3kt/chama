@@ -25,8 +25,6 @@ export default async function HomePage() {
         homeDescription: true,
         homeHeroImageUrl: true,
         eventsEnabled: true,
-        socialsEnabled: true,
-        contactEnabled: true,
       },
     }),
     db.event.findMany({
@@ -56,8 +54,6 @@ export default async function HomePage() {
 
   const heroImageUrl = config?.homeHeroImageUrl?.trim() || "/images/CHAMA-hero.jpg";
   const eventsEnabled = config?.eventsEnabled ?? true;
-  const socialsEnabled = config?.socialsEnabled ?? true;
-  const contactEnabled = config?.contactEnabled ?? true;
 
   return (
     <SiteShell>
@@ -85,32 +81,6 @@ export default async function HomePage() {
                 <p className="neon-text-muted mt-4 text-sm leading-7 md:text-base">
                   {homeDescription}
                 </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href="/tuto" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
-                    Comment ça marche ?
-                  </Link>
-
-                  <Link href="/membres" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
-                    Voir les membres
-                  </Link>
-
-                  <Link href="/reglement" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
-                    Règlement
-                  </Link>
-
-                  {socialsEnabled ? (
-                    <Link href="/socials" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
-                      Voir nos réseaux
-                    </Link>
-                  ) : null}
-
-                  {contactEnabled ? (
-                    <Link href="/contact" className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3">
-                      Contacter les admins
-                    </Link>
-                  ) : null}
-                </div>
               </div>
             </div>
           </div>

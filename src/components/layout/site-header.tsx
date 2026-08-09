@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Share2, UserCircle2 } from "lucide-react";
+import { Bell, Share2, UserCircle2, HelpCircle, Users, Shield, Mail } from "lucide-react";
 import { getSessionUser } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { LogoutButton } from "@/components/layout/logout-button";
@@ -9,7 +9,16 @@ const ACTION_CLASS =
   "relative inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-white transition hover:border-cyan-400/20 hover:bg-white/[0.05]";
 
 export async function SiteHeader() {
-  const user = await getSessionUser();
+  const [user, config] = await Promise.all([
+    getSessionUser(),
+    db.siteConfig.findUnique({
+      where: { id: "main" },
+      select: { socialsEnabled: true, contactEnabled: true },
+    }),
+  ]);
+
+  const socialsEnabled = config?.socialsEnabled ?? true;
+  const contactEnabled = config?.contactEnabled ?? true;
 
   let unreadNotificationsCount = 0;
   if (user?.id) {
@@ -46,11 +55,35 @@ export async function SiteHeader() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 xl:shrink-0 xl:flex-nowrap">
-          <Link href="/socials" className={ACTION_CLASS}>
-            <Share2 className="h-4 w-4 text-cyan-300" />
-            <span>Réseaux</span>
+        <div className="flex flex-wrap items-center gap-2 xl:shrink-0">
+          <Link href="/tuto" className={ACTION_CLASS}>
+            <HelpCircle className="h-4 w-4 text-cyan-300" />
+            <span>Comment ça marche ?</span>
           </Link>
+
+          <Link href="/membres" className={ACTION_CLASS}>
+            <Users className="h-4 w-4 text-cyan-300" />
+            <span>Membres</span>
+          </Link>
+
+          <Link href="/reglement" className={ACTION_CLASS}>
+            <Shield className="h-4 w-4 text-cyan-300" />
+            <span>Règlement</span>
+          </Link>
+
+          {socialsEnabled ? (
+            <Link href="/socials" className={ACTION_CLASS}>
+              <Share2 className="h-4 w-4 text-cyan-300" />
+              <span>Réseaux</span>
+            </Link>
+          ) : null}
+
+          {contactEnabled ? (
+            <Link href="/contact" className={ACTION_CLASS}>
+              <Mail className="h-4 w-4 text-cyan-300" />
+              <span>Contact</span>
+            </Link>
+          ) : null}
 
           <Link href="/notifications" className={ACTION_CLASS}>
             <Bell className="h-4 w-4 text-pink-300" />
