@@ -730,12 +730,104 @@ button {
   }
 }
 
+/* --- Halloween : scène en couches (ciel, lune, brume, citrouille 3D) --- */
+@keyframes theme-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+@keyframes theme-moon-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 34px rgba(255, 244, 214, 0.55)) drop-shadow(0 0 80px rgba(255, 244, 214, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 48px rgba(255, 244, 214, 0.75)) drop-shadow(0 0 110px rgba(255, 244, 214, 0.35));
+  }
+}
+
+@keyframes theme-bat-flap {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.5);
+  }
+}
+
+@keyframes theme-fog-drift-a {
+  0% {
+    transform: translateX(-6%);
+  }
+  100% {
+    transform: translateX(6%);
+  }
+}
+
+@keyframes theme-fog-drift-b {
+  0% {
+    transform: translateX(5%);
+  }
+  100% {
+    transform: translateX(-5%);
+  }
+}
+
+@keyframes theme-lightning-flash {
+  0%,
+  91%,
+  93%,
+  95.5%,
+  100% {
+    opacity: 0;
+  }
+  91.5%,
+  95% {
+    opacity: 0.85;
+  }
+  92.2% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes theme-pumpkin-spin {
+  0% {
+    transform: translateY(0) rotateY(0deg);
+  }
+  50% {
+    transform: translateY(-16px) rotateY(180deg);
+  }
+  100% {
+    transform: translateY(0) rotateY(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .theme-snowflake,
   .theme-santa,
   .theme-gift,
-  .theme-bat {
+  .theme-bat,
+  .theme-bat-wing,
+  .theme-star,
+  .theme-moon,
+  .theme-fog,
+  .theme-lightning,
+  .theme-pumpkin {
     animation: none !important;
+  }
+  .theme-lightning {
+    display: none !important;
+  }
+  .theme-snowflake,
+  .theme-santa,
+  .theme-gift,
+  .theme-bat {
     display: none !important;
   }
 }
