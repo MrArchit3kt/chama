@@ -647,6 +647,12 @@ model TeamMember {
   // automatiquement à la génération du mix. Affiché avec une couronne.
   isHost Boolean @default(false)
 
+  // ✅ Stats facultatives auto-déclarées par les joueurs eux-mêmes
+  // (n'importe quel membre de l'équipe peut les renseigner, pour
+  // lui-même ou pour un coéquipier). Sert au classement K/D.
+  kills  Int?
+  deaths Int?
+
   team       Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   tempPlayer TempPlayer? @relation(fields: [tempPlayerId], references: [id], onDelete: Cascade)

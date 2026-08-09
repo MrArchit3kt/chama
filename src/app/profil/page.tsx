@@ -96,6 +96,8 @@ export default async function ProfilePage({
     select: {
       isHost: true,
       addedAt: true,
+      kills: true,
+      deaths: true,
       team: {
         select: {
           teamNumber: true,
@@ -221,6 +223,11 @@ export default async function ProfilePage({
                         }
                       >
                         {entry.team.result === "WIN" ? "Victoire" : "Défaite"}
+                      </span>
+                    ) : null}
+                    {entry.kills !== null || entry.deaths !== null ? (
+                      <span className="neon-text-muted text-[11px]">
+                        {entry.kills ?? 0} kills / {entry.deaths ?? 0} morts
                       </span>
                     ) : null}
                   </div>

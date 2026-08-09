@@ -13,6 +13,8 @@ import { PoolList, type PoolPlayer } from "@/components/mix/pool-list";
 import { canSelfServeMix, getMixManagingAdminName } from "@/server/mix/mix-access";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 import { rocketLeagueRankLabel } from "@/lib/ranks";
+import { setTeamResult } from "@/server/mix/set-team-result";
+import { setPlayerStats } from "@/server/mix/set-player-stats";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -34,6 +36,10 @@ function getErrorMessage(error?: string) {
       return "Un admin est en ligne : la génération est verrouillée tant qu’un générateur n’est pas sélectionné.";
     case "banned":
       return "Compte banni ou en attente. Action impossible.";
+    case "result_forbidden":
+      return "Tu dois faire partie de cette équipe pour modifier son résultat ou ses stats.";
+    case "stats_invalid":
+      return "Kills/morts invalides (nombres entiers entre 0 et 999).";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -304,7 +310,57 @@ export default async function RocketLeaguePage({
                       </h4>
                       {isMine ? <span className="neon-badge text-[10px]">TON ÉQUIPE</span> : null}
                     </div>
-                    <p className="mt-1 text-xs text-white/60">Équipe #{team.teamNumber}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <p className="text-xs text-white/60">Équipe #{team.teamNumber}</p>
+                      {team.result ? (
+                        <span
+                          className={
+                            team.result === "WIN"
+                              ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300"
+                              : "rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-rose-300"
+                          }
+                        >
+                          {team.result === "WIN" ? "Victoire" : "Défaite"}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {isMine ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <form action={setTeamResult}>
+                          <input type="hidden" name="teamId" value={team.id} />
+                          <input type="hidden" name="result" value="WIN" />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/30 hover:bg-emerald-400/10"
+                          >
+                            Victoire
+                          </button>
+                        </form>
+                        <form action={setTeamResult}>
+                          <input type="hidden" name="teamId" value={team.id} />
+                          <input type="hidden" name="result" value="LOSS" />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/30 hover:bg-rose-400/10"
+                          >
+                            Défaite
+                          </button>
+                        </form>
+                        {team.result ? (
+                          <form action={setTeamResult}>
+                            <input type="hidden" name="teamId" value={team.id} />
+                            <input type="hidden" name="result" value="CLEAR" />
+                            <button
+                              type="submit"
+                              className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/50 transition hover:border-white/20 hover:bg-white/5"
+                            >
+                              Effacer
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     <div className="mt-3 grid gap-2">
                       {team.members.map((member) => {
@@ -336,6 +392,41 @@ export default async function RocketLeaguePage({
                             <p className="neon-text-muted mt-1 truncate text-[11px]">
                               Rang : <span className="text-white">{rank}</span>
                             </p>
+
+                            {isMine ? (
+                              <form action={setPlayerStats} className="mt-2 flex items-center gap-1.5">
+                                <input type="hidden" name="teamMemberId" value={member.id} />
+                                <input
+                                  type="number"
+                                  name="kills"
+                                  min={0}
+                                  max={999}
+                                  defaultValue={member.kills ?? ""}
+                                  placeholder="Kills"
+                                  className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
+                                />
+                                <span className="text-[10px] text-white/30">/</span>
+                                <input
+                                  type="number"
+                                  name="deaths"
+                                  min={0}
+                                  max={999}
+                                  defaultValue={member.deaths ?? ""}
+                                  placeholder="Morts"
+                                  className="w-16 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1 text-center text-[11px] text-white placeholder:text-white/30"
+                                />
+                                <button
+                                  type="submit"
+                                  className="rounded-lg border border-white/10 px-2 py-1 text-[10px] font-semibold text-cyan-300/80 transition hover:border-cyan-400/30 hover:bg-cyan-400/10"
+                                >
+                                  OK
+                                </button>
+                              </form>
+                            ) : member.kills !== null || member.deaths !== null ? (
+                              <p className="neon-text-muted mt-1.5 text-[11px]">
+                                {member.kills ?? 0} kills / {member.deaths ?? 0} morts
+                              </p>
+                            ) : null}
                           </div>
                         );
                       })}

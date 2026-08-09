@@ -2,41 +2,50 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
-import { requireAdmin } from "@/server/auth/session";
+import { requireAuth } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 
 const GAME_TO_PATH: Record<string, string> = {
-  WARZONE: "/admin/mix/warzone",
-  WARZONE_RANKED: "/admin/mix/warzone-ranked",
-  BO7: "/admin/mix/bo7",
-  ROCKET_LEAGUE: "/admin/mix/rocket-league",
+  WARZONE: "/warzone",
+  WARZONE_RANKED: "/ranked",
+  BO7: "/bo7",
+  ROCKET_LEAGUE: "/rocket-league",
 };
 
 /**
  * Enregistre (ou efface) le résultat d'une équipe pour une session donnée.
- * Sert de base au classement des joueurs (/classement) et à l'historique
- * perso sur le Profil.
+ * Auto-déclaré par les joueurs eux-mêmes : n'importe quel membre de
+ * l'équipe concernée peut renseigner le résultat, pas besoin d'un admin.
+ * Sert de base au classement (/classement) et à l'historique perso sur
+ * le Profil.
  */
 export async function setTeamResult(formData: FormData) {
-  const admin = await requireAdmin();
-  if (!admin) redirect("/dashboard");
+  const sessionUser = await requireAuth();
+  if (!sessionUser) redirect("/login");
 
   const teamId = String(formData.get("teamId") ?? "").trim();
   const result = String(formData.get("result") ?? "").trim();
 
   if (!teamId || !["WIN", "LOSS", "CLEAR"].includes(result)) {
-    redirect("/admin");
+    redirect("/dashboard");
   }
 
   const team = await db.team.findUnique({
     where: { id: teamId },
-    select: { id: true, session: { select: { id: true, game: true } } },
+    select: {
+      id: true,
+      session: { select: { id: true, game: true } },
+      members: { select: { userId: true } },
+    },
   });
 
-  if (!team) redirect("/admin");
+  if (!team) redirect("/dashboard");
 
-  const backPath = GAME_TO_PATH[team.session.game] ?? "/admin";
+  const backPath = GAME_TO_PATH[team.session.game] ?? "/dashboard";
   const backUrl = `${backPath}?session=${team.session.id}`;
+
+  const isTeammate = team.members.some((m) => m.userId === sessionUser.id);
+  if (!isTeammate) redirect(`${backUrl}&error=result_forbidden`);
 
   try {
     await db.team.update({
@@ -44,7 +53,7 @@ export async function setTeamResult(formData: FormData) {
       data: { result: result === "CLEAR" ? null : (result as "WIN" | "LOSS") },
     });
   } catch (error) {
-    await logServerError("SET_TEAM_RESULT_ERROR", error, { userId: admin.id });
+    await logServerError("SET_TEAM_RESULT_ERROR", error, { userId: sessionUser.id });
     redirect(`${backUrl}&error=server`);
   }
 
