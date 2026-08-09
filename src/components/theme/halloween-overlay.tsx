@@ -63,14 +63,6 @@ export function HalloweenOverlay() {
       style={{ perspective: 1400 }}
       aria-hidden="true"
     >
-      {/* Ciel nocturne dégradé */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: "radial-gradient(ellipse at 32% 18%, #241233 0%, #0e0817 55%, #050308 100%)",
-        }}
-      />
-
       {/* Étoiles qui scintillent */}
       {stars.map((s) => (
         <span
@@ -125,12 +117,14 @@ export function HalloweenOverlay() {
         </span>
       ))}
 
-      {/* Silhouette de cimetière au sol, en dégradé vers le noir */}
+      {/* Silhouette de cimetière au sol, en dégradé vers le noir — cantonné
+          à une fine bande tout en bas pour ne jamais gêner la lecture du
+          contenu réel du site. */}
       <div
         className="absolute inset-x-0 bottom-0"
         style={{
-          height: "16vh",
-          background: "linear-gradient(transparent, rgba(4,2,7,0.96) 55%)",
+          height: "10vh",
+          background: "linear-gradient(transparent, rgba(4,2,7,0.55) 70%)",
         }}
       />
       <div className="absolute inset-x-0 bottom-0" style={{ height: "9vh" }}>
@@ -224,9 +218,12 @@ export function HalloweenOverlay() {
         }}
       />
 
-      {/* Éclair occasionnel */}
+      {/* Éclair occasionnel — opacity: 0 posée en dur en plus de l'animation :
+          si jamais l'animation ne s'applique pas pour une raison ou une
+          autre, ce calque doit rester invisible plutôt que de finir en
+          plein écran blanc opaque par défaut. */}
       <div
-        className="theme-lightning absolute inset-0 bg-white"
+        className="theme-lightning absolute inset-0 bg-white opacity-0"
         style={{ animation: "theme-lightning-flash 13s linear infinite" }}
       />
 
