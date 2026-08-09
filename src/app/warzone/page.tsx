@@ -218,17 +218,24 @@ export default async function WarzonePage({
           </div>
         ) : null}
 
-        <div className="neon-card p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
-            File d’attente
-          </p>
-          <PoolList
-            game="WARZONE"
-            players={poolPlayers}
-            canManage={canManagePool}
-            managingAdminName={managingAdminName}
-          />
-        </div>
+        <details className="group neon-card relative overflow-hidden p-0">
+          <summary className="list-none cursor-pointer p-6 pr-10 md:p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
+              File d’attente ({poolPlayers.length})
+            </p>
+            <span className="pointer-events-none absolute right-5 top-6 text-xs text-white/40 transition group-open:rotate-180 md:right-6 md:top-8">
+              ▼
+            </span>
+          </summary>
+          <div className="border-t border-white/8 px-6 pb-6 md:px-8 md:pb-8">
+            <PoolList
+              game="WARZONE"
+              players={poolPlayers}
+              canManage={canManagePool}
+              managingAdminName={managingAdminName}
+            />
+          </div>
+        </details>
 
         <div className="neon-card p-6 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">

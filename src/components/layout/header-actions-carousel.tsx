@@ -12,10 +12,9 @@ const RESUME_DELAY_MS = 10000;
 
 /**
  * Carrousel horizontal pour les boutons de la bannière :
- * - défilement automatique CONTINU (bandeau défilant, sans à-coups ni pause
- *   entre chaque étape) uniquement si les boutons dépassent la largeur
- *   visible ; le contenu n'est alors dupliqué qu'une fois pour reboucler
- *   sans saut visible (sinon pas de duplication, pas de défilement)
+ * - défilement automatique en va-et-vient (jusqu'au bout, puis retour en
+ *   arrière, en boucle) — AUCUNE duplication du contenu, donc jamais de
+ *   bouton affiché deux fois, contrairement à un rebouclage infini
  * - glisser au doigt / molette / flèches pour naviguer manuellement, ce qui
  *   met le défilement auto en pause pendant 10s après le dernier geste
  * - dégradé + flèches sur les bords tant qu'il reste du contenu caché
@@ -23,17 +22,11 @@ const RESUME_DELAY_MS = 10000;
  */
 export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const firstSetRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  // ✅ Le contenu n'est dupliqué (pour le rebouclage sans saut) que si les
-  // boutons dépassent réellement la largeur visible. Sinon tout tient déjà
-  // à l'écran et dupliquer donnerait l'impression que chaque bouton
-  // apparaît deux fois.
-  const [needsLoop, setNeedsLoop] = useState(false);
   const pausedRef = useRef(false);
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loopWidthRef = useRef(0);
+  const directionRef = useRef<1 | -1>(1);
 
   const updateArrows = useCallback(() => {
     const el = scrollerRef.current;
@@ -42,36 +35,21 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
-  const updateLoopWidth = useCallback(() => {
-    const el = scrollerRef.current;
-    const firstSet = firstSetRef.current;
-    if (!el || !firstSet) return;
-    const gap = parseFloat(window.getComputedStyle(el).columnGap || "0") || 0;
-    loopWidthRef.current = firstSet.offsetWidth + gap;
-    setNeedsLoop(firstSet.offsetWidth > el.clientWidth + 4);
-  }, []);
-
   useEffect(() => {
     const el = scrollerRef.current;
-    const firstSet = firstSetRef.current;
-    if (!el || !firstSet) return;
+    if (!el) return;
 
     updateArrows();
-    updateLoopWidth();
     el.addEventListener("scroll", updateArrows, { passive: true });
 
-    const resizeObserver = new ResizeObserver(() => {
-      updateArrows();
-      updateLoopWidth();
-    });
+    const resizeObserver = new ResizeObserver(updateArrows);
     resizeObserver.observe(el);
-    resizeObserver.observe(firstSet);
 
     return () => {
       el.removeEventListener("scroll", updateArrows);
       resizeObserver.disconnect();
     };
-  }, [updateArrows, updateLoopWidth]);
+  }, [updateArrows]);
 
   const pauseAutoScroll = useCallback(() => {
     pausedRef.current = true;
@@ -110,12 +88,19 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
       lastTime = time;
 
       const el = scrollerRef.current;
-      const loopWidth = loopWidthRef.current;
-      if (!el || pausedRef.current || loopWidth <= el.clientWidth) return;
+      if (!el || pausedRef.current) return;
 
-      el.scrollLeft += (SCROLL_SPEED_PX_PER_SEC * dt) / 1000;
-      if (el.scrollLeft >= loopWidth) {
-        el.scrollLeft -= loopWidth;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+
+      el.scrollLeft += (directionRef.current * SCROLL_SPEED_PX_PER_SEC * dt) / 1000;
+
+      if (el.scrollLeft >= maxScroll) {
+        el.scrollLeft = maxScroll;
+        directionRef.current = -1;
+      } else if (el.scrollLeft <= 0) {
+        el.scrollLeft = 0;
+        directionRef.current = 1;
       }
     };
 
@@ -147,14 +132,7 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
         onTouchStart={pauseAutoScroll}
         className="thin-scrollbar flex items-center gap-2 overflow-x-auto"
       >
-        <div ref={firstSetRef} className="flex shrink-0 items-center gap-2">
-          {children}
-        </div>
-        {needsLoop ? (
-          <div aria-hidden="true" inert className="flex shrink-0 items-center gap-2">
-            {children}
-          </div>
-        ) : null}
+        {children}
       </div>
 
       {canScrollRight ? (
