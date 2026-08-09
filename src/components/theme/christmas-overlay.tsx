@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { Snowflake, Sparkles, Gift, TreePine } from "lucide-react";
+import { Snowflake, Gift, TreePine } from "lucide-react";
+
+// Cycle complet du passage du traîneau (apparaît, traverse, repart), en
+// secondes. Les fenêtres de largage des cadeaux (@keyframes theme-gift-fall-N
+// dans globals.css) sont exprimées en % de ce même cycle, donc synchronisées
+// automatiquement tant que gifts et traîneau utilisent la même durée.
+const SANTA_CYCLE_SECONDS = 30;
 
 const FAR_SNOWFLAKE_COUNT = 22;
 const NEAR_SNOWFLAKE_COUNT = 16;
@@ -81,34 +87,43 @@ export function ChristmasOverlay() {
         <TreePine size={72} strokeWidth={1.25} />
       </div>
 
-      {/* Étoile filante qui traverse l'écran en boucle, avec une traînée scintillante */}
-      <div className="theme-santa absolute" style={{ top: "10%", animation: "theme-santa-fly 42s ease-in-out infinite" }}>
-        <div className="relative">
-          {/* traînée : dégradé flouté derrière l'étoile */}
-          <div
-            className="absolute right-full top-1/2 h-0.75 w-28 -translate-y-1/2"
-            style={{
-              background: "linear-gradient(90deg, transparent, rgba(255,214,120,0.7))",
-              filter: "blur(1px)",
-            }}
-          />
-          <Sparkles
-            size={34}
-            className="text-amber-200"
-            style={{ filter: "drop-shadow(0 0 14px rgba(255,214,120,0.85)) drop-shadow(0 0 28px rgba(255,180,80,0.5))" }}
-          />
-        </div>
+      {/* Le père Noël sur son traîneau : vraie image (silhouette détaillée,
+          traîneau + rennes), pas une icône. Inversée en blanc + halo doré
+          pour ressortir sur le fond sombre du site. Traverse l'écran en
+          boucle toutes les 30 secondes. */}
+      <div
+        className="theme-santa absolute"
+        style={{ top: "9%", animation: `theme-santa-fly ${SANTA_CYCLE_SECONDS}s ease-in-out infinite` }}
+      >
+        {/* traînée lumineuse derrière le traîneau */}
+        <div
+          className="absolute right-full top-1/2 h-1 w-32 -translate-y-1/2"
+          style={{
+            background: "linear-gradient(90deg, transparent, rgba(255,214,120,0.55))",
+            filter: "blur(1.5px)",
+          }}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element -- SVG décoratif animé, pas un <Image> layout classique */}
+        <img
+          src="/images/theme/santa-sleigh.svg"
+          alt=""
+          className="h-auto w-72 md:w-96"
+          style={{
+            filter:
+              "invert(1) drop-shadow(0 0 12px rgba(255,214,120,0.9)) drop-shadow(0 0 26px rgba(255,180,80,0.55))",
+          }}
+        />
       </div>
 
-      {/* Cadeaux lâchés au passage de l'étoile filante */}
+      {/* Cadeaux lâchés au passage du traîneau */}
       {GIFT_KEYFRAMES.map((keyframe, i) => (
         <span
           key={keyframe}
           className="theme-gift absolute text-rose-300"
           style={{
-            top: "10%",
+            top: "9%",
             left: `${GIFT_LEFT_PERCENT[i]}%`,
-            animation: `${keyframe} 42s ease-in infinite`,
+            animation: `${keyframe} ${SANTA_CYCLE_SECONDS}s ease-in infinite`,
             filter: "drop-shadow(0 0 8px rgba(255,120,180,0.55))",
           }}
         >

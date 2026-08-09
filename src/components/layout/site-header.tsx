@@ -4,6 +4,7 @@ import { getSessionUser } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { HeaderActionsCarousel } from "@/components/layout/header-actions-carousel";
+import { ChristmasGarland } from "@/components/theme/christmas-garland";
 
 // ✅ Largeur fixe : tous les boutons ont exactement la même taille dans le
 // carrousel, quelle que soit la longueur du texte (qui tronque avec
@@ -16,12 +17,13 @@ export async function SiteHeader() {
     getSessionUser(),
     db.siteConfig.findUnique({
       where: { id: "main" },
-      select: { socialsEnabled: true, contactEnabled: true },
+      select: { socialsEnabled: true, contactEnabled: true, theme: true },
     }),
   ]);
 
   const socialsEnabled = config?.socialsEnabled ?? true;
   const contactEnabled = config?.contactEnabled ?? true;
+  const showChristmasGarland = config?.theme === "CHRISTMAS";
 
   let unreadNotificationsCount = 0;
   if (user?.id) {
@@ -31,7 +33,8 @@ export async function SiteHeader() {
   }
 
   return (
-    <header className="mb-6">
+    <header className="relative mb-6">
+      {showChristmasGarland ? <ChristmasGarland /> : null}
       <nav className="neon-card p-3 md:p-3.5">
         <HeaderActionsCarousel>
           <Link href="/tuto" className={ACTION_CLASS}>
