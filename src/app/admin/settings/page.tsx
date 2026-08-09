@@ -142,30 +142,19 @@ export default async function AdminSettingsPage({
               </label>
               <p className="neon-text-muted mb-3 text-xs">
                 Affiche une décoration animée sur toutes les pages (neige,
-                père Noël, chauves-souris...). Visible par tous les joueurs
+                étoile filante, sapin...). Visible par tous les joueurs
                 immédiatement après enregistrement.
               </p>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-cyan-400/40 has-checked:bg-cyan-400/6">
                   <input
                     type="radio"
                     name="theme"
                     value="DEFAULT"
-                    defaultChecked={(config?.theme ?? "DEFAULT") === "DEFAULT"}
+                    defaultChecked={config?.theme !== "CHRISTMAS"}
                     className="h-4 w-4"
                   />
                   <span className="text-sm text-white">Aucun</span>
-                </label>
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-amber-400/40 has-checked:bg-amber-400/6">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value="HALLOWEEN"
-                    defaultChecked={config?.theme === "HALLOWEEN"}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm text-white">🎃 Halloween</span>
                 </label>
 
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-emerald-400/40 has-checked:bg-emerald-400/6">
