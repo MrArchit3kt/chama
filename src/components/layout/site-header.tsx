@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Bell, Share2, UserCircle2, HelpCircle, Users, Shield, Mail } from "lucide-react";
 import { getSessionUser } from "@/server/auth/session";
@@ -6,7 +5,7 @@ import { db } from "@/lib/prisma";
 import { LogoutButton } from "@/components/layout/logout-button";
 
 const ACTION_CLASS =
-  "relative inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-white transition hover:border-cyan-400/20 hover:bg-white/[0.05]";
+  "relative inline-flex h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.03] px-3.5 text-sm font-medium text-white transition hover:border-cyan-400/20 hover:bg-white/[0.05] md:h-11 md:px-4";
 
 export async function SiteHeader() {
   const [user, config] = await Promise.all([
@@ -29,99 +28,65 @@ export async function SiteHeader() {
 
   return (
     <header className="mb-6">
-      <div className="neon-card flex flex-col gap-4 p-4 md:p-5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0 flex items-center gap-4">
-          {/* ✅ Logo 3D */}
-          <div className="logo-3d logo-3d--auto logo-3d--glow">
-            <div className="logo-3d__inner relative h-14 w-14 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
-              <Image
-                src="/images/CHAMA-logo.jpg"
-                alt="Logo CHAMA"
-                fill
-                sizes="56px"
-                className="object-contain"
-                priority
-              />
-            </div>
-          </div>
+      <nav className="neon-card thin-scrollbar flex items-center gap-2 overflow-x-auto p-3 md:p-3.5">
+        <Link href="/tuto" className={ACTION_CLASS}>
+          <HelpCircle className="h-4 w-4 text-cyan-300" />
+          <span>Comment ça marche ?</span>
+        </Link>
 
-          <div className="min-w-0">
-            <h1 className="neon-title neon-gradient-text text-xl font-black md:text-2xl">
-              Plateforme de gestion Gaming
-            </h1>
-            <p className="neon-text-muted mt-1 truncate text-xs md:text-sm">
-              Team privée • mix • modération • événements
-            </p>
-          </div>
-        </div>
+        <Link href="/membres" className={ACTION_CLASS}>
+          <Users className="h-4 w-4 text-cyan-300" />
+          <span>Membres</span>
+        </Link>
 
-        <div className="flex flex-wrap items-center gap-2 xl:shrink-0">
-          <Link href="/tuto" className={ACTION_CLASS}>
-            <HelpCircle className="h-4 w-4 text-cyan-300" />
-            <span>Comment ça marche ?</span>
+        <Link href="/reglement" className={ACTION_CLASS}>
+          <Shield className="h-4 w-4 text-cyan-300" />
+          <span>Règlement</span>
+        </Link>
+
+        {socialsEnabled ? (
+          <Link href="/socials" className={ACTION_CLASS}>
+            <Share2 className="h-4 w-4 text-cyan-300" />
+            <span>Réseaux</span>
           </Link>
+        ) : null}
 
-          <Link href="/membres" className={ACTION_CLASS}>
-            <Users className="h-4 w-4 text-cyan-300" />
-            <span>Membres</span>
+        {contactEnabled ? (
+          <Link href="/contact" className={ACTION_CLASS}>
+            <Mail className="h-4 w-4 text-cyan-300" />
+            <span>Contact</span>
           </Link>
+        ) : null}
 
-          <Link href="/reglement" className={ACTION_CLASS}>
-            <Shield className="h-4 w-4 text-cyan-300" />
-            <span>Règlement</span>
-          </Link>
+        <span className="mx-1 hidden h-7 w-px shrink-0 bg-white/10 lg:block" />
 
-          {socialsEnabled ? (
-            <Link href="/socials" className={ACTION_CLASS}>
-              <Share2 className="h-4 w-4 text-cyan-300" />
-              <span>Réseaux</span>
-            </Link>
+        <Link href="/notifications" className={`${ACTION_CLASS} ml-auto`}>
+          <Bell className="h-4 w-4 text-pink-300" />
+          <span>Alertes</span>
+
+          {unreadNotificationsCount > 0 ? (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-pink-400/20 bg-pink-400/90 px-1 text-[10px] font-bold text-white shadow-[0_0_12px_rgba(236,72,153,0.55)]">
+              {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+            </span>
           ) : null}
+        </Link>
 
-          {contactEnabled ? (
-            <Link href="/contact" className={ACTION_CLASS}>
-              <Mail className="h-4 w-4 text-cyan-300" />
-              <span>Contact</span>
+        {user ? (
+          <>
+            <Link href="/profil" className={ACTION_CLASS}>
+              <UserCircle2 className="h-4 w-4 text-cyan-300" />
+              <span>{user.name}</span>
             </Link>
-          ) : null}
 
-          <Link href="/notifications" className={ACTION_CLASS}>
-            <Bell className="h-4 w-4 text-pink-300" />
-            <span>Alertes</span>
-
-            {unreadNotificationsCount > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-pink-400/20 bg-pink-400/90 px-1 text-[10px] font-bold text-white shadow-[0_0_12px_rgba(236,72,153,0.55)]">
-                {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
-              </span>
-            ) : null}
+            <LogoutButton className={ACTION_CLASS} />
+          </>
+        ) : (
+          <Link href="/login" className={ACTION_CLASS}>
+            <UserCircle2 className="h-4 w-4" />
+            <span>Connexion</span>
           </Link>
-
-          {user ? (
-            <>
-              <Link
-                href="/profil"
-                className="inline-flex h-12 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 transition hover:border-cyan-400/20 hover:bg-white/[0.05]"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">
-                    {user.name}
-                  </p>
-                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-cyan-300/80">
-                    {user.role}
-                  </p>
-                </div>
-              </Link>
-
-              <LogoutButton className={ACTION_CLASS} />
-            </>
-          ) : (
-            <Link href="/login" className={ACTION_CLASS}>
-              <UserCircle2 className="h-4 w-4" />
-              <span>Connexion</span>
-            </Link>
-          )}
-        </div>
-      </div>
+        )}
+      </nav>
     </header>
   );
 }
