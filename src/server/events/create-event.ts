@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 import {
   deleteLocalEventImage,
   resolveEventImageInput,
@@ -125,8 +126,7 @@ export async function createEvent(formData: FormData) {
       }
     }
   } catch (error) {
-    console.error("CREATE_EVENT_ERROR", error);
-
+    await logServerError("CREATE_EVENT_ERROR", error);
     if (uploadedLocalImageUrl) {
       await deleteLocalEventImage(uploadedLocalImageUrl);
     }

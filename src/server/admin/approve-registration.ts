@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 export async function approveRegistration(formData: FormData) {
   const admin = await requireAdmin();
@@ -42,7 +43,7 @@ export async function approveRegistration(formData: FormData) {
     publishAdminEvent("players");
     publishAdminEvent("registrations");
   } catch (error) {
-    console.error("APPROVE_REGISTRATION_ERROR", error);
+    await logServerError("APPROVE_REGISTRATION_ERROR", error);
     redirect("/admin/registrations?error=server");
   }
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { logServerError } from "@/lib/log-error";
 
 type Listener = (payload?: string) => void;
 
@@ -38,7 +39,9 @@ export function publishAdminEvent(channel: string, payload = "updated") {
     try {
       listener(payload);
     } catch (error) {
-      console.error("ADMIN_LIVE_EVENT_LISTENER_ERROR", error);
+      // Fonction synchrone (listener SSE) : on ne bloque pas sur l'écriture
+      // en base, elle continue en tâche de fond.
+      void logServerError("ADMIN_LIVE_EVENT_LISTENER_ERROR", error);
     }
   }
 }

@@ -16,6 +16,7 @@ import {
   Swords,
   Award,
   Headphones,
+  Bug,
 } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
@@ -100,7 +101,17 @@ const cards = [
     description: "Vérifier les accès Discord / WhatsApp affichés publiquement.",
     icon: Share2,
   },
+  {
+    href: "/admin/errors",
+    title: "Erreurs",
+    description: "Historique des erreurs serveur inattendues (monitoring).",
+    icon: Bug,
+  },
 ];
+
+function oneDayAgo() {
+  return new Date(Date.now() - 24 * 60 * 60 * 1000);
+}
 
 export default async function AdminHomePage() {
   const admin = await requireAdmin();
@@ -109,14 +120,21 @@ export default async function AdminHomePage() {
     redirect("/dashboard");
   }
 
-  const [activePlayers, pendingRegistrations, openContactRequests, chamaMembers, bannedPlayers] =
-    await Promise.all([
-      db.user.count({ where: { status: "ACTIVE", registrationStatus: "APPROVED" } }),
-      db.user.count({ where: { registrationStatus: "PENDING" } }),
-      db.contactRequest.count({ where: { status: "OPEN" } }),
-      db.user.count({ where: { isChamaMember: true } }),
-      db.user.count({ where: { status: "BANNED" } }),
-    ]);
+  const [
+    activePlayers,
+    pendingRegistrations,
+    openContactRequests,
+    chamaMembers,
+    bannedPlayers,
+    recentErrors,
+  ] = await Promise.all([
+    db.user.count({ where: { status: "ACTIVE", registrationStatus: "APPROVED" } }),
+    db.user.count({ where: { registrationStatus: "PENDING" } }),
+    db.contactRequest.count({ where: { status: "OPEN" } }),
+    db.user.count({ where: { isChamaMember: true } }),
+    db.user.count({ where: { status: "BANNED" } }),
+    db.errorLog.count({ where: { createdAt: { gte: oneDayAgo() } } }),
+  ]);
 
   const stats = [
     { href: "/admin/players", label: "Joueurs actifs", value: activePlayers, color: "text-cyan-300" },
@@ -124,6 +142,7 @@ export default async function AdminHomePage() {
     { href: "/admin/contact", label: "Demandes ouvertes", value: openContactRequests, color: "text-pink-300" },
     { href: "/admin/players", label: "Membres CHAMA", value: chamaMembers, color: "text-emerald-300" },
     { href: "/admin/players", label: "Joueurs bannis", value: bannedPlayers, color: "text-rose-300" },
+    { href: "/admin/errors", label: "Erreurs (24h)", value: recentErrors, color: "text-rose-300" },
   ];
 
   return (
@@ -147,7 +166,7 @@ export default async function AdminHomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-6">
           {stats.map((stat) => (
             <Link
               key={stat.label}

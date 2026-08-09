@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { logServerError } from "@/lib/log-error";
 
 const registerSchema = z
   .object({
@@ -140,7 +141,7 @@ export async function registerUser(formData: FormData) {
     }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("REGISTER_ERROR", error);
+    await logServerError("REGISTER_ERROR", error);
     redirect("/register?error=server");
   }
 

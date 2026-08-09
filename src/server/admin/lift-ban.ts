@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 export async function liftBan(formData: FormData) {
   const admin = await requireAdmin();
@@ -67,7 +68,7 @@ export async function liftBan(formData: FormData) {
 
     publishAdminEvent("players");
   } catch (error) {
-    console.error("LIFT_BAN_ERROR", error);
+    await logServerError("LIFT_BAN_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

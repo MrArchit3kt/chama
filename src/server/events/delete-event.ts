@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { deleteLocalEventImage } from "@/server/events/_event-image";
+import { logServerError } from "@/lib/log-error";
 
 export async function deleteEvent(formData: FormData) {
   const admin = await requireAdmin();
@@ -39,7 +40,7 @@ export async function deleteEvent(formData: FormData) {
       await deleteLocalEventImage(existing.coverImageUrl);
     }
   } catch (error) {
-    console.error("DELETE_EVENT_ERROR", error);
+    await logServerError("DELETE_EVENT_ERROR", error);
     redirect("/admin/events?error=server");
   }
 

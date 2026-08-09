@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -41,7 +42,7 @@ export async function toggleChamaMember(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
 
-    console.error("TOGGLE_CHAMA_MEMBER_ERROR", error);
+    await logServerError("TOGGLE_CHAMA_MEMBER_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

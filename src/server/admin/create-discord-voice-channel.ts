@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -40,7 +41,7 @@ export async function createDiscordVoiceChannel(formData: FormData) {
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("CREATE_DISCORD_VOICE_CHANNEL_ERROR", error);
+    await logServerError("CREATE_DISCORD_VOICE_CHANNEL_ERROR", error);
     redirect("/admin/discord?error=server");
   }
 

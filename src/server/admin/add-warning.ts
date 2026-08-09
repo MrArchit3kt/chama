@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 const WARNING_LIMIT_PER_TYPE = 5;
 
@@ -117,7 +118,7 @@ export async function addWarning(formData: FormData) {
 
     publishAdminEvent("players");
   } catch (error) {
-    console.error("ADD_WARNING_ERROR", error);
+    await logServerError("ADD_WARNING_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

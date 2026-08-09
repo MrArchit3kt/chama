@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { ContactRequestType } from "@/generated/prisma/enums";
+import { logServerError } from "@/lib/log-error";
 
 const CONTACT_REQUEST_TYPES = new Set<string>(Object.values(ContactRequestType));
 
@@ -62,7 +63,7 @@ export async function createContactRequest(formData: FormData) {
       });
     }
   } catch (error) {
-    console.error("CREATE_CONTACT_REQUEST_ERROR", error);
+    await logServerError("CREATE_CONTACT_REQUEST_ERROR", error);
     redirect("/contact?error=server");
   }
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getSessionUser } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { exchangeDiscordCode } from "@/lib/discord";
+import { logServerError } from "@/lib/log-error";
 
 const STATE_COOKIE = "discord_oauth_state";
 
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("DISCORD_LINK_ERROR", error);
+    await logServerError("DISCORD_LINK_ERROR", error);
     return NextResponse.redirect(siteUrl("/profil?error=discord_exchange"));
   }
 

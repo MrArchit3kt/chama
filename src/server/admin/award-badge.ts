@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -33,7 +34,7 @@ export async function awardBadge(formData: FormData) {
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("AWARD_BADGE_ERROR", error);
+    await logServerError("AWARD_BADGE_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

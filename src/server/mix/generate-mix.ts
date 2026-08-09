@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/discord";
+import { logServerError } from "@/lib/log-error";
 import {
   shuffle,
   getTeamSizesFourThree,
@@ -124,7 +125,7 @@ async function moveTeamsToDiscordVoice(game: MixGame, teamsUserIds: string[][]) 
 
     await Promise.allSettled(moves);
   } catch (error) {
-    console.error("MOVE_TEAMS_TO_DISCORD_VOICE_ERROR", error);
+    await logServerError("MOVE_TEAMS_TO_DISCORD_VOICE_ERROR", error);
   }
 }
 
@@ -517,7 +518,7 @@ export async function generateMix(formData: FormData) {
     redirectToGame(game, `?success=1&session=${session.id}`);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("GENERATE_MIX_ERROR", error);
+    await logServerError("GENERATE_MIX_ERROR", error);
     redirectToGame(game, "?error=server");
   }
 }

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -25,7 +26,7 @@ export async function deleteDiscordVoiceChannel(formData: FormData) {
     await db.discordVoiceChannel.delete({ where: { id } });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("DELETE_DISCORD_VOICE_CHANNEL_ERROR", error);
+    await logServerError("DELETE_DISCORD_VOICE_CHANNEL_ERROR", error);
     redirect("/admin/discord?error=server");
   }
 

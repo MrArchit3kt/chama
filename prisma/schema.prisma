@@ -731,3 +731,24 @@ model UserBadge {
   @@index([badgeId])
   @@index([earnedAt])
 }
+
+/**
+ * ✅ Monitoring d'erreurs auto-hébergé : chaque erreur inattendue capturée
+ * côté serveur (server actions, routes API) est journalisée ici plutôt que
+ * de finir uniquement dans les logs pm2. Consultable depuis /admin/errors.
+ * Pas de FK vers User (une erreur doit survivre à la suppression du compte
+ * qui l'a déclenchée).
+ */
+model ErrorLog {
+  id      String  @id @default(cuid())
+  context String // ex: GENERATE_MIX_ERROR
+  message String  @db.Text
+  stack   String? @db.Text
+  userId  String?
+  url     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([context])
+}

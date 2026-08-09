@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { getSessionUser } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 /**
  * Marque le pop-up "Bienvenue dans la team CHAMA" comme vu, pour qu'il ne
@@ -19,6 +20,6 @@ export async function markChamaWelcomeSeen() {
       data: { chamaWelcomeSeenAt: new Date() },
     });
   } catch (error) {
-    console.error("MARK_CHAMA_WELCOME_SEEN_ERROR", error);
+    await logServerError("MARK_CHAMA_WELCOME_SEEN_ERROR", error);
   }
 }

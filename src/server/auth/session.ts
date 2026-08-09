@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/prisma";
+import { logServerError } from "@/lib/log-error";
 
 // ⚠️ redirect() de Next.js fonctionne en lançant une erreur spéciale pour
 // interrompre le rendu. Il ne faut jamais l'avaler dans un try/catch, sinon
@@ -73,7 +74,7 @@ export async function getSessionUser() {
   try {
     return await resolveSessionUser();
   } catch (error) {
-    console.error("GET_SESSION_USER_ERROR", error);
+    await logServerError("GET_SESSION_USER_ERROR", error);
     return null;
   }
 }
@@ -101,7 +102,7 @@ export async function requireAuth() {
     return user;
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("REQUIRE_AUTH_ERROR", error);
+    await logServerError("REQUIRE_AUTH_ERROR", error);
     return null;
   }
 }
@@ -125,7 +126,7 @@ export async function getChamaWelcomeState(): Promise<boolean> {
 
     return Boolean(user?.isChamaMember && !user.chamaWelcomeSeenAt && user.status === "ACTIVE");
   } catch (error) {
-    console.error("GET_CHAMA_WELCOME_STATE_ERROR", error);
+    await logServerError("GET_CHAMA_WELCOME_STATE_ERROR", error);
     return false;
   }
 }
@@ -147,7 +148,7 @@ export async function requireAdmin() {
     return user;
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("REQUIRE_ADMIN_ERROR", error);
+    await logServerError("REQUIRE_ADMIN_ERROR", error);
     return null;
   }
 }

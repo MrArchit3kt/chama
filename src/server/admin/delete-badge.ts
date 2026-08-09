@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -26,7 +27,7 @@ export async function deleteBadge(formData: FormData) {
     await db.badge.delete({ where: { id } });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("DELETE_BADGE_ERROR", error);
+    await logServerError("DELETE_BADGE_ERROR", error);
     redirect("/admin/badges?error=server");
   }
 

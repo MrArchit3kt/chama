@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 const resetPasswordSchema = z.object({
   userId: z.string().min(1),
@@ -58,7 +59,7 @@ export async function resetPlayerPassword(formData: FormData) {
 
     publishAdminEvent("players");
   } catch (error) {
-    console.error("RESET_PLAYER_PASSWORD_ERROR", error);
+    await logServerError("RESET_PLAYER_PASSWORD_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

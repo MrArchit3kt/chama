@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { canSelfServeMix, type MixGame } from "@/server/mix/mix-access";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -75,7 +76,7 @@ export async function removePlayerFromPoolSelfServe(formData: FormData) {
     }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("REMOVE_FROM_POOL_SELF_SERVE_ERROR", error);
+    await logServerError("REMOVE_FROM_POOL_SELF_SERVE_ERROR", error);
     redirect(`${backTo(game)}?error=server`);
   }
 

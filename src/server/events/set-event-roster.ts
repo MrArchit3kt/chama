@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 type RosterRole = "TITULAIRE" | "REMPLACANT";
 
@@ -65,7 +66,7 @@ export async function setEventRoster(formData: FormData) {
     ]);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("SET_EVENT_ROSTER_ERROR", error);
+    await logServerError("SET_EVENT_ROSTER_ERROR", error);
     redirect("/admin/events?error=server");
   }
 

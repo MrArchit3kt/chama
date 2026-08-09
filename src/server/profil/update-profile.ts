@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { normalizeTwitchUsername } from "@/lib/twitch";
+import { logServerError } from "@/lib/log-error";
 
 const rocketLeagueRankEnum = z.enum([
   "BRONZE",
@@ -147,7 +148,7 @@ export async function updateProfile(formData: FormData) {
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("UPDATE_PROFILE_ERROR", error);
+    await logServerError("UPDATE_PROFILE_ERROR", error);
     redirect("/profil?error=server");
   }
 

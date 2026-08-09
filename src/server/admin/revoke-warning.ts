@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 export async function revokeWarning(formData: FormData) {
   const admin = await requireAdmin();
@@ -48,7 +49,7 @@ export async function revokeWarning(formData: FormData) {
 
     publishAdminEvent("players");
   } catch (error) {
-    console.error("REVOKE_WARNING_ERROR", error);
+    await logServerError("REVOKE_WARNING_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

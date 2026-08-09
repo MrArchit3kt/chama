@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 export async function saveSiteConfig(formData: FormData) {
   const admin = await requireAdmin();
@@ -52,7 +53,7 @@ export async function saveSiteConfig(formData: FormData) {
       },
     });
   } catch (error) {
-    console.error("SAVE_SITE_CONFIG_ERROR", error);
+    await logServerError("SAVE_SITE_CONFIG_ERROR", error);
     redirect("/admin/settings?error=server");
   }
 

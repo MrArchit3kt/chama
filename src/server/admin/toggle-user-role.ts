@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 export async function toggleUserRole(formData: FormData) {
   const admin = await requireAdmin();
@@ -64,7 +65,7 @@ export async function toggleUserRole(formData: FormData) {
 
     await Promise.resolve(publishAdminEvent("players"));
   } catch (error) {
-    console.error("TOGGLE_USER_ROLE_ERROR", error);
+    await logServerError("TOGGLE_USER_ROLE_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

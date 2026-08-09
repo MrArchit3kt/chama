@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 type RLTeamSize = "TWO" | "THREE";
@@ -114,7 +115,7 @@ export async function setMixGenerator(formData: FormData) {
     redirectTo(game, "?lock_set=1");
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("SET_MIX_GENERATOR_ERROR", error);
+    await logServerError("SET_MIX_GENERATOR_ERROR", error);
     redirectTo(game, "?error=server");
   }
 }

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 export async function setEventPresence(formData: FormData) {
   const user = await requireAuth();
@@ -46,7 +47,7 @@ export async function setEventPresence(formData: FormData) {
       },
     });
   } catch (error) {
-    console.error("SET_EVENT_PRESENCE_ERROR", error);
+    await logServerError("SET_EVENT_PRESENCE_ERROR", error);
     redirect("/events?error=server");
   }
 

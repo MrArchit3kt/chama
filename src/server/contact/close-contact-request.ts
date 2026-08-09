@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 export async function closeContactRequest(formData: FormData) {
   const admin = await requireAdmin();
@@ -25,7 +26,7 @@ export async function closeContactRequest(formData: FormData) {
       },
     });
   } catch (error) {
-    console.error("CLOSE_CONTACT_REQUEST_ERROR", error);
+    await logServerError("CLOSE_CONTACT_REQUEST_ERROR", error);
     redirect("/admin/contact?error=server");
   }
 

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { getSessionUser } from "@/server/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
+import { logServerError } from "@/lib/log-error";
 
 const BAN_APPEAL_SUBJECT = "Contestation de bannissement";
 
@@ -76,7 +77,7 @@ export async function submitBanAppeal(formData: FormData) {
     }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("SUBMIT_BAN_APPEAL_ERROR", error);
+    await logServerError("SUBMIT_BAN_APPEAL_ERROR", error);
     redirect("/banni?error=server");
   }
 

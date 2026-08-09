@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 import {
   deleteLocalEventImage,
   isLocalEventImage,
@@ -107,8 +108,7 @@ export async function updateEvent(formData: FormData) {
       await deleteLocalEventImage(previousImageUrl);
     }
   } catch (error) {
-    console.error("UPDATE_EVENT_ERROR", error);
-
+    await logServerError("UPDATE_EVENT_ERROR", error);
     if (uploadedLocalImageUrl) {
       await deleteLocalEventImage(uploadedLocalImageUrl);
     }

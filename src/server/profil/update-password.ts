@@ -5,6 +5,7 @@ import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 const updatePasswordSchema = z
   .object({
@@ -60,7 +61,7 @@ export async function updatePassword(formData: FormData) {
     ) {
       throw error;
     }
-    console.error("UPDATE_PASSWORD_ERROR", error);
+    await logServerError("UPDATE_PASSWORD_ERROR", error);
     redirect("/profil?error=server");
   }
 

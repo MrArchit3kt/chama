@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 const saveRulesSchema = z.object({
   title: z.string().min(3).max(120),
@@ -63,7 +64,7 @@ export async function saveRules(formData: FormData) {
       });
     });
   } catch (error) {
-    console.error("SAVE_RULES_ERROR", error);
+    await logServerError("SAVE_RULES_ERROR", error);
     redirect("/admin/reglement?error=server");
   }
 

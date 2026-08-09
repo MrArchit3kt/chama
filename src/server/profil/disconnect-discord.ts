@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 export async function disconnectDiscord() {
   const user = await requireAuth();
@@ -14,7 +15,7 @@ export async function disconnectDiscord() {
       data: { discordUserId: null, discordUsername: null },
     });
   } catch (error) {
-    console.error("DISCONNECT_DISCORD_ERROR", error);
+    await logServerError("DISCONNECT_DISCORD_ERROR", error);
     redirect("/profil?error=server");
   }
 

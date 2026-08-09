@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -85,7 +86,7 @@ export async function banPlayer(formData: FormData) {
     publishAdminEvent("players");
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("BAN_PLAYER_ERROR", error);
+    await logServerError("BAN_PLAYER_ERROR", error);
     redirect("/admin/players?error=server");
   }
 

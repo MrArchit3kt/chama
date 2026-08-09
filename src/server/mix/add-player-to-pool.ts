@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
 
@@ -92,7 +93,7 @@ export async function addPlayerToPool(formData: FormData) {
     }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("ADD_PLAYER_TO_POOL_ERROR", error);
+    await logServerError("ADD_PLAYER_TO_POOL_ERROR", error);
     redirect(`${backTo(game)}?error=server`);
   }
 

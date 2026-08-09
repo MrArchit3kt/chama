@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
+import { logServerError } from "@/lib/log-error";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -59,7 +60,7 @@ export async function createBadge(formData: FormData) {
     await db.badge.create({ data: parsed.data });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("CREATE_BADGE_ERROR", error);
+    await logServerError("CREATE_BADGE_ERROR", error);
     redirect("/admin/badges?error=server");
   }
 
