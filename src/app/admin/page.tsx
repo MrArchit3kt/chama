@@ -17,6 +17,9 @@ import {
   Award,
   Headphones,
   Bug,
+  Activity,
+  Wifi,
+  TrendingUp,
 } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
@@ -113,6 +116,25 @@ function oneDayAgo() {
   return new Date(Date.now() - 24 * 60 * 60 * 1000);
 }
 
+function sevenDaysAgo() {
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+}
+
+function mixGameLabel(game: string) {
+  switch (game) {
+    case "WARZONE":
+      return "Warzone";
+    case "WARZONE_RANKED":
+      return "Ranked";
+    case "BO7":
+      return "BO7";
+    case "ROCKET_LEAGUE":
+      return "Rocket League";
+    default:
+      return game;
+  }
+}
+
 export default async function AdminHomePage() {
   const admin = await requireAdmin();
 
@@ -127,6 +149,10 @@ export default async function AdminHomePage() {
     chamaMembers,
     bannedPlayers,
     recentErrors,
+    onlineNow,
+    mixesThisWeek,
+    mixesByGame,
+    activePlayerIdsThisWeek,
   ] = await Promise.all([
     db.user.count({ where: { status: "ACTIVE", registrationStatus: "APPROVED" } }),
     db.user.count({ where: { registrationStatus: "PENDING" } }),
@@ -134,7 +160,24 @@ export default async function AdminHomePage() {
     db.user.count({ where: { isChamaMember: true } }),
     db.user.count({ where: { status: "BANNED" } }),
     db.errorLog.count({ where: { createdAt: { gte: oneDayAgo() } } }),
+    db.user.count({ where: { isOnline: true, status: "ACTIVE" } }),
+    db.mixSession.count({ where: { createdAt: { gte: sevenDaysAgo() } } }),
+    db.mixSession.groupBy({
+      by: ["game"],
+      where: { createdAt: { gte: sevenDaysAgo() } },
+      _count: { _all: true },
+    }),
+    db.mixSessionPlayer.findMany({
+      where: { session: { createdAt: { gte: sevenDaysAgo() } }, userId: { not: null } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
   ]);
+
+  const participationRate =
+    activePlayers > 0
+      ? Math.round((activePlayerIdsThisWeek.length / activePlayers) * 100)
+      : 0;
 
   const stats = [
     { href: "/admin/players", label: "Joueurs actifs", value: activePlayers, color: "text-cyan-300" },
@@ -179,6 +222,67 @@ export default async function AdminHomePage() {
               <p className={`mt-1 text-xl font-black md:text-2xl ${stat.color}`}>{stat.value}</p>
             </Link>
           ))}
+        </div>
+
+        <div className="neon-card p-5 md:p-8">
+          <div className="flex items-center gap-3">
+            <Activity className="h-5 w-5 text-cyan-300" />
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+              Activité
+            </p>
+          </div>
+          <h2 className="mt-2 text-lg font-bold text-white md:text-xl">
+            7 derniers jours
+          </h2>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="neon-card-soft p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                Mixes générés
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">{mixesThisWeek}</p>
+            </div>
+
+            <div className="neon-card-soft p-4">
+              <div className="flex items-center gap-1.5">
+                <Wifi className="h-3.5 w-3.5 text-emerald-300" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                  En ligne maintenant
+                </p>
+              </div>
+              <p className="mt-1 text-2xl font-black text-emerald-300">{onlineNow}</p>
+            </div>
+
+            <div className="neon-card-soft p-4">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-cyan-300" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                  Participation
+                </p>
+              </div>
+              <p className="mt-1 text-2xl font-black text-cyan-300">{participationRate}%</p>
+              <p className="neon-text-muted mt-1 text-[11px]">
+                {activePlayerIdsThisWeek.length} joueur(s) dans une file sur {activePlayers}
+              </p>
+            </div>
+
+            <div className="neon-card-soft p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                Par jeu
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {mixesByGame.length === 0 ? (
+                  <span className="neon-text-muted text-xs">Aucun mix cette semaine</span>
+                ) : (
+                  mixesByGame.map((g) => (
+                    <span key={g.game} className="neon-badge text-[10px]">
+                      {mixGameLabel(g.game)} : {g._count._all}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
