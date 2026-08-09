@@ -5,6 +5,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { createDiscordVoiceChannel } from "@/server/admin/create-discord-voice-channel";
+import { updateDiscordVoiceChannel } from "@/server/admin/update-discord-voice-channel";
 import { deleteDiscordVoiceChannel } from "@/server/admin/delete-discord-voice-channel";
 import { isDiscordBotConfigured, isDiscordOAuthConfigured } from "@/lib/discord";
 
@@ -29,7 +30,7 @@ function getErrorMessage(error?: string) {
 export default async function AdminDiscordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; deleted?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; deleted?: string; updated?: string }>;
 }) {
   const admin = await requireAdmin();
   if (!admin) redirect("/dashboard");
@@ -38,6 +39,7 @@ export default async function AdminDiscordPage({
   const errorMessage = getErrorMessage(sp.error);
   const isSuccess = sp.success === "1";
   const isDeleted = sp.deleted === "1";
+  const isUpdated = sp.updated === "1";
 
   const oauthConfigured = isDiscordOAuthConfigured();
   const botConfigured = isDiscordBotConfigured();
@@ -114,6 +116,11 @@ export default async function AdminDiscordPage({
             <p className="text-sm font-medium text-amber-300">Salon vocal supprimé.</p>
           </div>
         ) : null}
+        {isUpdated ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-emerald-400">Salon vocal modifié avec succès.</p>
+          </div>
+        ) : null}
 
         <div className="neon-card p-6 md:p-8">
           <h2 className="text-lg font-bold text-white">Ajouter un salon vocal</h2>
@@ -173,24 +180,55 @@ export default async function AdminDiscordPage({
               ) : (
                 <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {gameChannels.map((channel, index) => (
-                    <div key={channel.id} className="neon-card-soft flex items-center justify-between gap-3 p-3.5">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-300/80">
-                          Équipe {index + 1}
-                        </p>
-                        <p className="truncate text-sm font-semibold text-white">{channel.label}</p>
-                        <p className="neon-text-muted truncate text-[11px]">{channel.channelId}</p>
+                    <div key={channel.id} className="neon-card-soft p-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-300/80">
+                            Équipe {index + 1}
+                          </p>
+                          <p className="truncate text-sm font-semibold text-white">{channel.label}</p>
+                          <p className="neon-text-muted truncate text-[11px]">{channel.channelId}</p>
+                        </div>
+
+                        <form action={deleteDiscordVoiceChannel}>
+                          <input type="hidden" name="id" value={channel.id} />
+                          <button
+                            type="submit"
+                            className="neon-button-secondary shrink-0 px-3 py-2 text-xs"
+                          >
+                            Retirer
+                          </button>
+                        </form>
                       </div>
 
-                      <form action={deleteDiscordVoiceChannel}>
-                        <input type="hidden" name="id" value={channel.id} />
-                        <button
-                          type="submit"
-                          className="neon-button-secondary shrink-0 px-3 py-2 text-xs"
-                        >
-                          Retirer
-                        </button>
-                      </form>
+                      <details className="mt-2.5">
+                        <summary className="cursor-pointer text-xs font-semibold text-cyan-300/80">
+                          Modifier
+                        </summary>
+                        <form action={updateDiscordVoiceChannel} className="mt-2 grid gap-2">
+                          <input type="hidden" name="id" value={channel.id} />
+                          <input
+                            name="label"
+                            type="text"
+                            required
+                            defaultValue={channel.label}
+                            placeholder="Ex : Équipe 1"
+                            className="w-full px-3 py-2 text-sm"
+                          />
+                          <input
+                            name="channelId"
+                            type="text"
+                            required
+                            inputMode="numeric"
+                            defaultValue={channel.channelId}
+                            placeholder="ID du salon Discord"
+                            className="w-full px-3 py-2 text-sm"
+                          />
+                          <button type="submit" className="neon-button w-full px-3 py-2 text-xs">
+                            Enregistrer
+                          </button>
+                        </form>
+                      </details>
                     </div>
                   ))}
                 </div>
