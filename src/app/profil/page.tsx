@@ -377,8 +377,8 @@ export default async function ProfilePage({
                 <option value="GOLD">Or</option>
                 <option value="PLATINUM">Platine</option>
                 <option value="DIAMOND">Diamant</option>
-                <option value="CRIMSON">Cramoisi</option>
-                <option value="IRIDESCENT">Irisé</option>
+                <option value="CRIMSON">Écarlate</option>
+                <option value="IRIDESCENT">Iridescent</option>
                 <option value="TOP_250">Top 250</option>
               </select>
             </div>

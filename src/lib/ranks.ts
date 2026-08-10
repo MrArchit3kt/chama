@@ -15,8 +15,8 @@ export const WARZONE_RANK_TIER_LABELS: Record<string, string> = {
   GOLD: "Or",
   PLATINUM: "Platine",
   DIAMOND: "Diamant",
-  CRIMSON: "Cramoisi",
-  IRIDESCENT: "Irisé",
+  CRIMSON: "Écarlate",
+  IRIDESCENT: "Iridescent",
   TOP_250: "Top 250",
 };
 
