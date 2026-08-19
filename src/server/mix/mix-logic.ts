@@ -39,6 +39,13 @@ export function getTeamSizesWarzoneRanked(total: number): number[] | null {
   return Array(total / 3).fill(3);
 }
 
+/** VERSUS : strictement des équipes de 4 (format teams contre une team partenaire). */
+export function getTeamSizesVersus(total: number): number[] | null {
+  if (total < 4) return null;
+  if (total % 4 !== 0) return null;
+  return Array(total / 4).fill(4);
+}
+
 // =======================
 // Rocket League ranks
 // =======================

@@ -15,7 +15,7 @@ import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 function getErrorMessage(error?: string) {
   switch (error) {
     case "invalid_count":
-      return "En Versus, le mix doit être en 3v3 uniquement : il faut un nombre de joueurs divisible par 3 (ex: 3, 6, 9, 12...).";
+      return "En Versus, le mix doit être en 4v4 uniquement : il faut un nombre de joueurs divisible par 4 (ex: 4, 8, 12, 16...).";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -28,9 +28,9 @@ function getErrorMessage(error?: string) {
 }
 
 function formatVersusPreview(total: number) {
-  if (total < 3) return "Impossible";
-  if (total % 3 !== 0) return "Impossible";
-  return `${total / 3}x3`;
+  if (total < 4) return "Impossible";
+  if (total % 4 !== 0) return "Impossible";
+  return `${total / 4}x4`;
 }
 
 export default async function AdminMixVersusPage({
@@ -201,10 +201,10 @@ export default async function AdminMixVersusPage({
             Versus Mix (Admin)
           </p>
           <h2 className="neon-title neon-gradient-text mt-2 text-2xl font-black md:text-3xl">
-            Mix Versus — 3v3 only
+            Mix Versus — 4v4 only
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:text-base">
-            Le Versus est strict : génération uniquement en équipes de 3 (aucun 4v4, aucun banc).
+            Le Versus est strict : génération uniquement en équipes de 4 (aucun 3v3, aucun banc).
             Les pools, locks et invités sont séparés des autres jeux — sert à composer les
             teams face à une team partenaire.
           </p>
@@ -372,7 +372,7 @@ export default async function AdminMixVersusPage({
                 {totalPoolCount} joueur{totalPoolCount > 1 ? "s" : ""} dans le pool
               </h3>
               <p className="neon-text-muted mt-2 text-sm">
-                Répartition Versus : uniquement en 3v3. Total doit être divisible par 3.
+                Répartition Versus : uniquement en 4v4. Total doit être divisible par 4.
               </p>
             </div>
 
