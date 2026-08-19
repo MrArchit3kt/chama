@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { PartyPopper, X } from "lucide-react";
+import { SiDiscord } from "react-icons/si";
 import { markApprovalWelcomeSeen } from "@/server/profil/mark-approval-welcome-seen";
+
+type ApprovalWelcomePopupProps = {
+  discordInviteUrl?: string | null;
+};
 
 type Shape = "rect" | "ribbon" | "circle";
 
@@ -107,8 +112,9 @@ function shapeRadius(shape: Shape) {
   return shape === "circle" ? "9999px" : "2px";
 }
 
-export function ApprovalWelcomePopup() {
+export function ApprovalWelcomePopup({ discordInviteUrl }: ApprovalWelcomePopupProps) {
   const [visible, setVisible] = useState(true);
+  const trimmedDiscordUrl = discordInviteUrl?.trim() || null;
   const [particles, setParticles] = useState<Particle[]>([]);
   const [, startTransition] = useTransition();
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -234,12 +240,29 @@ export function ApprovalWelcomePopup() {
           traîner avec le reste de la squad. À très vite sur les games ! 🚀
         </p>
 
+        {trimmedDiscordUrl ? (
+          <a
+            href={trimmedDiscordUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={close}
+            className="neon-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-3"
+          >
+            <SiDiscord className="h-4 w-4" />
+            Rejoindre le Discord
+          </a>
+        ) : null}
+
         <button
           type="button"
           onClick={close}
-          className="neon-button mt-6 w-full px-6 py-3"
+          className={
+            trimmedDiscordUrl
+              ? "neon-button-secondary mt-3 w-full px-6 py-3"
+              : "neon-button mt-6 w-full px-6 py-3"
+          }
         >
-          C’est parti !
+          {trimmedDiscordUrl ? "Plus tard" : "C’est parti !"}
         </button>
       </div>
     </div>

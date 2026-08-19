@@ -20,7 +20,10 @@ export async function SiteShell({ children }: SiteShellProps) {
     getSessionUser(),
     getApprovalWelcomeState(),
     getChamaWelcomeState(),
-    db.siteConfig.findUnique({ where: { id: "main" }, select: { theme: true } }),
+    db.siteConfig.findUnique({
+      where: { id: "main" },
+      select: { theme: true, discordInviteUrl: true },
+    }),
   ]);
   const canSeeAdmin =
     user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
@@ -34,7 +37,7 @@ export async function SiteShell({ children }: SiteShellProps) {
       {/* Une seule pop-up de célébration à la fois : priorité à celle de
           validation de compte si les deux sont vraies (cas rare). */}
       {showApprovalWelcome ? (
-        <ApprovalWelcomePopup />
+        <ApprovalWelcomePopup discordInviteUrl={config?.discordInviteUrl} />
       ) : showChamaWelcome ? (
         <ChamaWelcomePopup />
       ) : null}
