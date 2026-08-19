@@ -24,7 +24,7 @@ function getErrorMessage(error?: string) {
     case "pool_forbidden":
       return "Un admin gère actuellement la file : tu ne peux pas retirer de joueur.";
     case "invalid_count":
-      return "En Versus, le mix doit être en 3v3 uniquement : il faut un nombre de joueurs divisible par 3.";
+      return "En Versus, le mix doit être en 4v4 uniquement : il faut un nombre de joueurs divisible par 4.";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -156,7 +156,7 @@ export default async function VersusPage({
             Mix Versus — Team partenaire
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
-            Le Versus est strict : équipes de 3 uniquement, séparé des files
+            Le Versus est strict : équipes de 4 uniquement, séparé des files
             Ranked/Warzone/BO7. Rejoins la file pour être pris en compte, puis
             consulte toutes les équipes (la tienne en premier) avant de lancer
             les games face à la team partenaire.

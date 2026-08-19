@@ -9,6 +9,7 @@ import {
   shuffle,
   getTeamSizesFourThree,
   getTeamSizesWarzoneRanked,
+  getTeamSizesVersus,
   buildRocketLeagueTeams,
   teamSizeFromLock,
 } from "@/server/mix/mix-logic";
@@ -413,8 +414,8 @@ export async function generateMix(formData: FormData) {
     }
 
     // =========================
-    // VERSUS (STRICT 3v3, mêmes règles que Ranked — teams contre une
-    // team partenaire, file/lock/historique séparés des autres jeux)
+    // VERSUS (STRICT 4v4 — teams contre une team partenaire, file/lock/
+    // historique séparés des autres jeux)
     // =========================
     if (game === "VERSUS") {
       const users = await db.user.findMany({
@@ -438,8 +439,8 @@ export async function generateMix(formData: FormData) {
         ...tempPlayers.map((t) => ({ kind: "TEMP" as const, id: t.id })),
       ];
 
-      const sizes = getTeamSizesWarzoneRanked(pool.length);
-      if (!sizes) redirectToGame(game, "?error=invalid_count"); // => pas divisible par 3
+      const sizes = getTeamSizesVersus(pool.length);
+      if (!sizes) redirectToGame(game, "?error=invalid_count"); // => pas divisible par 4
 
       const shuffled = shuffle(pool);
 
@@ -447,7 +448,7 @@ export async function generateMix(formData: FormData) {
         data: {
           game,
           status: "GENERATED",
-          allowTeamsOfThree: true,
+          allowTeamsOfThree: false,
           keepRemainderAsBench: false,
           createdById: sessionUser.id,
         },
@@ -469,7 +470,7 @@ export async function generateMix(formData: FormData) {
       const teamsUserIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
-        const chunk = shuffled.slice(cursor, cursor + 3);
+        const chunk = shuffled.slice(cursor, cursor + 4);
 
         const team = await db.team.create({
           data: { sessionId: session.id, teamNumber: idx + 1 },
@@ -504,7 +505,7 @@ export async function generateMix(formData: FormData) {
           });
         }
 
-        cursor += 3;
+        cursor += 4;
       }
 
       await notifyMixReady(game, allUserIds);

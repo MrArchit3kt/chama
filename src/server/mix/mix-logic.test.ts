@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildRocketLeagueTeams,
   getTeamSizesFourThree,
+  getTeamSizesVersus,
   getTeamSizesWarzoneRanked,
   rankIndex,
   shuffle,
@@ -52,6 +53,23 @@ describe("getTeamSizesWarzoneRanked (strict 3v3)", () => {
     expect(getTeamSizesWarzoneRanked(3)).toEqual([3]);
     expect(getTeamSizesWarzoneRanked(9)).toEqual([3, 3, 3]);
     expect(getTeamSizesWarzoneRanked(0)).toBeNull(); // total < 3
+  });
+});
+
+describe("getTeamSizesVersus (strict 4v4)", () => {
+  it("refuse un pool non divisible par 4", () => {
+    expect(getTeamSizesVersus(1)).toBeNull();
+    expect(getTeamSizesVersus(2)).toBeNull();
+    expect(getTeamSizesVersus(3)).toBeNull();
+    expect(getTeamSizesVersus(6)).toBeNull();
+    expect(getTeamSizesVersus(10)).toBeNull();
+  });
+
+  it("accepte uniquement des multiples de 4", () => {
+    expect(getTeamSizesVersus(4)).toEqual([4]);
+    expect(getTeamSizesVersus(8)).toEqual([4, 4]);
+    expect(getTeamSizesVersus(12)).toEqual([4, 4, 4]);
+    expect(getTeamSizesVersus(0)).toBeNull(); // total < 4
   });
 });
 
