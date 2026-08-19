@@ -1,4 +1,4 @@
-export type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+export type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 /* ===========================
    TEAM NAMES (30 + 30)
@@ -177,6 +177,6 @@ export function getTeamDisplayName(params: {
   if (params.game === "ROCKET_LEAGUE") {
     return ROCKET_TEAM_NAMES[hashToIndex(base, ROCKET_TEAM_NAMES.length)];
   }
-  // WARZONE + WARZONE_RANKED + BO7 -> mêmes noms, c'est ok
+  // WARZONE + WARZONE_RANKED + BO7 + VERSUS -> mêmes noms, c'est ok
   return WARZONE_TEAM_NAMES[hashToIndex(base, WARZONE_TEAM_NAMES.length)];
 }

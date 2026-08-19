@@ -10,6 +10,7 @@ const GAME_TO_PATH: Record<string, string> = {
   WARZONE_RANKED: "/ranked",
   BO7: "/bo7",
   ROCKET_LEAGUE: "/rocket-league",
+  VERSUS: "/versus",
 };
 
 /**

@@ -78,15 +78,15 @@ body {
 
 @keyframes grid-drift {
   0% {
-    background-position: 0 0, 0 0;
+    transform: translate3d(0, 0, 0);
     opacity: 0.28;
   }
   50% {
-    background-position: 120px 60px, 60px 120px;
+    transform: translate3d(90px, 90px, 0);
     opacity: 0.38;
   }
   100% {
-    background-position: 0 0, 0 0;
+    transform: translate3d(0, 0, 0);
     opacity: 0.28;
   }
 }
@@ -166,7 +166,12 @@ button {
 .page-wrap::after {
   content: "";
   position: fixed;
-  inset: 0;
+  /* ✅ Débordement volontaire (au-delà de la distance de translation max de
+     l'animation) : on anime un transform plutôt que background-position
+     (propriété compositée par le GPU, pas de repaint à chaque frame), donc
+     l'élément doit être plus grand que le viewport pour qu'aucun bord ne
+     se révèle en glissant. */
+  inset: -120px;
   pointer-events: none;
   background:
     linear-gradient(rgba(57, 240, 255, 0.025) 1px, transparent 1px),
@@ -175,7 +180,7 @@ button {
   opacity: 0.35;
   z-index: 0;
   animation: grid-drift 22s ease-in-out infinite;
-  will-change: background-position, opacity;
+  will-change: transform, opacity;
 }
 
 .content-layer {

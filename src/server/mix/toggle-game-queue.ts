@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 
-const ALLOWED = ["WARZONE", "WARZONE_RANKED", "BO7", "ROCKET_LEAGUE"] as const;
+const ALLOWED = ["WARZONE", "WARZONE_RANKED", "BO7", "ROCKET_LEAGUE", "VERSUS"] as const;
 type MixGame = (typeof ALLOWED)[number];
 
 function gameFrom(v: unknown): MixGame | null {
@@ -17,6 +17,7 @@ function backTo(game: MixGame) {
   if (game === "WARZONE") return "/warzone";
   if (game === "WARZONE_RANKED") return "/ranked";
   if (game === "BO7") return "/bo7";
+  if (game === "VERSUS") return "/versus";
   return "/rocket-league";
 }
 
@@ -37,6 +38,7 @@ export async function toggleGameQueue(formData: FormData) {
       isAvailableForWarzoneRankedMix: true,
       isAvailableForBO7Mix: true,
       isAvailableForRocketLeagueMix: true,
+      isAvailableForVersusMix: true,
     },
   });
 
@@ -50,8 +52,9 @@ export async function toggleGameQueue(formData: FormData) {
     game === "WARZONE_RANKED" ? !me.isAvailableForWarzoneRankedMix : false;
   const nextBO7 = game === "BO7" ? !me.isAvailableForBO7Mix : false;
   const nextRL = game === "ROCKET_LEAGUE" ? !me.isAvailableForRocketLeagueMix : false;
+  const nextVersus = game === "VERSUS" ? !me.isAvailableForVersusMix : false;
 
-  const nextGlobal = nextWarzone || nextWarzoneRanked || nextBO7 || nextRL;
+  const nextGlobal = nextWarzone || nextWarzoneRanked || nextBO7 || nextRL || nextVersus;
 
   await db.user.update({
     where: { id: me.id },
@@ -60,6 +63,7 @@ export async function toggleGameQueue(formData: FormData) {
       isAvailableForWarzoneRankedMix: nextWarzoneRanked,
       isAvailableForBO7Mix: nextBO7,
       isAvailableForRocketLeagueMix: nextRL,
+      isAvailableForVersusMix: nextVersus,
       isAvailableForMix: nextGlobal,
       isOnline: true,
       lastSeenAt: new Date(),

@@ -14,6 +14,7 @@ const GAMES = [
   { value: "WARZONE_RANKED", label: "Ranked" },
   { value: "BO7", label: "BO7" },
   { value: "ROCKET_LEAGUE", label: "Rocket League" },
+  { value: "VERSUS", label: "Versus" },
 ] as const;
 
 function getErrorMessage(error?: string) {

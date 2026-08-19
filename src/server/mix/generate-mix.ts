@@ -13,7 +13,7 @@ import {
   teamSizeFromLock,
 } from "@/server/mix/mix-logic";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -28,7 +28,13 @@ function isNextRedirectError(error: unknown) {
 function gameFrom(v: unknown): MixGame | null {
   if (typeof v !== "string") return null;
   const g = v.trim().toUpperCase();
-  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "BO7" || g === "ROCKET_LEAGUE") {
+  if (
+    g === "WARZONE" ||
+    g === "WARZONE_RANKED" ||
+    g === "BO7" ||
+    g === "ROCKET_LEAGUE" ||
+    g === "VERSUS"
+  ) {
     return g as MixGame;
   }
   return null;
@@ -44,7 +50,9 @@ function redirectToGame(game: MixGame, qs: string): never {
         ? "/ranked"
         : game === "BO7"
           ? "/bo7"
-          : "/rocket-league";
+          : game === "VERSUS"
+            ? "/versus"
+            : "/rocket-league";
 
   redirect(`${path}${qs}`);
 }
@@ -59,6 +67,8 @@ function gameLabel(game: MixGame) {
       return "BO7";
     case "ROCKET_LEAGUE":
       return "Rocket League";
+    case "VERSUS":
+      return "Versus";
   }
 }
 
@@ -274,6 +284,7 @@ export async function generateMix(formData: FormData) {
         isAvailableForWarzoneRankedMix: true,
         isAvailableForBO7Mix: true,
         isAvailableForRocketLeagueMix: true,
+        isAvailableForVersusMix: true,
       },
     });
 
@@ -284,7 +295,9 @@ export async function generateMix(formData: FormData) {
           ? !!me?.isAvailableForWarzoneRankedMix
           : game === "BO7"
             ? !!me?.isAvailableForBO7Mix
-            : !!me?.isAvailableForRocketLeagueMix;
+            : game === "VERSUS"
+              ? !!me?.isAvailableForVersusMix
+              : !!me?.isAvailableForRocketLeagueMix;
 
     if (!inQueue) {
       redirectToGame(game, "?error=forbidden");
@@ -315,6 +328,107 @@ export async function generateMix(formData: FormData) {
 
       const tempPlayers = await db.tempPlayer.findMany({
         where: { game: "WARZONE_RANKED", isAvailableForMix: true },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const pool = [
+        ...users.map((u) => ({ kind: "USER" as const, id: u.id })),
+        ...tempPlayers.map((t) => ({ kind: "TEMP" as const, id: t.id })),
+      ];
+
+      const sizes = getTeamSizesWarzoneRanked(pool.length);
+      if (!sizes) redirectToGame(game, "?error=invalid_count"); // => pas divisible par 3
+
+      const shuffled = shuffle(pool);
+
+      const session = await db.mixSession.create({
+        data: {
+          game,
+          status: "GENERATED",
+          allowTeamsOfThree: true,
+          keepRemainderAsBench: false,
+          createdById: sessionUser.id,
+        },
+      });
+
+      if (shuffled.length > 0) {
+        await db.mixSessionPlayer.createMany({
+          data: shuffled.map((p) => ({
+            sessionId: session.id,
+            userId: p.kind === "USER" ? p.id : null,
+            tempPlayerId: p.kind === "TEMP" ? p.id : null,
+            status: "WAITING",
+          })),
+        });
+      }
+
+      let cursor = 0;
+      const allUserIds: string[] = [];
+      const teamsUserIds: string[][] = [];
+
+      for (let idx = 0; idx < sizes.length; idx += 1) {
+        const chunk = shuffled.slice(cursor, cursor + 3);
+
+        const team = await db.team.create({
+          data: { sessionId: session.id, teamNumber: idx + 1 },
+        });
+
+        const hostIdx = Math.floor(Math.random() * chunk.length);
+
+        await db.teamMember.createMany({
+          data: chunk.map((p, i) => ({
+            teamId: team.id,
+            userId: p.kind === "USER" ? p.id : null,
+            tempPlayerId: p.kind === "TEMP" ? p.id : null,
+            isHost: i === hostIdx,
+          })),
+        });
+
+        const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
+        const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
+        allUserIds.push(...userIds);
+        teamsUserIds.push(userIds);
+
+        if (userIds.length > 0) {
+          await db.mixSessionPlayer.updateMany({
+            where: { sessionId: session.id, userId: { in: userIds } },
+            data: { status: "ASSIGNED", assignedAt: new Date() },
+          });
+        }
+        if (tempIds.length > 0) {
+          await db.mixSessionPlayer.updateMany({
+            where: { sessionId: session.id, tempPlayerId: { in: tempIds } },
+            data: { status: "ASSIGNED", assignedAt: new Date() },
+          });
+        }
+
+        cursor += 3;
+      }
+
+      await notifyMixReady(game, allUserIds);
+      await moveTeamsToDiscordVoice(game, teamsUserIds);
+
+      redirectToGame(game, `?success=1&session=${session.id}`);
+    }
+
+    // =========================
+    // VERSUS (STRICT 3v3, mêmes règles que Ranked — teams contre une
+    // team partenaire, file/lock/historique séparés des autres jeux)
+    // =========================
+    if (game === "VERSUS") {
+      const users = await db.user.findMany({
+        where: {
+          status: "ACTIVE",
+          registrationStatus: "APPROVED",
+          isAvailableForVersusMix: true,
+        },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const tempPlayers = await db.tempPlayer.findMany({
+        where: { game: "VERSUS", isAvailableForMix: true },
         select: { id: true },
         orderBy: { createdAt: "asc" },
       });

@@ -9,7 +9,7 @@ export type PoolPlayer = {
 };
 
 type PoolListProps = {
-  game: "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+  game: "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
   players: PoolPlayer[];
   canManage: boolean;
   managingAdminName?: string | null;

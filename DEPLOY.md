@@ -141,6 +141,14 @@ server {
   listen 80;
   server_name chama-gaming.site www.chama-gaming.site;
 
+  # ⚠️ Sans cette ligne, nginx retombe sur sa limite par défaut (1 Mo) et
+  # coupe la connexion en plein upload dès qu'une image dépasse 1 Mo (ex:
+  # cover d'événement) — ça se voit côté navigateur comme une erreur générique
+  # "This page couldn't load, reload to try again" plutôt qu'un message
+  # propre de l'app. Alignée sur la limite Server Actions de next.config.ts
+  # (bodySizeLimit: 25mb).
+  client_max_body_size 25m;
+
   location / {
     proxy_pass http://127.0.0.1:3010;
     proxy_http_version 1.1;
@@ -158,6 +166,16 @@ server {
 Activer et recharger :
 ```bash
 sudo ln -s /etc/nginx/sites-available/chama /etc/nginx/sites-enabled/chama
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+⚠️ **Si le site est déjà en prod** : ce bloc n'est appliqué qu'à l'installation
+initiale. Pour corriger un site existant, éditer directement le fichier déployé
+et ajouter la ligne `client_max_body_size 25m;` dans le bloc `server{}` :
+```bash
+sudo nano /etc/nginx/sites-available/chama
+# ajouter : client_max_body_size 25m;
 sudo nginx -t
 sudo systemctl reload nginx
 ```
