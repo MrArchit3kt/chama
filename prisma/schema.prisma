@@ -287,6 +287,11 @@ model User {
   notes         String?
   isChamaMember Boolean @default(false)
 
+  // ✅ Appartenance à la team partenaire AURA (affichage/tag uniquement,
+  // pour différencier visuellement les joueurs de chaque team côté admin —
+  // pas de pop-up de bienvenue dédié, contrairement à isChamaMember).
+  isAuraMember Boolean @default(false)
+
   // ✅ Pop-up de bienvenue "membre CHAMA" : null => pas encore vu, réinitialisé
   // à chaque fois qu'un admin active le statut membre.
   chamaWelcomeSeenAt DateTime?
