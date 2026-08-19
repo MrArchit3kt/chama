@@ -9,6 +9,7 @@ import { revokeWarning } from "@/server/admin/revoke-warning";
 import { liftBan } from "@/server/admin/lift-ban";
 import { resetPlayerPassword } from "@/server/admin/reset-player-password";
 import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
+import { toggleAuraMember } from "@/server/admin/toggle-aura-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
 import { banPlayer } from "@/server/admin/ban-player";
 import { awardBadge } from "@/server/admin/award-badge";
@@ -131,6 +132,7 @@ export default async function AdminPlayersPage({
     unbanned?: string;
     password_reset?: string;
     chama?: string;
+    aura?: string;
     role_updated?: string;
     manual_banned?: string;
     badge_awarded?: string;
@@ -155,6 +157,8 @@ export default async function AdminPlayersPage({
   const isPasswordReset = sp.password_reset === "1";
   const isChamaEnabled = sp.chama === "1";
   const isChamaDisabled = sp.chama === "0";
+  const isAuraEnabled = sp.aura === "1";
+  const isAuraDisabled = sp.aura === "0";
   const isRoleUpdated = sp.role_updated === "1";
   const isManuallyBanned = sp.manual_banned === "1";
   const isBadgeAwarded = sp.badge_awarded === "1";
@@ -210,6 +214,7 @@ export default async function AdminPlayersPage({
       createdAt: true,
       lastSeenAt: true,
       isChamaMember: true,
+      isAuraMember: true,
       badges: {
         select: {
           badgeId: true,
@@ -271,6 +276,7 @@ export default async function AdminPlayersPage({
       createdAt: player.createdAt,
       lastSeenAt: player.lastSeenAt,
       isChamaMember: player.isChamaMember,
+      isAuraMember: player.isAuraMember,
       badges: player.badges,
 
       inactiveDays,
@@ -284,6 +290,7 @@ export default async function AdminPlayersPage({
 
   const alertCount = rows.filter((row) => row.shouldAlert).length;
   const chamaCount = rows.filter((row) => row.isChamaMember).length;
+  const auraCount = rows.filter((row) => row.isAuraMember).length;
 
   const badgeCatalog = await db.badge.findMany({
     orderBy: { name: "asc" },
@@ -311,7 +318,7 @@ export default async function AdminPlayersPage({
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 md:gap-3">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
                 <div className="neon-card-soft px-2 py-1.5 md:px-4 md:py-3">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-cyan-300/75 md:text-xs md:tracking-[0.18em]">
                     Total
@@ -327,6 +334,15 @@ export default async function AdminPlayersPage({
                   </p>
                   <p className="mt-0.5 text-base font-black text-white md:mt-1 md:text-2xl">
                     {chamaCount}
+                  </p>
+                </div>
+
+                <div className="neon-card-soft px-2 py-1.5 md:px-4 md:py-3">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-fuchsia-300/75 md:text-xs md:tracking-[0.18em]">
+                    AURA
+                  </p>
+                  <p className="mt-0.5 text-base font-black text-white md:mt-1 md:text-2xl">
+                    {auraCount}
                   </p>
                 </div>
 
@@ -456,6 +472,22 @@ export default async function AdminPlayersPage({
           </div>
         ) : null}
 
+        {isAuraEnabled ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-fuchsia-300">
+              Membre AURA activé avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        {isAuraDisabled ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">
+              Membre AURA désactivé avec succès.
+            </p>
+          </div>
+        ) : null}
+
         {isRoleUpdated ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-cyan-300">
@@ -534,6 +566,12 @@ export default async function AdminPlayersPage({
                       >
                         {player.isChamaMember ? "Membre CHAMA" : "Externe"}
                       </span>
+
+                      {player.isAuraMember ? (
+                        <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-fuchsia-300 md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]">
+                          Membre AURA
+                        </span>
+                      ) : null}
 
                       {player.shouldAlert ? (
                         <span className="rounded-full border border-amber-400/20 bg-amber-300/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-amber-300 md:px-3 md:py-1 md:text-[11px] md:tracking-[0.18em]">
@@ -635,6 +673,38 @@ export default async function AdminPlayersPage({
                           }`}
                         >
                           {player.isChamaMember ? "Retirer de la team" : "Activer membre CHAMA"}
+                        </button>
+                      </form>
+                    </div>
+
+                    <div className="rounded-2xl border border-fuchsia-400/10 bg-fuchsia-400/[0.03] p-2.5 md:p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fuchsia-300/75">
+                        Statut team AURA
+                      </p>
+
+                      <p className="neon-text-muted mt-1 md:mt-1.5 text-sm leading-6">
+                        Ce joueur est actuellement{" "}
+                        <span className="font-semibold text-white">
+                          {player.isAuraMember ? "dans la team AURA" : "hors team AURA"}
+                        </span>
+                        .
+                      </p>
+
+                      <form action={toggleAuraMember} className="mt-1.5 md:mt-2">
+                        <input type="hidden" name="userId" value={player.id} />
+                        <input
+                          type="hidden"
+                          name="nextValue"
+                          value={player.isAuraMember ? "false" : "true"}
+                        />
+
+                        <button
+                          type="submit"
+                          className={`w-full px-5 py-2 md:py-2.5 ${
+                            player.isAuraMember ? "neon-button-secondary" : "neon-button"
+                          }`}
+                        >
+                          {player.isAuraMember ? "Retirer de la team" : "Activer membre AURA"}
                         </button>
                       </form>
                     </div>
