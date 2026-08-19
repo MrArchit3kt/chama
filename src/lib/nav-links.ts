@@ -8,10 +8,9 @@ import {
   Trophy,
   Swords,
   Rocket,
-  Award,
   Car,
   Radio,
-  Headphones,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +30,7 @@ export const mainLinks: NavLink[] = [
   { href: "/profil", label: "Profil", icon: UserCircle2 },
   { href: "/warzone", label: "Warzone", icon: Crosshair },
   { href: "/ranked", label: "Ranked", icon: Trophy },
+  { href: "/versus", label: "Versus", icon: Handshake },
   { href: "/bo7", label: "BO7", icon: Swords },
   { href: "/rocket-league", label: "Rocket League", icon: Rocket },
   { href: "/gta6", label: "GTA 6", icon: Car },
@@ -42,13 +42,12 @@ export const adminLinks: NavLink[] = [
   { href: "/admin/players", label: "Admin Players", icon: Users },
   { href: "/admin/registrations", label: "Admin Inscriptions", icon: Users },
   { href: "/admin/contact", label: "Admin Contact", icon: Mail },
-  { href: "/admin/badges", label: "Admin Badges", icon: Award },
-  { href: "/admin/discord", label: "Admin Discord", icon: Headphones },
 ];
 
 export const adminMixLinks: NavLink[] = [
   { href: "/admin/mix/warzone", label: "Mix Warzone", icon: Crosshair },
   { href: "/admin/mix/warzone-ranked", label: "Mix Ranked", icon: Trophy },
+  { href: "/admin/mix/versus", label: "Mix Versus", icon: Handshake },
   { href: "/admin/mix/bo7", label: "Mix BO7", icon: Swords },
   { href: "/admin/mix/rocket-league", label: "Mix Rocket League", icon: Rocket },
 ];

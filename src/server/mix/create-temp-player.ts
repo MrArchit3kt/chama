@@ -6,7 +6,7 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 const RL_RANKS = [
   "BRONZE",
@@ -20,7 +20,7 @@ const RL_RANKS = [
 ] as const;
 
 const createTempPlayerSchema = z.object({
-  game: z.enum(["WARZONE", "WARZONE_RANKED", "BO7", "ROCKET_LEAGUE"]).default("WARZONE"),
+  game: z.enum(["WARZONE", "WARZONE_RANKED", "BO7", "ROCKET_LEAGUE", "VERSUS"]).default("WARZONE"),
   nickname: z.string().trim().min(2).max(40),
   note: z.string().trim().max(200).optional(),
   rocketLeagueRank: z.enum(RL_RANKS).optional(),
@@ -40,6 +40,7 @@ function backTo(game: MixGame): string {
   if (game === "WARZONE") return "/admin/mix/warzone";
   if (game === "WARZONE_RANKED") return "/admin/mix/warzone-ranked";
   if (game === "BO7") return "/admin/mix/bo7";
+  if (game === "VERSUS") return "/admin/mix/versus";
   return "/admin/mix/rocket-league";
 }
 
@@ -55,7 +56,9 @@ export async function createTempPlayer(formData: FormData) {
         ? "WARZONE_RANKED"
         : rawGame === "BO7"
           ? "BO7"
-          : "WARZONE";
+          : rawGame === "VERSUS"
+            ? "VERSUS"
+            : "WARZONE";
 
   const parsed = createTempPlayerSchema.safeParse({
     game,

@@ -15,10 +15,16 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-type Game = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+type Game = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 function isGame(value: string): value is Game {
-  return value === "WARZONE" || value === "WARZONE_RANKED" || value === "BO7" || value === "ROCKET_LEAGUE";
+  return (
+    value === "WARZONE" ||
+    value === "WARZONE_RANKED" ||
+    value === "BO7" ||
+    value === "ROCKET_LEAGUE" ||
+    value === "VERSUS"
+  );
 }
 
 export async function createDiscordVoiceChannel(formData: FormData) {

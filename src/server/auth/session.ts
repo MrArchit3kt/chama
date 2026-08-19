@@ -131,6 +131,35 @@ export async function getChamaWelcomeState(): Promise<boolean> {
   }
 }
 
+/**
+ * True si l'utilisateur connecté vient de voir son inscription validée par
+ * un admin et n'a pas encore vu le pop-up de félicitations (voir
+ * approveRegistration / markApprovalWelcomeSeen). Même logique dédiée que
+ * getChamaWelcomeState : requête minimale, pas de champs superflus sur
+ * SessionUser.
+ */
+export async function getApprovalWelcomeState(): Promise<boolean> {
+  try {
+    const session = await getServerSession(authOptions);
+    const id = (session?.user as { id?: string } | undefined)?.id;
+    if (!id) return false;
+
+    const user = await db.user.findUnique({
+      where: { id },
+      select: { registrationStatus: true, approvalWelcomeSeenAt: true, status: true },
+    });
+
+    return Boolean(
+      user?.registrationStatus === "APPROVED" &&
+        !user.approvalWelcomeSeenAt &&
+        user.status === "ACTIVE",
+    );
+  } catch (error) {
+    await logServerError("GET_APPROVAL_WELCOME_STATE_ERROR", error);
+    return false;
+  }
+}
+
 export async function requireAdmin() {
   try {
     const user = await requireAuth();

@@ -156,6 +156,7 @@ enum MixGame {
   WARZONE_RANKED
   BO7
   ROCKET_LEAGUE
+  VERSUS
 }
 
 /** ✅ Résultat d'une partie renseigné par un admin après coup (facultatif). */
@@ -290,6 +291,11 @@ model User {
   // à chaque fois qu'un admin active le statut membre.
   chamaWelcomeSeenAt DateTime?
 
+  // ✅ Pop-up de félicitations à la 1ère connexion après validation de
+  // l'inscription : null => pas encore vu. Backfillée à `now()` pour les
+  // comptes déjà APPROVED au moment de l'ajout de ce champ (voir migration).
+  approvalWelcomeSeenAt DateTime?
+
   // Rocket League
   rocketLeagueRank RocketLeagueRank?
 
@@ -307,6 +313,7 @@ model User {
   isAvailableForWarzoneRankedMix Boolean @default(false)
   isAvailableForBO7Mix           Boolean @default(false)
   isAvailableForRocketLeagueMix  Boolean @default(false)
+  isAvailableForVersusMix        Boolean @default(false)
 
   lastSeenAt  DateTime?
   lastLoginAt DateTime?
@@ -365,6 +372,7 @@ model User {
   @@index([isAvailableForWarzoneRankedMix])
   @@index([isAvailableForBO7Mix])
   @@index([isAvailableForRocketLeagueMix])
+  @@index([isAvailableForVersusMix])
 
   @@index([rocketLeagueRank])
   @@index([warzoneRankTier])

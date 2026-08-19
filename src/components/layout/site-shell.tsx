@@ -6,8 +6,9 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { ScrollRestoration } from "@/components/layout/scroll-restoration";
 import { ChamaWelcomePopup } from "@/components/layout/chama-welcome-popup";
+import { ApprovalWelcomePopup } from "@/components/layout/approval-welcome-popup";
 import { SiteThemeOverlay } from "@/components/theme/site-theme-overlay";
-import { getSessionUser, getChamaWelcomeState } from "@/server/auth/session";
+import { getSessionUser, getChamaWelcomeState, getApprovalWelcomeState } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 
 type SiteShellProps = {
@@ -15,8 +16,9 @@ type SiteShellProps = {
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
-  const [user, showChamaWelcome, config] = await Promise.all([
+  const [user, showApprovalWelcome, showChamaWelcome, config] = await Promise.all([
     getSessionUser(),
+    getApprovalWelcomeState(),
     getChamaWelcomeState(),
     db.siteConfig.findUnique({ where: { id: "main" }, select: { theme: true } }),
   ]);
@@ -29,7 +31,13 @@ export async function SiteShell({ children }: SiteShellProps) {
       <AutoRefresh intervalMs={8000} />
       <ScrollRestoration />
       <SiteThemeOverlay theme={config?.theme ?? "DEFAULT"} />
-      {showChamaWelcome ? <ChamaWelcomePopup /> : null}
+      {/* Une seule pop-up de célébration à la fois : priorité à celle de
+          validation de compte si les deux sont vraies (cas rare). */}
+      {showApprovalWelcome ? (
+        <ApprovalWelcomePopup />
+      ) : showChamaWelcome ? (
+        <ChamaWelcomePopup />
+      ) : null}
 
       <div className="mx-auto max-w-7xl">
         <MobileNav canSeeAdmin={canSeeAdmin} />

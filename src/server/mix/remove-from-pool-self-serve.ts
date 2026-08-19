@@ -19,7 +19,13 @@ function isNextRedirectError(error: unknown) {
 function gameFrom(v: unknown): MixGame | null {
   if (typeof v !== "string") return null;
   const g = v.trim().toUpperCase();
-  if (g === "WARZONE" || g === "WARZONE_RANKED" || g === "BO7" || g === "ROCKET_LEAGUE") {
+  if (
+    g === "WARZONE" ||
+    g === "WARZONE_RANKED" ||
+    g === "BO7" ||
+    g === "ROCKET_LEAGUE" ||
+    g === "VERSUS"
+  ) {
     return g as MixGame;
   }
   return null;
@@ -29,6 +35,7 @@ function backTo(game: MixGame) {
   if (game === "WARZONE") return "/warzone";
   if (game === "WARZONE_RANKED") return "/ranked";
   if (game === "BO7") return "/bo7";
+  if (game === "VERSUS") return "/versus";
   return "/rocket-league";
 }
 
@@ -36,6 +43,7 @@ function availabilityField(game: MixGame) {
   if (game === "WARZONE") return "isAvailableForWarzoneMix" as const;
   if (game === "WARZONE_RANKED") return "isAvailableForWarzoneRankedMix" as const;
   if (game === "BO7") return "isAvailableForBO7Mix" as const;
+  if (game === "VERSUS") return "isAvailableForVersusMix" as const;
   return "isAvailableForRocketLeagueMix" as const;
 }
 

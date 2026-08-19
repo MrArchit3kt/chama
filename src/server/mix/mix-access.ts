@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/prisma";
 
-export type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+export type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 /**
  * Un joueur peut gérer la file (générer, retirer un autre joueur bloqué)

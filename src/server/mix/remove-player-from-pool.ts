@@ -5,7 +5,7 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 
-type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE";
+type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -22,6 +22,7 @@ function gameFrom(v: unknown): MixGame {
   if (g === "ROCKET_LEAGUE") return "ROCKET_LEAGUE";
   if (g === "WARZONE_RANKED") return "WARZONE_RANKED";
   if (g === "BO7") return "BO7";
+  if (g === "VERSUS") return "VERSUS";
   return "WARZONE";
 }
 
@@ -29,6 +30,7 @@ function backTo(game: MixGame) {
   if (game === "ROCKET_LEAGUE") return "/admin/mix/rocket-league";
   if (game === "WARZONE_RANKED") return "/admin/mix/warzone-ranked";
   if (game === "BO7") return "/admin/mix/bo7";
+  if (game === "VERSUS") return "/admin/mix/versus";
   return "/admin/mix/warzone";
 }
 
@@ -58,6 +60,11 @@ export async function removePlayerFromPool(formData: FormData) {
         await db.user.update({
           where: { id: userId },
           data: { isAvailableForBO7Mix: false, isOnline: false },
+        });
+      } else if (game === "VERSUS") {
+        await db.user.update({
+          where: { id: userId },
+          data: { isAvailableForVersusMix: false, isOnline: false },
         });
       } else {
         await db.user.update({
