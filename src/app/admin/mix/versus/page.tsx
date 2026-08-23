@@ -15,7 +15,9 @@ import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 function getErrorMessage(error?: string) {
   switch (error) {
     case "invalid_count":
-      return "En Versus, le mix doit être en 4v4 uniquement : il faut un nombre de joueurs divisible par 4 (ex: 4, 8, 12, 16...).";
+      return "Nombre de joueurs invalide pour le format Versus choisi (doit être divisible par la taille d’équipe).";
+    case "no_team_size":
+      return "Choisis d’abord le format 2v2, 3v3 ou 4v4 pour Versus.";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -27,10 +29,18 @@ function getErrorMessage(error?: string) {
   }
 }
 
-function formatVersusPreview(total: number) {
-  if (total < 4) return "Impossible";
-  if (total % 4 !== 0) return "Impossible";
-  return `${total / 4}x4`;
+function versusTeamSizeNumber(size?: "TWO" | "THREE" | "FOUR" | null): 2 | 3 | 4 | null {
+  if (size === "TWO") return 2;
+  if (size === "THREE") return 3;
+  if (size === "FOUR") return 4;
+  return null;
+}
+
+function formatVersusPreview(total: number, size: 2 | 3 | 4 | null) {
+  if (!size) return "Format ?";
+  if (total < size) return "Impossible";
+  if (total % size !== 0) return "Impossible";
+  return `${total / size}x${size}`;
 }
 
 export default async function AdminMixVersusPage({
@@ -137,15 +147,17 @@ export default async function AdminMixVersusPage({
     select: {
       game: true,
       selectedUserId: true,
+      versusTeamSize: true,
       selectedUser: {
         select: { id: true, displayName: true, username: true, role: true },
       },
     },
   });
 
+  const versusTeamSize = versusTeamSizeNumber(mixLock?.versusTeamSize);
   const totalPoolCount = availableUsers.length + availableTempPlayers.length;
-  const poolDistribution = formatVersusPreview(totalPoolCount);
-  const canGenerateByCount = poolDistribution !== "Impossible";
+  const poolDistribution = formatVersusPreview(totalPoolCount, versusTeamSize);
+  const canGenerateByCount = !!versusTeamSize && poolDistribution !== "Impossible";
 
   const canCurrentAdminGenerate =
     !!mixLock?.selectedUserId && mixLock.selectedUserId === admin.id;
@@ -201,12 +213,12 @@ export default async function AdminMixVersusPage({
             Versus Mix (Admin)
           </p>
           <h2 className="neon-title neon-gradient-text mt-2 text-2xl font-black md:text-3xl">
-            Mix Versus — 4v4 only
+            Mix Versus — 2v2 / 3v3 / 4v4
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:text-base">
-            Le Versus est strict : génération uniquement en équipes de 4 (aucun 3v3, aucun banc).
-            Les pools, locks et invités sont séparés des autres jeux — sert à composer les
-            teams face à une team partenaire.
+            Le Versus est strict : génération uniquement dans le format choisi ci-dessous
+            (aucun banc, aucun mélange de tailles). Les pools, locks et invités sont séparés
+            des autres jeux — sert à composer les teams face à une team partenaire.
           </p>
         </div>
 
@@ -271,7 +283,7 @@ export default async function AdminMixVersusPage({
                     Contrôle du générateur (Versus)
                   </h3>
                   <p className="neon-text-muted mt-1 text-xs leading-5">
-                    Un seul admin peut générer le mix Versus à la fois.
+                    Un seul admin peut générer le mix Versus à la fois. Choisis aussi le format.
                   </p>
                 </div>
 
@@ -284,12 +296,18 @@ export default async function AdminMixVersusPage({
                       ? `${mixLock.selectedUser.displayName} (@${mixLock.selectedUser.username})`
                       : "Aucun admin"}
                   </p>
+                  <p className="mt-1 text-[11px] text-white/60">
+                    Format :{" "}
+                    <span className="text-white">
+                      {versusTeamSize ? `${versusTeamSize}v${versusTeamSize}` : "Non défini"}
+                    </span>
+                  </p>
                 </div>
               </div>
 
               <form
                 action={setMixGenerator}
-                className="grid gap-2 sm:grid-cols-[1fr_auto]"
+                className="grid gap-2 sm:grid-cols-[1fr_140px_auto]"
               >
                 <input type="hidden" name="game" value="VERSUS" />
 
@@ -304,6 +322,17 @@ export default async function AdminMixVersusPage({
                       {item.displayName} (@{item.username}) — {item.role}
                     </option>
                   ))}
+                </select>
+
+                <select
+                  name="versusTeamSize"
+                  defaultValue={mixLock?.versusTeamSize ?? ""}
+                  className="w-full px-3 py-2.5 text-sm"
+                >
+                  <option value="">Format ?</option>
+                  <option value="TWO">2v2</option>
+                  <option value="THREE">3v3</option>
+                  <option value="FOUR">4v4</option>
                 </select>
 
                 <button
@@ -372,7 +401,9 @@ export default async function AdminMixVersusPage({
                 {totalPoolCount} joueur{totalPoolCount > 1 ? "s" : ""} dans le pool
               </h3>
               <p className="neon-text-muted mt-2 text-sm">
-                Répartition Versus : uniquement en 4v4. Total doit être divisible par 4.
+                {versusTeamSize
+                  ? `Répartition Versus : format ${versusTeamSize}v${versusTeamSize}. Total doit être divisible par ${versusTeamSize}.`
+                  : "Choisis d’abord un format (2v2/3v3/4v4) ci-dessus pour pouvoir générer."}
               </p>
             </div>
 

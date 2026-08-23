@@ -12,6 +12,7 @@ import {
   getTeamSizesVersus,
   buildRocketLeagueTeams,
   teamSizeFromLock,
+  versusTeamSizeFromLock,
 } from "@/server/mix/mix-logic";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
@@ -265,7 +266,7 @@ export async function generateMix(formData: FormData) {
 
   const lock = await db.mixGenerationLock.findUnique({
     where: { game },
-    select: { selectedUserId: true, rocketLeagueTeamSize: true },
+    select: { selectedUserId: true, rocketLeagueTeamSize: true, versusTeamSize: true },
   });
 
   // Auth rules
@@ -414,10 +415,14 @@ export async function generateMix(formData: FormData) {
     }
 
     // =========================
-    // VERSUS (STRICT 4v4 — teams contre une team partenaire, file/lock/
-    // historique séparés des autres jeux)
+    // VERSUS (STRICT, format 2v2/3v3/4v4 choisi par un admin — teams
+    // contre une team partenaire, file/lock/historique séparés des
+    // autres jeux)
     // =========================
     if (game === "VERSUS") {
+      const versusTeamSize = versusTeamSizeFromLock(lock?.versusTeamSize);
+      if (!versusTeamSize) redirectToGame(game, "?error=no_team_size");
+
       const users = await db.user.findMany({
         where: {
           status: "ACTIVE",
@@ -439,8 +444,8 @@ export async function generateMix(formData: FormData) {
         ...tempPlayers.map((t) => ({ kind: "TEMP" as const, id: t.id })),
       ];
 
-      const sizes = getTeamSizesVersus(pool.length);
-      if (!sizes) redirectToGame(game, "?error=invalid_count"); // => pas divisible par 4
+      const sizes = getTeamSizesVersus(pool.length, versusTeamSize);
+      if (!sizes) redirectToGame(game, "?error=invalid_count"); // => pas divisible par le format choisi
 
       const shuffled = shuffle(pool);
 
@@ -470,7 +475,7 @@ export async function generateMix(formData: FormData) {
       const teamsUserIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
-        const chunk = shuffled.slice(cursor, cursor + 4);
+        const chunk = shuffled.slice(cursor, cursor + versusTeamSize);
 
         const team = await db.team.create({
           data: { sessionId: session.id, teamNumber: idx + 1 },
@@ -505,7 +510,7 @@ export async function generateMix(formData: FormData) {
           });
         }
 
-        cursor += 4;
+        cursor += versusTeamSize;
       }
 
       await notifyMixReady(game, allUserIds);

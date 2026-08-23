@@ -181,6 +181,13 @@ enum RocketLeagueTeamSize {
   THREE
 }
 
+/** ✅ Versus : format choisi par un admin (2v2 / 3v3 / 4v4), comme Rocket League. */
+enum VersusTeamSize {
+  TWO
+  THREE
+  FOUR
+}
+
 /**
  * ✅ Warzone Ranked tiers (simple & efficace)
  * (si tu veux plus tard "Bronze I/II/III" etc, on pourra raffiner)
@@ -711,6 +718,9 @@ model MixGenerationLock {
 
   // Rocket League : format autorisé (2v2/3v3) pour la génération
   rocketLeagueTeamSize RocketLeagueTeamSize?
+
+  // Versus : format choisi (2v2/3v3/4v4) pour la génération
+  versusTeamSize VersusTeamSize?
 
   updatedAt DateTime @default(now()) @updatedAt
 
