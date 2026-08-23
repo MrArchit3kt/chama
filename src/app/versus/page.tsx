@@ -24,7 +24,9 @@ function getErrorMessage(error?: string) {
     case "pool_forbidden":
       return "Un admin gère actuellement la file : tu ne peux pas retirer de joueur.";
     case "invalid_count":
-      return "En Versus, le mix doit être en 4v4 uniquement : il faut un nombre de joueurs divisible par 4.";
+      return "Nombre de joueurs invalide pour le format Versus choisi (doit être divisible par la taille d’équipe).";
+    case "no_team_size":
+      return "Un admin doit d’abord choisir le format 2v2, 3v3 ou 4v4 avant de pouvoir générer.";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -62,6 +64,20 @@ export default async function VersusPage({
   const isRemoved = sp.removed === "1";
   const sessionId = sp.session;
   const isInQueue = !!user.isAvailableForVersusMix;
+
+  const lock = await db.mixGenerationLock.findUnique({
+    where: { game: "VERSUS" },
+    select: { versusTeamSize: true },
+  });
+
+  const versusFormatLabel =
+    lock?.versusTeamSize === "TWO"
+      ? "2v2"
+      : lock?.versusTeamSize === "THREE"
+        ? "3v3"
+        : lock?.versusTeamSize === "FOUR"
+          ? "4v4"
+          : "Non défini";
 
   const [queueUsers, queueTempPlayers, canManagePool, managingAdminName] = await Promise.all([
     db.user.findMany({
@@ -156,10 +172,10 @@ export default async function VersusPage({
             Mix Versus — Team partenaire
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
-            Le Versus est strict : équipes de 4 uniquement, séparé des files
-            Ranked/Warzone/BO7. Rejoins la file pour être pris en compte, puis
-            consulte toutes les équipes (la tienne en premier) avant de lancer
-            les games face à la team partenaire.
+            Le Versus est strict : génération dans le format choisi par un admin
+            (2v2, 3v3 ou 4v4), séparé des files Ranked/Warzone/BO7. Rejoins la file
+            pour être pris en compte, puis consulte toutes les équipes (la tienne
+            en premier) avant de lancer les games face à la team partenaire.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -176,6 +192,8 @@ export default async function VersusPage({
             <span className="neon-badge">
               {queueCount} joueur{queueCount > 1 ? "s" : ""} dans la file
             </span>
+
+            <span className="neon-badge">Format : {versusFormatLabel}</span>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 sm:max-w-lg">

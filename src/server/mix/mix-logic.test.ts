@@ -7,6 +7,7 @@ import {
   rankIndex,
   shuffle,
   teamSizeFromLock,
+  versusTeamSizeFromLock,
 } from "./mix-logic";
 
 describe("getTeamSizesFourThree (Warzone / BO7)", () => {
@@ -56,20 +57,37 @@ describe("getTeamSizesWarzoneRanked (strict 3v3)", () => {
   });
 });
 
-describe("getTeamSizesVersus (strict 4v4)", () => {
-  it("refuse un pool non divisible par 4", () => {
-    expect(getTeamSizesVersus(1)).toBeNull();
-    expect(getTeamSizesVersus(2)).toBeNull();
-    expect(getTeamSizesVersus(3)).toBeNull();
-    expect(getTeamSizesVersus(6)).toBeNull();
-    expect(getTeamSizesVersus(10)).toBeNull();
+describe("getTeamSizesVersus (format 2v2/3v3/4v4 choisi par un admin)", () => {
+  it("refuse un pool non divisible par la taille d'équipe choisie", () => {
+    expect(getTeamSizesVersus(1, 2)).toBeNull();
+    expect(getTeamSizesVersus(3, 2)).toBeNull();
+    expect(getTeamSizesVersus(1, 3)).toBeNull();
+    expect(getTeamSizesVersus(2, 3)).toBeNull();
+    expect(getTeamSizesVersus(1, 4)).toBeNull();
+    expect(getTeamSizesVersus(6, 4)).toBeNull();
   });
 
-  it("accepte uniquement des multiples de 4", () => {
-    expect(getTeamSizesVersus(4)).toEqual([4]);
-    expect(getTeamSizesVersus(8)).toEqual([4, 4]);
-    expect(getTeamSizesVersus(12)).toEqual([4, 4, 4]);
-    expect(getTeamSizesVersus(0)).toBeNull(); // total < 4
+  it("accepte uniquement des multiples de la taille choisie", () => {
+    expect(getTeamSizesVersus(2, 2)).toEqual([2]);
+    expect(getTeamSizesVersus(6, 2)).toEqual([2, 2, 2]);
+    expect(getTeamSizesVersus(3, 3)).toEqual([3]);
+    expect(getTeamSizesVersus(9, 3)).toEqual([3, 3, 3]);
+    expect(getTeamSizesVersus(4, 4)).toEqual([4]);
+    expect(getTeamSizesVersus(8, 4)).toEqual([4, 4]);
+    expect(getTeamSizesVersus(0, 4)).toBeNull(); // total < teamSize
+  });
+});
+
+describe("versusTeamSizeFromLock", () => {
+  it("convertit l'enum Prisma en taille numérique", () => {
+    expect(versusTeamSizeFromLock("TWO")).toBe(2);
+    expect(versusTeamSizeFromLock("THREE")).toBe(3);
+    expect(versusTeamSizeFromLock("FOUR")).toBe(4);
+  });
+
+  it("renvoie null si aucun format n'est verrouillé", () => {
+    expect(versusTeamSizeFromLock(null)).toBeNull();
+    expect(versusTeamSizeFromLock(undefined)).toBeNull();
   });
 });
 

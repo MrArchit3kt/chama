@@ -7,6 +7,7 @@ import { logServerError } from "@/lib/log-error";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 type RLTeamSize = "TWO" | "THREE";
+type VersusTeamSize = "TWO" | "THREE" | "FOUR";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -40,6 +41,13 @@ function rlTeamSizeFrom(v: unknown): RLTeamSize | null {
   return null;
 }
 
+function versusTeamSizeFrom(v: unknown): VersusTeamSize | null {
+  if (typeof v !== "string") return null;
+  const x = v.trim().toUpperCase();
+  if (x === "TWO" || x === "THREE" || x === "FOUR") return x as VersusTeamSize;
+  return null;
+}
+
 function redirectTo(game: MixGame, qs: string): never {
   const backTo =
     game === "WARZONE"
@@ -62,8 +70,10 @@ export async function setMixGenerator(formData: FormData) {
   const game = gameFrom(formData.get("game")) ?? "WARZONE";
   const selectedAdminId = String(formData.get("selectedAdminId") ?? "").trim();
 
-  // RL uniquement
+  // RL / Versus uniquement
   const rlTeamSize = game === "ROCKET_LEAGUE" ? rlTeamSizeFrom(formData.get("rlTeamSize")) : null;
+  const versusTeamSize =
+    game === "VERSUS" ? versusTeamSizeFrom(formData.get("versusTeamSize")) : null;
 
   try {
     // ✅ CLEAR sélection
@@ -74,10 +84,12 @@ export async function setMixGenerator(formData: FormData) {
           game,
           selectedUserId: null,
           rocketLeagueTeamSize: game === "ROCKET_LEAGUE" ? (rlTeamSize ?? null) : null,
+          versusTeamSize: game === "VERSUS" ? (versusTeamSize ?? null) : null,
         },
         update: {
           selectedUserId: null,
           ...(game === "ROCKET_LEAGUE" ? { rocketLeagueTeamSize: rlTeamSize ?? null } : {}),
+          ...(game === "VERSUS" ? { versusTeamSize: versusTeamSize ?? null } : {}),
         },
       });
 
@@ -107,16 +119,23 @@ export async function setMixGenerator(formData: FormData) {
       redirectTo(game, "?error=no_team_size");
     }
 
+    // ✅ Versus : exige le choix 2v2/3v3/4v4 quand on enregistre
+    if (game === "VERSUS" && !versusTeamSize) {
+      redirectTo(game, "?error=no_team_size");
+    }
+
     await db.mixGenerationLock.upsert({
       where: { game },
       create: {
         game,
         selectedUserId: selectedAdmin.id,
         rocketLeagueTeamSize: game === "ROCKET_LEAGUE" ? rlTeamSize : null,
+        versusTeamSize: game === "VERSUS" ? versusTeamSize : null,
       },
       update: {
         selectedUserId: selectedAdmin.id,
         ...(game === "ROCKET_LEAGUE" ? { rocketLeagueTeamSize: rlTeamSize } : {}),
+        ...(game === "VERSUS" ? { versusTeamSize: versusTeamSize } : {}),
       },
     });
 
