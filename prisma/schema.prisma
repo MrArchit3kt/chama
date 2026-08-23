@@ -183,6 +183,7 @@ enum RocketLeagueTeamSize {
 
 /** ✅ Versus : format choisi par un admin (2v2 / 3v3 / 4v4), comme Rocket League. */
 enum VersusTeamSize {
+  ONE
   TWO
   THREE
   FOUR

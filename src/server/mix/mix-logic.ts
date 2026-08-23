@@ -7,7 +7,7 @@
  */
 
 export type RocketLeagueTeamSizeLock = "TWO" | "THREE";
-export type VersusTeamSizeLock = "TWO" | "THREE" | "FOUR";
+export type VersusTeamSizeLock = "ONE" | "TWO" | "THREE" | "FOUR";
 
 export function shuffle<T>(items: T[]): T[] {
   const arr = [...items];
@@ -41,11 +41,11 @@ export function getTeamSizesWarzoneRanked(total: number): number[] | null {
 }
 
 /**
- * VERSUS : strictement des équipes de taille fixe (format 2v2/3v3/4v4
+ * VERSUS : strictement des équipes de taille fixe (format 1v1/2v2/3v3/4v4
  * choisi par un admin, comme Rocket League) — teams contre une team
  * partenaire, aucun banc.
  */
-export function getTeamSizesVersus(total: number, teamSize: 2 | 3 | 4): number[] | null {
+export function getTeamSizesVersus(total: number, teamSize: 1 | 2 | 3 | 4): number[] | null {
   if (total < teamSize) return null;
   if (total % teamSize !== 0) return null;
   return Array(total / teamSize).fill(teamSize);
@@ -169,7 +169,8 @@ export function teamSizeFromLock(
 
 export function versusTeamSizeFromLock(
   v: VersusTeamSizeLock | null | undefined,
-): 2 | 3 | 4 | null {
+): 1 | 2 | 3 | 4 | null {
+  if (v === "ONE") return 1;
   if (v === "TWO") return 2;
   if (v === "THREE") return 3;
   if (v === "FOUR") return 4;

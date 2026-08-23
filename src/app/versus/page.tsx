@@ -26,7 +26,7 @@ function getErrorMessage(error?: string) {
     case "invalid_count":
       return "Nombre de joueurs invalide pour le format Versus choisi (doit être divisible par la taille d’équipe).";
     case "no_team_size":
-      return "Un admin doit d’abord choisir le format 2v2, 3v3 ou 4v4 avant de pouvoir générer.";
+      return "Un admin doit d’abord choisir le format 1v1, 2v2, 3v3 ou 4v4 avant de pouvoir générer.";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -71,13 +71,15 @@ export default async function VersusPage({
   });
 
   const versusFormatLabel =
-    lock?.versusTeamSize === "TWO"
-      ? "2v2"
-      : lock?.versusTeamSize === "THREE"
-        ? "3v3"
-        : lock?.versusTeamSize === "FOUR"
-          ? "4v4"
-          : "Non défini";
+    lock?.versusTeamSize === "ONE"
+      ? "1v1"
+      : lock?.versusTeamSize === "TWO"
+        ? "2v2"
+        : lock?.versusTeamSize === "THREE"
+          ? "3v3"
+          : lock?.versusTeamSize === "FOUR"
+            ? "4v4"
+            : "Non défini";
 
   const [queueUsers, queueTempPlayers, canManagePool, managingAdminName] = await Promise.all([
     db.user.findMany({
@@ -173,7 +175,7 @@ export default async function VersusPage({
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Le Versus est strict : génération dans le format choisi par un admin
-            (2v2, 3v3 ou 4v4), séparé des files Ranked/Warzone/BO7. Rejoins la file
+            (1v1, 2v2, 3v3 ou 4v4), séparé des files Ranked/Warzone/BO7. Rejoins la file
             pour être pris en compte, puis consulte toutes les équipes (la tienne
             en premier) avant de lancer les games face à la team partenaire.
           </p>

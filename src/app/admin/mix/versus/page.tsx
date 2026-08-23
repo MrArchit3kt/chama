@@ -17,7 +17,7 @@ function getErrorMessage(error?: string) {
     case "invalid_count":
       return "Nombre de joueurs invalide pour le format Versus choisi (doit être divisible par la taille d’équipe).";
     case "no_team_size":
-      return "Choisis d’abord le format 2v2, 3v3 ou 4v4 pour Versus.";
+      return "Choisis d’abord le format 1v1, 2v2, 3v3 ou 4v4 pour Versus.";
     case "locked":
       return "Un autre admin est actuellement sélectionné pour générer le mix Versus.";
     case "no_mix_admin":
@@ -29,14 +29,17 @@ function getErrorMessage(error?: string) {
   }
 }
 
-function versusTeamSizeNumber(size?: "TWO" | "THREE" | "FOUR" | null): 2 | 3 | 4 | null {
+function versusTeamSizeNumber(
+  size?: "ONE" | "TWO" | "THREE" | "FOUR" | null,
+): 1 | 2 | 3 | 4 | null {
+  if (size === "ONE") return 1;
   if (size === "TWO") return 2;
   if (size === "THREE") return 3;
   if (size === "FOUR") return 4;
   return null;
 }
 
-function formatVersusPreview(total: number, size: 2 | 3 | 4 | null) {
+function formatVersusPreview(total: number, size: 1 | 2 | 3 | 4 | null) {
   if (!size) return "Format ?";
   if (total < size) return "Impossible";
   if (total % size !== 0) return "Impossible";
@@ -213,7 +216,7 @@ export default async function AdminMixVersusPage({
             Versus Mix (Admin)
           </p>
           <h2 className="neon-title neon-gradient-text mt-2 text-2xl font-black md:text-3xl">
-            Mix Versus — 2v2 / 3v3 / 4v4
+            Mix Versus — 1v1 / 2v2 / 3v3 / 4v4
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:text-base">
             Le Versus est strict : génération uniquement dans le format choisi ci-dessous
@@ -330,6 +333,7 @@ export default async function AdminMixVersusPage({
                   className="w-full px-3 py-2.5 text-sm"
                 >
                   <option value="">Format ?</option>
+                  <option value="ONE">1v1</option>
                   <option value="TWO">2v2</option>
                   <option value="THREE">3v3</option>
                   <option value="FOUR">4v4</option>
@@ -403,7 +407,7 @@ export default async function AdminMixVersusPage({
               <p className="neon-text-muted mt-2 text-sm">
                 {versusTeamSize
                   ? `Répartition Versus : format ${versusTeamSize}v${versusTeamSize}. Total doit être divisible par ${versusTeamSize}.`
-                  : "Choisis d’abord un format (2v2/3v3/4v4) ci-dessus pour pouvoir générer."}
+                  : "Choisis d’abord un format (1v1/2v2/3v3/4v4) ci-dessus pour pouvoir générer."}
               </p>
             </div>
 

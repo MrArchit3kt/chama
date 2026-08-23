@@ -7,7 +7,7 @@ import { logServerError } from "@/lib/log-error";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 type RLTeamSize = "TWO" | "THREE";
-type VersusTeamSize = "TWO" | "THREE" | "FOUR";
+type VersusTeamSize = "ONE" | "TWO" | "THREE" | "FOUR";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -44,7 +44,7 @@ function rlTeamSizeFrom(v: unknown): RLTeamSize | null {
 function versusTeamSizeFrom(v: unknown): VersusTeamSize | null {
   if (typeof v !== "string") return null;
   const x = v.trim().toUpperCase();
-  if (x === "TWO" || x === "THREE" || x === "FOUR") return x as VersusTeamSize;
+  if (x === "ONE" || x === "TWO" || x === "THREE" || x === "FOUR") return x as VersusTeamSize;
   return null;
 }
 
@@ -119,7 +119,7 @@ export async function setMixGenerator(formData: FormData) {
       redirectTo(game, "?error=no_team_size");
     }
 
-    // ✅ Versus : exige le choix 2v2/3v3/4v4 quand on enregistre
+    // ✅ Versus : exige le choix 1v1/2v2/3v3/4v4 quand on enregistre
     if (game === "VERSUS" && !versusTeamSize) {
       redirectTo(game, "?error=no_team_size");
     }
