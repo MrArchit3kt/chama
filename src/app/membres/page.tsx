@@ -21,7 +21,7 @@ export default async function MembresPage() {
       rocketLeagueRank: true,
       warzoneRankTier: true,
     },
-    orderBy: [{ isOnline: "desc" }, { username: "asc" }],
+    orderBy: { username: "asc" },
   });
 
   const onlineCount = members.filter((m) => m.isOnline).length;
