@@ -202,7 +202,7 @@ export default async function AdminPlayersPage({
         : {}),
     },
     orderBy: {
-      createdAt: "asc",
+      displayName: "asc",
     },
     select: {
       id: true,
