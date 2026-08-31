@@ -5,6 +5,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { rocketLeagueRankLabel, warzoneRankTierLabel } from "@/lib/ranks";
+import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 
 export default async function MembresPage() {
   const sessionUser = await requireAuth();
@@ -20,6 +21,13 @@ export default async function MembresPage() {
       isChamaMember: true,
       rocketLeagueRank: true,
       warzoneRankTier: true,
+      warzoneUsername: true,
+      twitchUsername: true,
+      badges: {
+        select: {
+          badge: { select: { id: true, name: true, description: true, icon: true, color: true } },
+        },
+      },
     },
     orderBy: { username: "asc" },
   });
@@ -87,11 +95,46 @@ export default async function MembresPage() {
                   </div>
 
                   <p className="neon-text-muted mt-2 truncate text-[11px]">
+                    Warzone :{" "}
+                    <span className="text-white">{member.warzoneUsername || "Non renseigné"}</span>
+                  </p>
+                  <p className="neon-text-muted mt-1 truncate text-[11px]">
                     RL : <span className="text-white">{rocketLeagueRankLabel(member.rocketLeagueRank)}</span>
                   </p>
                   <p className="neon-text-muted mt-1 truncate text-[11px]">
                     Ranked WZ : <span className="text-white">{warzoneRankTierLabel(member.warzoneRankTier)}</span>
                   </p>
+
+                  {member.twitchUsername ? (
+                    <a
+                      href={`https://twitch.tv/${member.twitchUsername}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="neon-text-muted mt-1 block truncate text-[11px] hover:text-white"
+                    >
+                      Twitch : <span className="text-white">twitch.tv/{member.twitchUsername}</span>
+                    </a>
+                  ) : null}
+
+                  {member.badges.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {member.badges.map(({ badge }) => {
+                        const Icon = getBadgeIcon(badge.icon);
+                        const colorClasses = getBadgeColorClasses(badge.color);
+
+                        return (
+                          <span
+                            key={badge.id}
+                            title={badge.description}
+                            className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${colorClasses}`}
+                          >
+                            <Icon className="h-2.5 w-2.5" />
+                            {badge.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
