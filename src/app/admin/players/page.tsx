@@ -12,6 +12,7 @@ import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleAuraMember } from "@/server/admin/toggle-aura-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
 import { banPlayer } from "@/server/admin/ban-player";
+import { deletePlayer } from "@/server/admin/delete-player";
 import { awardBadge } from "@/server/admin/award-badge";
 import { revokeBadge } from "@/server/admin/revoke-badge";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
@@ -55,6 +56,12 @@ function getErrorMessage(error?: string) {
       return "Tu ne peux pas te bannir toi-même.";
     case "already_banned":
       return "Ce joueur est déjà banni.";
+    case "self_delete":
+      return "Tu ne peux pas supprimer ton propre compte.";
+    case "admin_delete_locked":
+      return "Impossible de supprimer un compte admin depuis cette page. Retire d’abord le rôle admin.";
+    case "has_related_records":
+      return "Impossible de supprimer ce joueur : des enregistrements liés l’en empêchent (ex. avertissements émis en tant qu’ancien admin).";
     default:
       return null;
   }
@@ -137,6 +144,7 @@ export default async function AdminPlayersPage({
     manual_banned?: string;
     badge_awarded?: string;
     badge_revoked?: string;
+    deleted?: string;
     q?: string;
     role?: string;
     status?: string;
@@ -163,6 +171,7 @@ export default async function AdminPlayersPage({
   const isManuallyBanned = sp.manual_banned === "1";
   const isBadgeAwarded = sp.badge_awarded === "1";
   const isBadgeRevoked = sp.badge_revoked === "1";
+  const isDeleted = sp.deleted === "1";
 
   const searchQuery = (sp.q ?? "").trim();
   const roleFilter = (sp.role ?? "").trim();
@@ -520,6 +529,14 @@ export default async function AdminPlayersPage({
           </div>
         ) : null}
 
+        {isDeleted ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">
+              Compte supprimé définitivement.
+            </p>
+          </div>
+        ) : null}
+
         {alertCount > 0 ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-amber-300">
@@ -810,6 +827,39 @@ export default async function AdminPlayersPage({
                           Déban
                         </button>
                       </form>
+                    </div>
+
+                    <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-2.5 md:p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">
+                        Zone dangereuse
+                      </p>
+
+                      {player.id === admin.id ? (
+                        <p className="neon-text-muted mt-1.5 md:mt-2 text-xs leading-5">
+                          Tu ne peux pas supprimer ton propre compte.
+                        </p>
+                      ) : player.role !== "PLAYER" ? (
+                        <p className="neon-text-muted mt-1.5 md:mt-2 text-xs leading-5">
+                          Retire d’abord le rôle admin pour pouvoir supprimer ce compte.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="neon-text-muted mt-1.5 md:mt-2 text-xs leading-5">
+                            Suppression définitive et irréversible du compte (contrairement
+                            au bannissement). Toutes ses données liées sont effacées.
+                          </p>
+
+                          <form action={deletePlayer} className="mt-1.5 md:mt-2">
+                            <input type="hidden" name="userId" value={player.id} />
+                            <button
+                              type="submit"
+                              className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
+                            >
+                              Supprimer le compte
+                            </button>
+                          </form>
+                        </>
+                      )}
                     </div>
                   </div>
 
