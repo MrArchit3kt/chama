@@ -59,38 +59,6 @@ function redirectToGame(game: MixGame, qs: string): never {
   redirect(`${path}${qs}`);
 }
 
-function gameLabel(game: MixGame) {
-  switch (game) {
-    case "WARZONE":
-      return "Warzone";
-    case "WARZONE_RANKED":
-      return "Warzone Ranked";
-    case "BO7":
-      return "BO7";
-    case "ROCKET_LEAGUE":
-      return "Rocket League";
-    case "VERSUS":
-      return "Versus";
-  }
-}
-
-/** Notifie les joueurs (comptes réels uniquement) que leur équipe est prête. */
-async function notifyMixReady(game: MixGame, userIds: string[]) {
-  const uniqueIds = [...new Set(userIds)];
-  if (uniqueIds.length === 0) return;
-
-  await db.notification.createMany({
-    data: uniqueIds.map((userId) => ({
-      userId,
-      type: "INFO",
-      channel: "IN_APP",
-      status: "PENDING",
-      title: "Ton équipe est prête",
-      message: `Le mix ${gameLabel(game)} vient d’être généré, va voir ton équipe.`,
-    })),
-  });
-}
-
 /**
  * Déplace automatiquement les joueurs (comptes réels avec un Discord lié
  * via OAuth) dans le salon vocal configuré pour leur équipe. Best-effort
@@ -194,7 +162,6 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
   }
 
   let cursor = 0;
-  const allUserIds: string[] = [];
   const teamsUserIds: string[][] = [];
 
   for (let idx = 0; idx < sizes.length; idx += 1) {
@@ -219,7 +186,6 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
 
       const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
       const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
-      allUserIds.push(...userIds);
       teamsUserIds.push(userIds);
 
       if (userIds.length > 0) {
@@ -242,7 +208,6 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
     cursor += size;
   }
 
-  await notifyMixReady(game, allUserIds);
   await moveTeamsToDiscordVoice(game, teamsUserIds);
 
   redirectToGame(game, `?success=1&session=${session.id}`);
@@ -366,7 +331,6 @@ export async function generateMix(formData: FormData) {
       }
 
       let cursor = 0;
-      const allUserIds: string[] = [];
       const teamsUserIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
@@ -389,7 +353,6 @@ export async function generateMix(formData: FormData) {
 
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
-        allUserIds.push(...userIds);
         teamsUserIds.push(userIds);
 
         if (userIds.length > 0) {
@@ -408,7 +371,6 @@ export async function generateMix(formData: FormData) {
         cursor += 3;
       }
 
-      await notifyMixReady(game, allUserIds);
       await moveTeamsToDiscordVoice(game, teamsUserIds);
 
       redirectToGame(game, `?success=1&session=${session.id}`);
@@ -471,7 +433,6 @@ export async function generateMix(formData: FormData) {
       }
 
       let cursor = 0;
-      const allUserIds: string[] = [];
       const teamsUserIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
@@ -494,7 +455,6 @@ export async function generateMix(formData: FormData) {
 
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
-        allUserIds.push(...userIds);
         teamsUserIds.push(userIds);
 
         if (userIds.length > 0) {
@@ -513,7 +473,6 @@ export async function generateMix(formData: FormData) {
         cursor += versusTeamSize;
       }
 
-      await notifyMixReady(game, allUserIds);
       await moveTeamsToDiscordVoice(game, teamsUserIds);
 
       redirectToGame(game, `?success=1&session=${session.id}`);
@@ -589,7 +548,6 @@ export async function generateMix(formData: FormData) {
       })),
     });
 
-    const allUserIds: string[] = [];
     const teamsUserIds: string[][] = [];
 
     for (let idx = 0; idx < teams.length; idx += 1) {
@@ -615,7 +573,6 @@ export async function generateMix(formData: FormData) {
 
       const userIds = members.filter((m) => m.kind === "USER").map((m) => m.id);
       const tempIds = members.filter((m) => m.kind === "TEMP").map((m) => m.id);
-      allUserIds.push(...userIds);
       teamsUserIds.push(userIds);
 
       if (userIds.length > 0) {
@@ -632,7 +589,6 @@ export async function generateMix(formData: FormData) {
       }
     }
 
-    await notifyMixReady(game, allUserIds);
     await moveTeamsToDiscordVoice(game, teamsUserIds);
 
     redirectToGame(game, `?success=1&session=${session.id}`);
