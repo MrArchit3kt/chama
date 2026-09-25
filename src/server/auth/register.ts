@@ -12,6 +12,7 @@ const registerSchema = z
     displayName: z.string().trim().min(2).max(40),
     email: z.string().trim().email(),
     activisionId: z.string().trim().max(64).optional().or(z.literal("")),
+    invitedByName: z.string().trim().max(60).optional().or(z.literal("")),
     password: z.string().min(8),
     confirmPassword: z.string().min(8),
     acceptRules: z.literal("on"),
@@ -71,6 +72,7 @@ export async function registerUser(formData: FormData) {
     displayName: String(formData.get("displayName") ?? ""),
     email: String(formData.get("email") ?? ""),
     activisionId: String(formData.get("activisionId") ?? ""),
+    invitedByName: String(formData.get("invitedByName") ?? ""),
     password: String(formData.get("password") ?? ""),
     confirmPassword: String(formData.get("confirmPassword") ?? ""),
     acceptRules: formData.get("acceptRules"),
@@ -96,6 +98,7 @@ export async function registerUser(formData: FormData) {
     // ✅ DB exige warzoneUsername => on fallback proprement
     const activisionId = data.activisionId?.trim() || null;
     const warzoneUsername = activisionId ? activisionId : data.displayName.trim();
+    const invitedByName = data.invitedByName?.trim() || null;
 
     const activeRules = await db.rulesVersion.findFirst({
       where: { isActive: true },
@@ -113,6 +116,7 @@ export async function registerUser(formData: FormData) {
         username, // ✅ généré
         warzoneUsername, // ✅ fallback
         activisionId, // ✅ optionnel
+        invitedByName, // ✅ optionnel
         role: "PLAYER",
         status: "INACTIVE",
         registrationStatus: "PENDING",
@@ -135,7 +139,9 @@ export async function registerUser(formData: FormData) {
           channel: "IN_APP",
           status: "PENDING",
           title: "Nouvelle inscription à valider",
-          message: `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription.`,
+          message: invitedByName
+            ? `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription. Invité par : ${invitedByName}.`
+            : `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription.`,
         })),
       });
     }

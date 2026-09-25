@@ -278,6 +278,12 @@ model User {
   rejectedAt         DateTime?
   rejectedById       String?
 
+  // ✅ Renseigné librement par le joueur à l'inscription : pseudo/nom du
+  // membre qui l'a invité, pour que les admins sachent qui a fait venir qui.
+  // Texte libre (pas de FK vers un autre User) : le joueur ne connaît pas
+  // forcément le pseudo exact ni même si la personne a un compte.
+  invitedByName String?
+
   warzoneUsername String
   activisionId    String?
   platform        GamePlatform?

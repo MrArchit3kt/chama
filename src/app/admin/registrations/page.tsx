@@ -66,6 +66,7 @@ export default async function AdminRegistrationsPage({
       role: true,
       status: true,
       createdAt: true,
+      invitedByName: true,
     },
   });
 
@@ -142,7 +143,7 @@ export default async function AdminRegistrationsPage({
                       </span>
                     </div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
                           Email
@@ -167,6 +168,15 @@ export default async function AdminRegistrationsPage({
                         </p>
                         <p className="mt-1 text-sm text-white">
                           {formatDate(user.createdAt)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                          Invité par
+                        </p>
+                        <p className="mt-1 text-sm text-white">
+                          {user.invitedByName || "Non renseigné"}
                         </p>
                       </div>
                     </div>
