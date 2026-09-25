@@ -1,4 +1,5 @@
 import "server-only";
+import { logServerError } from "@/lib/log-error";
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -120,22 +121,26 @@ export async function moveGuildMemberToVoiceChannel(
     );
 
     if (!res.ok) {
-      // Cas fréquents et attendus, pas la peine de crier : membre pas sur
-      // le serveur, ou pas connecté à un vocal (Discord renvoie 404/400).
-      console.error(
+      // Cas fréquents et attendus (membre pas sur le serveur, pas connecté
+      // à un vocal), mais aussi le cas le plus courant en pratique : le
+      // bot n'a pas la permission "Connecter"/"Voir le salon" sur CE salon
+      // précis (une permission "Déplacer des membres" globale au serveur
+      // ne suffit pas). Loggé en base (voir /admin/errors) plutôt qu'en
+      // simple console.error : sinon impossible de diagnostiquer sans
+      // accès SSH au VPS pour lire `pm2 logs`.
+      const body = await res.text();
+      await logServerError(
         "DISCORD_MOVE_MEMBER_ERROR",
-        discordUserId,
-        "->",
-        channelId,
-        res.status,
-        await res.text(),
+        new Error(
+          `Échec du déplacement vers le salon ${channelId} (membre Discord ${discordUserId}) : HTTP ${res.status} — ${body}`,
+        ),
       );
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error("DISCORD_MOVE_MEMBER_FETCH_ERROR", error);
+    await logServerError("DISCORD_MOVE_MEMBER_FETCH_ERROR", error);
     return false;
   }
 }
