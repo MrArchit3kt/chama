@@ -91,6 +91,22 @@ export default async function RegisterPage({
               </p>
             </div>
 
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-semibold text-white">
+                Invité par (optionnel)
+              </label>
+              <input
+                name="invitedByName"
+                type="text"
+                maxLength={60}
+                placeholder="Pseudo ou nom du membre qui t’a fait connaître le site"
+                className="w-full px-4 py-3"
+              />
+              <p className="neon-text-muted mt-2 text-xs leading-5">
+                Ça nous aide à savoir qui t’a invité — pas besoin d’un pseudo exact.
+              </p>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-semibold text-white">
                 Mot de passe

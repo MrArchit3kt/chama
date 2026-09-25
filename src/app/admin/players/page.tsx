@@ -224,6 +224,7 @@ export default async function AdminPlayersPage({
       lastSeenAt: true,
       isChamaMember: true,
       isAuraMember: true,
+      invitedByName: true,
       badges: {
         select: {
           badgeId: true,
@@ -286,6 +287,7 @@ export default async function AdminPlayersPage({
       lastSeenAt: player.lastSeenAt,
       isChamaMember: player.isChamaMember,
       isAuraMember: player.isAuraMember,
+      invitedByName: player.invitedByName,
       badges: player.badges,
 
       inactiveDays,
@@ -599,6 +601,7 @@ export default async function AdminPlayersPage({
 
                     <p className="neon-text-muted mt-2 hidden truncate text-sm md:block">
                       {player.email}
+                      {player.invitedByName ? ` · Invité par : ${player.invitedByName}` : ""}
                     </p>
 
                     {/* Résumé compact, mobile uniquement */}
