@@ -34,6 +34,11 @@ const ACTIVITY_LABELS: Record<string, string> = {
   CONTACT_CLOSED: "Demande de contact clôturée",
   SITE_CONFIG_UPDATED: "Config du site modifiée",
   MIX_GENERATED: "Mix généré",
+  SCORE_GAME_MODE_CREATED: "Mode de jeu (points) créé",
+  SCORE_CONDITION_CREATED: "Condition de points créée",
+  SCORE_CONDITION_DELETED: "Condition de points supprimée",
+  SCORE_BOARD_CREATED: "Tableau de points créé",
+  SCORE_ENTRY_UPDATED: "Scores saisis",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);

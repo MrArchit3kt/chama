@@ -13,6 +13,7 @@ import {
   Handshake,
   ScrollText,
   ShieldCheck,
+  Gem,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ export const mainLinks: NavLink[] = [
   { href: "/rocket-league", label: "Rocket League", icon: Rocket },
   { href: "/gta6", label: "GTA 6", icon: Car },
   { href: "/lives", label: "Lives", icon: Radio },
+  { href: "/points", label: "Points", icon: Gem },
 ];
 
 export const adminLinks: NavLink[] = [
@@ -44,6 +46,7 @@ export const adminLinks: NavLink[] = [
   { href: "/admin/players", label: "Admin Players", icon: Users },
   { href: "/admin/registrations", label: "Admin Inscriptions", icon: Users },
   { href: "/admin/contact", label: "Admin Contact", icon: Mail },
+  { href: "/admin/points", label: "Admin Points", icon: Gem },
 ];
 
 export const adminMixLinks: NavLink[] = [

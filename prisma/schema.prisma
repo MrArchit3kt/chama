@@ -394,6 +394,10 @@ model User {
   activityLogsAsActor  ActivityLog[] @relation("ActivityLogActor")
   activityLogsAsTarget ActivityLog[] @relation("ActivityLogTarget")
 
+  // ✅ Système de points
+  scoreBoardsCreated   ScoreBoard[]      @relation("ScoreBoardsCreated")
+  scoreTeamMemberships ScoreTeamMember[] @relation("ScoreTeamMemberships")
+
   @@index([registrationStatus])
   @@index([approvedById])
   @@index([rejectedById])
@@ -856,6 +860,11 @@ enum ActivityAction {
   CONTACT_CLOSED
   SITE_CONFIG_UPDATED
   MIX_GENERATED
+  SCORE_GAME_MODE_CREATED
+  SCORE_CONDITION_CREATED
+  SCORE_CONDITION_DELETED
+  SCORE_BOARD_CREATED
+  SCORE_ENTRY_UPDATED
 }
 
 model ActivityLog {
@@ -878,4 +887,104 @@ model ActivityLog {
   @@index([createdAt])
   @@index([actorId])
   @@index([targetId])
+}
+
+/* ===========================
+   ✅ SYSTÈME DE POINTS (classement configurable par mode de jeu)
+   =========================== */
+
+enum ScoreConditionMode {
+  QUANTITY // l'admin saisit un nombre, points = nombre × condition.points
+  ONE_TIME // atteinte ou pas (case à cocher), points = condition.points si cochée
+}
+
+enum ScoreConditionTarget {
+  TEAM // condition appliquée à l'équipe entière (ex: Victoire)
+  PLAYER // condition appliquée à un membre précis (ex: Kill, MVP)
+}
+
+model ScoreGameMode {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conditions ScoreCondition[]
+  boards     ScoreBoard[]
+
+  @@index([isActive])
+}
+
+model ScoreCondition {
+  id         String               @id @default(cuid())
+  gameModeId String
+  label      String
+  points     Int
+  mode       ScoreConditionMode   @default(ONE_TIME)
+  appliesTo  ScoreConditionTarget @default(PLAYER)
+  createdAt  DateTime             @default(now())
+
+  gameMode ScoreGameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+  entries  ScoreEntry[]
+
+  @@index([gameModeId])
+}
+
+model ScoreBoard {
+  id          String   @id @default(cuid())
+  gameModeId  String
+  title       String?
+  createdAt   DateTime @default(now())
+  createdById String?
+
+  gameMode  ScoreGameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+  createdBy User?         @relation("ScoreBoardsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  teams     ScoreTeam[]
+
+  @@index([gameModeId, createdAt])
+}
+
+model ScoreTeam {
+  id      String @id @default(cuid())
+  boardId String
+  name    String
+
+  board   ScoreBoard        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  members ScoreTeamMember[]
+  entries ScoreEntry[]
+
+  @@index([boardId])
+}
+
+model ScoreTeamMember {
+  id        String  @id @default(cuid())
+  teamId    String
+  userId    String?
+  guestName String?
+
+  team    ScoreTeam    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user    User?        @relation("ScoreTeamMemberships", fields: [userId], references: [id], onDelete: SetNull)
+  entries ScoreEntry[]
+
+  @@index([teamId])
+  @@index([userId])
+}
+
+model ScoreEntry {
+  id           String   @id @default(cuid())
+  conditionId  String
+  teamId       String?
+  teamMemberId String?
+  quantity     Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  condition  ScoreCondition   @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  team       ScoreTeam?       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamMember ScoreTeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([conditionId, teamId])
+  @@unique([conditionId, teamMemberId])
+  @@index([conditionId])
 }
