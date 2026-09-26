@@ -17,8 +17,13 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-/** ONE_TIME => case cochée (0 ou 1). QUANTITY => nombre saisi (>= 0). */
-function parseQuantity(raw: FormDataEntryValue | null, mode: "QUANTITY" | "ONE_TIME"): number {
+/**
+ * ONE_TIME => case cochée (0 ou 1). QUANTITY/TIERED => nombre saisi
+ * (toujours >= 0 : c'est un compteur d'occurrences — kills, morts... —
+ * jamais les points eux-mêmes, qui peuvent être négatifs sur la
+ * condition/le palier).
+ */
+function parseQuantity(raw: FormDataEntryValue | null, mode: "QUANTITY" | "ONE_TIME" | "TIERED"): number {
   if (mode === "ONE_TIME") {
     return raw === "on" ? 1 : 0;
   }

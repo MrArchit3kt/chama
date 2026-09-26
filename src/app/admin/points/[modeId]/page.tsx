@@ -11,6 +11,7 @@ import { addScoreTeamMember } from "@/server/points/add-score-team-member";
 import { saveScoreEntries } from "@/server/points/save-score-entries";
 import { BoardHistory } from "@/components/points/board-history";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -37,15 +38,32 @@ function getErrorMessage(error?: string) {
 type EntryWithCondition = {
   quantity: number;
   conditionId: string;
-  condition: { points: number };
+  condition: ConditionForScoring;
 };
 
 function sumEntries(entries: EntryWithCondition[]) {
-  return entries.reduce((sum, e) => sum + e.quantity * e.condition.points, 0);
+  return entries.reduce((sum, e) => sum + computeEntryPoints(e.quantity, e.condition), 0);
 }
 
 function findEntry(entries: EntryWithCondition[], conditionId: string) {
   return entries.find((e) => e.conditionId === conditionId);
+}
+
+function formatTierRange(tier: { minValue: number; maxValue: number | null }) {
+  return tier.maxValue === null ? `${tier.minValue}+` : `${tier.minValue}–${tier.maxValue}`;
+}
+
+/** Petit indice à côté du label de la condition dans le formulaire de
+ * saisie : points fixes pour QUANTITY/ONE_TIME, liste des paliers pour
+ * TIERED (l'admin voit tout de suite le barème en saisissant). */
+function conditionHint(condition: ConditionForScoring & { tiers: { minValue: number; maxValue: number | null; points: number }[] }) {
+  if (condition.mode !== "TIERED") {
+    return `${condition.points} pt${Math.abs(condition.points) > 1 ? "s" : ""}`;
+  }
+  if (condition.tiers.length === 0) return "aucun palier";
+  return condition.tiers
+    .map((t) => `${formatTierRange(t)}:${t.points > 0 ? "+" : ""}${t.points}`)
+    .join(" · ");
 }
 
 export default async function AdminPointsModePage({
@@ -75,7 +93,12 @@ export default async function AdminPointsModePage({
 
   const gameMode = await db.scoreGameMode.findUnique({
     where: { id: modeId },
-    include: { conditions: { orderBy: { createdAt: "asc" } } },
+    include: {
+      conditions: {
+        orderBy: { createdAt: "asc" },
+        include: { tiers: { orderBy: { minValue: "asc" } } },
+      },
+    },
   });
 
   if (!gameMode) redirect("/admin/points?error=server");
@@ -83,16 +106,22 @@ export default async function AdminPointsModePage({
   const teamConditions = gameMode.conditions.filter((c) => c.appliesTo === "TEAM");
   const playerConditions = gameMode.conditions.filter((c) => c.appliesTo === "PLAYER");
 
+  const conditionForScoringSelect = {
+    points: true,
+    mode: true,
+    tiers: { select: { minValue: true, maxValue: true, points: true } },
+  } as const;
+
   const boardsInclude = {
     teams: {
       include: {
         members: {
           include: {
             user: { select: { id: true, displayName: true, username: true } },
-            entries: { include: { condition: { select: { points: true } } } },
+            entries: { include: { condition: { select: conditionForScoringSelect } } },
           },
         },
-        entries: { include: { condition: { select: { points: true } } } },
+        entries: { include: { condition: { select: conditionForScoringSelect } } },
       },
     },
   };
@@ -243,7 +272,7 @@ export default async function AdminPointsModePage({
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <h4 className="text-lg font-bold text-white md:text-xl">{team.name}</h4>
                         <span className="neon-badge">
-                          {teamTotal} pt{teamTotal > 1 ? "s" : ""}
+                          {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
                         </span>
                       </div>
 
@@ -270,7 +299,7 @@ export default async function AdminPointsModePage({
                                     >
                                       <span>
                                         {condition.label}{" "}
-                                        <span className="text-white/40">({condition.points} pt{condition.points > 1 ? "s" : ""})</span>
+                                        <span className="text-white/40">({conditionHint(condition)})</span>
                                       </span>
                                       {condition.mode === "ONE_TIME" ? (
                                         <input
@@ -317,7 +346,7 @@ export default async function AdminPointsModePage({
                                         <p className="neon-text-muted truncate text-[11px]">{sub}</p>
                                       </div>
                                       <span className="neon-badge shrink-0 text-[10px]">
-                                        {memberTotal} pt{memberTotal > 1 ? "s" : ""}
+                                        {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
                                       </span>
                                     </div>
 
@@ -335,7 +364,7 @@ export default async function AdminPointsModePage({
                                               <span>
                                                 {condition.label}{" "}
                                                 <span className="text-white/40">
-                                                  ({condition.points} pt{condition.points > 1 ? "s" : ""})
+                                                  ({conditionHint(condition)})
                                                 </span>
                                               </span>
                                               {condition.mode === "ONE_TIME" ? (
