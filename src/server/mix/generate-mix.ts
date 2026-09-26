@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/discord";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
 import {
   shuffle,
   getTeamSizesFourThree,
@@ -110,7 +111,11 @@ async function moveTeamsToDiscordVoice(game: MixGame, teamsUserIds: string[][]) 
 }
 
 /** WARZONE et BO7 partagent exactement la même logique de génération (4/3). */
-async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
+async function runFourThreeMix(
+  game: "WARZONE" | "BO7",
+  sessionUser: { id: string; name: string; username: string },
+) {
+  const sessionUserId = sessionUser.id;
   const availabilityField =
     game === "WARZONE" ? "isAvailableForWarzoneMix" : "isAvailableForBO7Mix";
 
@@ -210,6 +215,13 @@ async function runFourThreeMix(game: "WARZONE" | "BO7", sessionUserId: string) {
 
   await moveTeamsToDiscordVoice(game, teamsUserIds);
 
+  await logActivity({
+    action: "MIX_GENERATED",
+    actorId: sessionUser.id,
+    actorLabel: `${sessionUser.name} (@${sessionUser.username})`,
+    metadata: { game, sessionId: session.id, teamCount: teamsUserIds.length },
+  });
+
   redirectToGame(game, `?success=1&session=${session.id}`);
 }
 
@@ -276,7 +288,7 @@ export async function generateMix(formData: FormData) {
     // WARZONE NORMAL & BO7 (mêmes règles 4/3)
     // =========================
     if (game === "WARZONE" || game === "BO7") {
-      await runFourThreeMix(game, sessionUser.id);
+      await runFourThreeMix(game, sessionUser);
     }
 
     // =========================
@@ -372,6 +384,13 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
+
+      await logActivity({
+        action: "MIX_GENERATED",
+        actorId: sessionUser.id,
+        actorLabel: `${sessionUser.name} (@${sessionUser.username})`,
+        metadata: { game, sessionId: session.id, teamCount: teamsUserIds.length },
+      });
 
       redirectToGame(game, `?success=1&session=${session.id}`);
     }
@@ -474,6 +493,13 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
+
+      await logActivity({
+        action: "MIX_GENERATED",
+        actorId: sessionUser.id,
+        actorLabel: `${sessionUser.name} (@${sessionUser.username})`,
+        metadata: { game, sessionId: session.id, teamCount: teamsUserIds.length },
+      });
 
       redirectToGame(game, `?success=1&session=${session.id}`);
     }
@@ -590,6 +616,13 @@ export async function generateMix(formData: FormData) {
     }
 
     await moveTeamsToDiscordVoice(game, teamsUserIds);
+
+    await logActivity({
+      action: "MIX_GENERATED",
+      actorId: sessionUser.id,
+      actorLabel: `${sessionUser.name} (@${sessionUser.username})`,
+      metadata: { game, sessionId: session.id, teamCount: teamsUserIds.length },
+    });
 
     redirectToGame(game, `?success=1&session=${session.id}`);
   } catch (error) {

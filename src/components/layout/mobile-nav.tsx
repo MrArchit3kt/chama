@@ -4,13 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { mainLinks, adminLinks, adminMixLinks } from "@/lib/nav-links";
+import { mainLinks, adminLinks, adminMixLinks, superAdminLinks } from "@/lib/nav-links";
 
 type MobileNavProps = {
   canSeeAdmin: boolean;
+  isSuperAdmin?: boolean;
 };
 
-export function MobileNav({ canSeeAdmin }: MobileNavProps) {
+export function MobileNav({ canSeeAdmin, isSuperAdmin = false }: MobileNavProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
                       Gestion des mix
                     </p>
 
-                    <div className="space-y-2 pb-6">
+                    <div className="space-y-2">
                       {adminMixLinks.map((item) => {
                         const Icon = item.icon;
 
@@ -188,6 +189,36 @@ export function MobileNav({ canSeeAdmin }: MobileNavProps) {
                         );
                       })}
                     </div>
+
+                    {isSuperAdmin ? (
+                      <>
+                        <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-white/40">
+                          Super Admin
+                        </p>
+
+                        <div className="space-y-2 pb-6">
+                          {superAdminLinks.map((item) => {
+                            const Icon = item.icon;
+
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setOpen(false)}
+                                className="group flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-white/75 transition hover:border-fuchsia-400/15 hover:bg-white/[0.03] hover:text-white"
+                              >
+                                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-white/[0.03]">
+                                  <Icon className="h-4 w-4 text-fuchsia-300/90" />
+                                </span>
+                                <span>{item.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="pb-6" />
+                    )}
                   </div>
                 ) : null}
               </div>

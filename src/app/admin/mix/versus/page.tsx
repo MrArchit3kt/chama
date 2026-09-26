@@ -14,6 +14,8 @@ import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "invalid_count":
       return "Nombre de joueurs invalide pour le format Versus choisi (doit être divisible par la taille d’équipe).";
     case "no_team_size":
@@ -59,7 +61,7 @@ export default async function AdminMixVersusPage({
     session?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};

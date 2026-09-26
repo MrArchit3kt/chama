@@ -5,12 +5,18 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 export async function liftBan(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.unban")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -25,6 +31,8 @@ export async function liftBan(formData: FormData) {
       where: { id: userId },
       select: {
         id: true,
+        displayName: true,
+        username: true,
       },
     });
 
@@ -67,6 +75,15 @@ export async function liftBan(formData: FormData) {
     });
 
     publishAdminEvent("players");
+
+    await logActivity({
+      action: "PLAYER_UNBANNED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+      metadata: reason ? { reason } : undefined,
+    });
   } catch (error) {
     await logServerError("LIFT_BAN_ERROR", error);
     redirect("/admin/players?error=server");

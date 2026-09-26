@@ -17,6 +17,7 @@ import { awardBadge } from "@/server/admin/award-badge";
 import { revokeBadge } from "@/server/admin/revoke-badge";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function formatDate(value: Date | null) {
   if (!value) return "Jamais";
@@ -150,7 +151,7 @@ export default async function AdminPlayersPage({
     status?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
@@ -678,23 +679,25 @@ export default async function AdminPlayersPage({
                         .
                       </p>
 
-                      <form action={toggleChamaMember} className="mt-1.5 md:mt-2">
-                        <input type="hidden" name="userId" value={player.id} />
-                        <input
-                          type="hidden"
-                          name="nextValue"
-                          value={player.isChamaMember ? "false" : "true"}
-                        />
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.chama.toggle") ? (
+                        <form action={toggleChamaMember} className="mt-1.5 md:mt-2">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            type="hidden"
+                            name="nextValue"
+                            value={player.isChamaMember ? "false" : "true"}
+                          />
 
-                        <button
-                          type="submit"
-                          className={`w-full px-5 py-2 md:py-2.5 ${
-                            player.isChamaMember ? "neon-button-secondary" : "neon-button"
-                          }`}
-                        >
-                          {player.isChamaMember ? "Retirer de la team" : "Activer membre CHAMA"}
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className={`w-full px-5 py-2 md:py-2.5 ${
+                              player.isChamaMember ? "neon-button-secondary" : "neon-button"
+                            }`}
+                          >
+                            {player.isChamaMember ? "Retirer de la team" : "Activer membre CHAMA"}
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
 
                     <div className="rounded-2xl border border-fuchsia-400/10 bg-fuchsia-400/[0.03] p-2.5 md:p-3">
@@ -710,23 +713,25 @@ export default async function AdminPlayersPage({
                         .
                       </p>
 
-                      <form action={toggleAuraMember} className="mt-1.5 md:mt-2">
-                        <input type="hidden" name="userId" value={player.id} />
-                        <input
-                          type="hidden"
-                          name="nextValue"
-                          value={player.isAuraMember ? "false" : "true"}
-                        />
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.aura.toggle") ? (
+                        <form action={toggleAuraMember} className="mt-1.5 md:mt-2">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            type="hidden"
+                            name="nextValue"
+                            value={player.isAuraMember ? "false" : "true"}
+                          />
 
-                        <button
-                          type="submit"
-                          className={`w-full px-5 py-2 md:py-2.5 ${
-                            player.isAuraMember ? "neon-button-secondary" : "neon-button"
-                          }`}
-                        >
-                          {player.isAuraMember ? "Retirer de la team" : "Activer membre AURA"}
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className={`w-full px-5 py-2 md:py-2.5 ${
+                              player.isAuraMember ? "neon-button-secondary" : "neon-button"
+                            }`}
+                          >
+                            {player.isAuraMember ? "Retirer de la team" : "Activer membre AURA"}
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
 
                     <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-2.5 md:p-3">
@@ -744,6 +749,10 @@ export default async function AdminPlayersPage({
                       {player.role === "SUPER_ADMIN" ? (
                         <p className="mt-1.5 md:mt-2 text-xs text-white/60">
                           Le rôle SUPER_ADMIN est verrouillé ici.
+                        </p>
+                      ) : admin.role !== "SUPER_ADMIN" ? (
+                        <p className="mt-1.5 md:mt-2 text-xs text-white/60">
+                          Seul un super admin peut changer ce rôle.
                         </p>
                       ) : (
                         <form action={toggleUserRole} className="mt-1.5 md:mt-2">
@@ -770,25 +779,27 @@ export default async function AdminPlayersPage({
                         Définit un mot de passe temporaire.
                       </p>
 
-                      <form action={resetPlayerPassword} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
-                        <input type="hidden" name="userId" value={player.id} />
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.password.reset") ? (
+                        <form action={resetPlayerPassword} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
+                          <input type="hidden" name="userId" value={player.id} />
 
-                        <input
-                          name="password"
-                          type="password"
-                          minLength={8}
-                          required
-                          placeholder="Nouveau mot de passe"
-                          className="w-full px-4 py-2 md:py-2.5"
-                        />
+                          <input
+                            name="password"
+                            type="password"
+                            minLength={8}
+                            required
+                            placeholder="Nouveau mot de passe"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
 
-                        <button
-                          type="submit"
-                          className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
-                        >
-                          Modifier le mot de passe
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
+                          >
+                            Modifier le mot de passe
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
 
                     <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-2.5 md:p-3">
@@ -801,35 +812,39 @@ export default async function AdminPlayersPage({
                         </span>
                       </div>
 
-                      <form action={banPlayer} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
-                        <input type="hidden" name="userId" value={player.id} />
-                        <input
-                          name="reason"
-                          type="text"
-                          required
-                          placeholder="Motif du bannissement"
-                          className="w-full px-4 py-2 md:py-2.5"
-                        />
-                        <button
-                          type="submit"
-                          className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
-                        >
-                          Bannir le joueur
-                        </button>
-                      </form>
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.ban") ? (
+                        <form action={banPlayer} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            name="reason"
+                            type="text"
+                            required
+                            placeholder="Motif du bannissement"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+                          <button
+                            type="submit"
+                            className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
+                          >
+                            Bannir le joueur
+                          </button>
+                        </form>
+                      ) : null}
 
-                      <form action={liftBan} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
-                        <input type="hidden" name="userId" value={player.id} />
-                        <input
-                          name="reason"
-                          type="text"
-                          placeholder="Motif du déban (optionnel)"
-                          className="w-full px-4 py-2 md:py-2.5"
-                        />
-                        <button type="submit" className="neon-button w-full px-5 py-2 md:py-2.5">
-                          Déban
-                        </button>
-                      </form>
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.unban") ? (
+                        <form action={liftBan} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            name="reason"
+                            type="text"
+                            placeholder="Motif du déban (optionnel)"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+                          <button type="submit" className="neon-button w-full px-5 py-2 md:py-2.5">
+                            Déban
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
 
                     <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-2.5 md:p-3">
@@ -845,7 +860,7 @@ export default async function AdminPlayersPage({
                         <p className="neon-text-muted mt-1.5 md:mt-2 text-xs leading-5">
                           Retire d’abord le rôle admin pour pouvoir supprimer ce compte.
                         </p>
-                      ) : (
+                      ) : !hasAdminPermission(admin.role, admin.adminPermissions, "players.delete") ? null : (
                         <>
                           <p className="neon-text-muted mt-1.5 md:mt-2 text-xs leading-5">
                             Suppression définitive et irréversible du compte (contrairement
@@ -881,6 +896,18 @@ export default async function AdminPlayersPage({
                           const Icon = getBadgeIcon(badge.icon);
                           const colorClasses = getBadgeColorClasses(badge.color);
 
+                          if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.badge.manage")) {
+                            return (
+                              <span
+                                key={badge.id}
+                                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${colorClasses}`}
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                                {badge.name}
+                              </span>
+                            );
+                          }
+
                           return (
                             <form key={badge.id} action={revokeBadge}>
                               <input type="hidden" name="userId" value={player.id} />
@@ -900,7 +927,8 @@ export default async function AdminPlayersPage({
                       </div>
                     )}
 
-                    {badgeCatalog.length > 0 ? (
+                    {badgeCatalog.length > 0 &&
+                    hasAdminPermission(admin.role, admin.adminPermissions, "players.badge.manage") ? (
                       <form action={awardBadge} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 sm:grid-cols-[1fr_auto]">
                         <input type="hidden" name="userId" value={player.id} />
                         <select name="badgeId" defaultValue="" required className="w-full px-4 py-2 md:py-2.5">
@@ -917,11 +945,11 @@ export default async function AdminPlayersPage({
                           Attribuer
                         </button>
                       </form>
-                    ) : (
+                    ) : badgeCatalog.length === 0 ? (
                       <p className="neon-text-muted mt-1.5 md:mt-2 text-xs">
                         Aucun badge créé pour le moment (Admin → Badges).
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
@@ -929,32 +957,34 @@ export default async function AdminPlayersPage({
                       Ajouter un avertissement
                     </p>
 
-                    <form action={addWarning} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 md:grid-cols-[1fr_1fr_auto]">
-                      <input type="hidden" name="userId" value={player.id} />
+                    {hasAdminPermission(admin.role, admin.adminPermissions, "players.warning.manage") ? (
+                      <form action={addWarning} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2 md:grid-cols-[1fr_1fr_auto]">
+                        <input type="hidden" name="userId" value={player.id} />
 
-                      <select name="type" defaultValue="TOXICITY" className="w-full px-4 py-2 md:py-2.5">
-                        <option value="TOXICITY">Toxicité</option>
-                        <option value="ABSENCE">Absence</option>
-                        <option value="AFK">AFK</option>
-                        <option value="INSULT">Insulte</option>
-                        <option value="CHEATING_SUSPECT">Suspicion de cheat</option>
-                        <option value="TEAM_REFUSAL">Refus d’équipe</option>
-                        <option value="SPAM">Spam</option>
-                        <option value="OTHER">Autre</option>
-                      </select>
+                        <select name="type" defaultValue="TOXICITY" className="w-full px-4 py-2 md:py-2.5">
+                          <option value="TOXICITY">Toxicité</option>
+                          <option value="ABSENCE">Absence</option>
+                          <option value="AFK">AFK</option>
+                          <option value="INSULT">Insulte</option>
+                          <option value="CHEATING_SUSPECT">Suspicion de cheat</option>
+                          <option value="TEAM_REFUSAL">Refus d’équipe</option>
+                          <option value="SPAM">Spam</option>
+                          <option value="OTHER">Autre</option>
+                        </select>
 
-                      <input
-                        name="message"
-                        type="text"
-                        required
-                        placeholder="Raison de l’avertissement"
-                        className="w-full px-4 py-2 md:py-2.5"
-                      />
+                        <input
+                          name="message"
+                          type="text"
+                          required
+                          placeholder="Raison de l’avertissement"
+                          className="w-full px-4 py-2 md:py-2.5"
+                        />
 
-                      <button type="submit" className="neon-button px-5 py-2 md:py-2.5">
-                        Avertir
-                      </button>
-                    </form>
+                        <button type="submit" className="neon-button px-5 py-2 md:py-2.5">
+                          Avertir
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
@@ -996,7 +1026,8 @@ export default async function AdminPlayersPage({
 
                             <p className="mt-1.5 md:mt-2 text-sm text-white">{warning.message}</p>
 
-                            {warning.status === "ACTIVE" ? (
+                            {warning.status === "ACTIVE" &&
+                            hasAdminPermission(admin.role, admin.adminPermissions, "players.warning.manage") ? (
                               <div className="mt-2 md:mt-3 rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 md:p-3">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300/80">
                                   Révoquer cet avertissement
@@ -1023,14 +1054,14 @@ export default async function AdminPlayersPage({
                                   </button>
                                 </form>
                               </div>
-                            ) : (
+                            ) : warning.status !== "ACTIVE" ? (
                               <div className="mt-2 md:mt-3 text-xs text-emerald-300/80">
                                 <p>Révoqué le : {formatDate(warning.revokedAt)}</p>
                                 {warning.revokedReason ? (
                                   <p className="mt-1">Motif : {warning.revokedReason}</p>
                                 ) : null}
                               </div>
-                            )}
+                            ) : null}
                           </div>
                         ))}
                       </div>

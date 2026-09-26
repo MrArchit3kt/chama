@@ -272,6 +272,13 @@ model User {
   role         UserRole   @default(PLAYER)
   status       UserStatus @default(ACTIVE)
 
+  // ✅ Permissions fines déléguées par un SUPER_ADMIN à un ADMIN (ignoré
+  // si role != ADMIN — un SUPER_ADMIN a toujours tout). Le passage
+  // admin/retrait admin (toggle-user-role.ts) n'est volontairement PAS
+  // déléguable ici : reste SUPER_ADMIN-only en dur, pour éviter qu'un
+  // admin puisse créer d'autres admins.
+  adminPermissions String[] @default([])
+
   registrationStatus RegistrationStatus @default(APPROVED)
   approvedAt         DateTime?
   approvedById       String?
@@ -382,6 +389,10 @@ model User {
 
   // ✅ Badges attribués au joueur
   badges UserBadge[]
+
+  // ✅ Journal d'activité (super admin)
+  activityLogsAsActor  ActivityLog[] @relation("ActivityLogActor")
+  activityLogsAsTarget ActivityLog[] @relation("ActivityLogTarget")
 
   @@index([registrationStatus])
   @@index([approvedById])
@@ -808,4 +819,63 @@ model ErrorLog {
 
   @@index([createdAt])
   @@index([context])
+}
+
+/**
+ * ✅ Journal d'activité (super admin uniquement, /admin/activity) : trace
+ * "qui a fait quoi" sur le site (inscriptions, passages admin, CHAMA/AURA,
+ * mix générés, bannissements, badges...). actorId/targetId en SetNull +
+ * labels en snapshot texte : le journal reste lisible même après
+ * suppression d'un compte (voir deletePlayer).
+ */
+enum ActivityAction {
+  REGISTRATION_CREATED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  ROLE_CHANGED
+  ADMIN_PERMISSIONS_UPDATED
+  CHAMA_TOGGLED
+  AURA_TOGGLED
+  PLAYER_BANNED
+  PLAYER_UNBANNED
+  PLAYER_DELETED
+  PASSWORD_RESET
+  WARNING_ADDED
+  WARNING_REVOKED
+  BADGE_CREATED
+  BADGE_DELETED
+  BADGE_AWARDED
+  BADGE_REVOKED
+  DISCORD_CHANNEL_CREATED
+  DISCORD_CHANNEL_UPDATED
+  DISCORD_CHANNEL_DELETED
+  EVENT_CREATED
+  EVENT_UPDATED
+  EVENT_DELETED
+  EVENT_ROSTER_UPDATED
+  CONTACT_CLOSED
+  SITE_CONFIG_UPDATED
+  MIX_GENERATED
+}
+
+model ActivityLog {
+  id     String         @id @default(cuid())
+  action ActivityAction
+
+  actorId    String?
+  actorLabel String // snapshot "Nom (@pseudo)" au moment de l'action
+  targetId   String?
+  targetLabel String? // snapshot de la cible (joueur, event, badge...)
+
+  metadata Json? // détails libres (ex: { "game": "VERSUS", "sessionId": "..." })
+
+  createdAt DateTime @default(now())
+
+  actor  User? @relation("ActivityLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+  target User? @relation("ActivityLogTarget", fields: [targetId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetId])
 }

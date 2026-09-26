@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -28,8 +30,12 @@ function isGame(value: string): value is Game {
 }
 
 export async function createDiscordVoiceChannel(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("discord");
   if (!admin) redirect("/dashboard");
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "discord.manage")) {
+    redirect("/admin/discord?error=forbidden");
+  }
 
   const rawGame = String(formData.get("game") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
@@ -44,6 +50,14 @@ export async function createDiscordVoiceChannel(formData: FormData) {
   try {
     await db.discordVoiceChannel.create({
       data: { game, label, channelId },
+    });
+
+    await logActivity({
+      action: "DISCORD_CHANNEL_CREATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: label,
+      metadata: { game, channelId },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

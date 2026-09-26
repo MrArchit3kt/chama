@@ -5,6 +5,8 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -23,10 +25,14 @@ function isNextRedirectError(error: unknown) {
  * le joueur voit le motif + peut s'expliquer sur /banni.
  */
 export async function banPlayer(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.ban")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -43,7 +49,7 @@ export async function banPlayer(formData: FormData) {
   try {
     const targetUser = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, status: true },
+      select: { id: true, displayName: true, username: true, role: true, status: true },
     });
 
     if (!targetUser) {
@@ -84,6 +90,15 @@ export async function banPlayer(formData: FormData) {
     });
 
     publishAdminEvent("players");
+
+    await logActivity({
+      action: "PLAYER_BANNED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+      metadata: { reason },
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("BAN_PLAYER_ERROR", error);

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 type RosterRole = "TITULAIRE" | "REMPLACANT";
 
@@ -28,8 +30,12 @@ function isRosterRole(value: string): value is RosterRole {
  * indépendants (chaque pop-up ne touche que le sien).
  */
 export async function setEventRoster(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("events");
   if (!admin) redirect("/dashboard");
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "events.roster")) {
+    redirect("/admin/events?error=forbidden");
+  }
 
   const eventId = String(formData.get("eventId") ?? "").trim();
   const rawRole = String(formData.get("role") ?? "").trim();
@@ -44,7 +50,7 @@ export async function setEventRoster(formData: FormData) {
   try {
     const event = await db.event.findUnique({
       where: { id: eventId },
-      select: { id: true },
+      select: { id: true, title: true },
     });
 
     if (!event) redirect("/admin/events?error=server");
@@ -64,6 +70,14 @@ export async function setEventRoster(formData: FormData) {
         }),
       ),
     ]);
+
+    await logActivity({
+      action: "EVENT_ROSTER_UPDATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: event.title,
+      metadata: { role, count: userIds.length },
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("SET_EVENT_ROSTER_ERROR", error);

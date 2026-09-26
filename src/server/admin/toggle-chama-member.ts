@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -16,10 +18,14 @@ function isNextRedirectError(error: unknown) {
 }
 
 export async function toggleChamaMember(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.chama.toggle")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -30,7 +36,7 @@ export async function toggleChamaMember(formData: FormData) {
   }
 
   try {
-    await db.user.update({
+    const targetUser = await db.user.update({
       where: { id: userId },
       data: {
         isChamaMember: nextValue === "true",
@@ -38,6 +44,16 @@ export async function toggleChamaMember(formData: FormData) {
         // (nouveau membre, ou ré-ajout après un retrait).
         ...(nextValue === "true" ? { chamaWelcomeSeenAt: null } : {}),
       },
+      select: { id: true, displayName: true, username: true },
+    });
+
+    await logActivity({
+      action: "CHAMA_TOGGLED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+      metadata: { enabled: nextValue === "true" },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

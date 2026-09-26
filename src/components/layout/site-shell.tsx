@@ -27,6 +27,7 @@ export async function SiteShell({ children }: SiteShellProps) {
   ]);
   const canSeeAdmin =
     user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
   return (
     <div className="min-h-screen px-4 py-6 md:px-6">
@@ -43,7 +44,7 @@ export async function SiteShell({ children }: SiteShellProps) {
       ) : null}
 
       <div className="mx-auto max-w-7xl">
-        <MobileNav canSeeAdmin={canSeeAdmin} />
+        <MobileNav canSeeAdmin={canSeeAdmin} isSuperAdmin={isSuperAdmin} />
 
         <div className="flex gap-6">
           <SiteSidebar />

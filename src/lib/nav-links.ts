@@ -11,6 +11,8 @@ import {
   Car,
   Radio,
   Handshake,
+  ScrollText,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,4 +52,14 @@ export const adminMixLinks: NavLink[] = [
   { href: "/admin/mix/versus", label: "Mix Versus", icon: Handshake },
   { href: "/admin/mix/bo7", label: "Mix BO7", icon: Swords },
   { href: "/admin/mix/rocket-league", label: "Mix Rocket League", icon: Rocket },
+];
+
+/**
+ * ✅ Visible uniquement par les SUPER_ADMIN (voir isSuperAdmin dans
+ * site-sidebar.tsx / mobile-nav.tsx) : journal d'activité global du site
+ * et gestion des permissions déléguées aux admins.
+ */
+export const superAdminLinks: NavLink[] = [
+  { href: "/admin/activity", label: "Journal d’activité", icon: ScrollText },
+  { href: "/admin/permissions", label: "Permissions admins", icon: ShieldCheck },
 ];

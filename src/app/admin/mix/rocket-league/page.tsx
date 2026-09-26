@@ -11,6 +11,8 @@ import { createTempPlayer } from "@/server/mix/create-temp-player";
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "no_mix_admin":
       return "Sélectionne d’abord un admin autorisé à générer le mix Rocket League.";
     case "locked":
@@ -42,7 +44,7 @@ export default async function AdminRocketLeagueMixPage({
     session?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -31,8 +33,12 @@ const createBadgeSchema = z.object({
 });
 
 export async function createBadge(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("badges");
   if (!admin) redirect("/dashboard");
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "badges.manage")) {
+    redirect("/admin/badges?error=forbidden");
+  }
 
   const parsed = createBadgeSchema.safeParse({
     code: String(formData.get("code") ?? "").trim().toUpperCase(),
@@ -57,7 +63,15 @@ export async function createBadge(formData: FormData) {
       redirect("/admin/badges?error=code_taken");
     }
 
-    await db.badge.create({ data: parsed.data });
+    const badge = await db.badge.create({ data: parsed.data });
+
+    await logActivity({
+      action: "BADGE_CREATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: badge.name,
+      metadata: { code: badge.code },
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("CREATE_BADGE_ERROR", error);

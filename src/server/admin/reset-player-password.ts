@@ -7,6 +7,8 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 const resetPasswordSchema = z.object({
   userId: z.string().min(1),
@@ -14,10 +16,14 @@ const resetPasswordSchema = z.object({
 });
 
 export async function resetPlayerPassword(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.password.reset")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const parsed = resetPasswordSchema.safeParse({
@@ -36,6 +42,8 @@ export async function resetPlayerPassword(formData: FormData) {
       where: { id: userId },
       select: {
         id: true,
+        displayName: true,
+        username: true,
         role: true,
       },
     });
@@ -58,6 +66,14 @@ export async function resetPlayerPassword(formData: FormData) {
     });
 
     publishAdminEvent("players");
+
+    await logActivity({
+      action: "PASSWORD_RESET",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+    });
   } catch (error) {
     await logServerError("RESET_PLAYER_PASSWORD_ERROR", error);
     redirect("/admin/players?error=server");

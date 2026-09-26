@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
@@ -45,7 +46,7 @@ function backTo(game: MixGame): string {
 }
 
 export async function createTempPlayer(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const rawGame = String(formData.get("game") ?? "WARZONE").trim().toUpperCase();
@@ -59,6 +60,10 @@ export async function createTempPlayer(formData: FormData) {
           : rawGame === "VERSUS"
             ? "VERSUS"
             : "WARZONE";
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "mix.manage")) {
+    redirect(`${backTo(game)}?error=forbidden`);
+  }
 
   const parsed = createTempPlayerSchema.safeParse({
     game,

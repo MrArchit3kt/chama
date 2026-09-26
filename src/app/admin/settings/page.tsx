@@ -7,6 +7,8 @@ import { saveSiteConfig } from "@/server/admin/save-site-config";
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Le formulaire est invalide. Vérifie les champs obligatoires.";
     case "server":
@@ -21,7 +23,7 @@ export default async function AdminSettingsPage({
 }: {
   searchParams: Promise<{ error?: string; success?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("settings");
 
   if (!admin) {
     redirect("/dashboard");
