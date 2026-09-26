@@ -865,6 +865,8 @@ enum ActivityAction {
   SCORE_CONDITION_DELETED
   SCORE_BOARD_CREATED
   SCORE_ENTRY_UPDATED
+  SCORE_TIER_CREATED
+  SCORE_TIER_DELETED
 }
 
 model ActivityLog {
@@ -896,6 +898,7 @@ model ActivityLog {
 enum ScoreConditionMode {
   QUANTITY // l'admin saisit un nombre, points = nombre × condition.points
   ONE_TIME // atteinte ou pas (case à cocher), points = condition.points si cochée
+  TIERED // l'admin saisit un nombre, points = ceux du palier (tranche) dans lequel il tombe
 }
 
 enum ScoreConditionTarget {
@@ -921,15 +924,31 @@ model ScoreCondition {
   id         String               @id @default(cuid())
   gameModeId String
   label      String
-  points     Int
+  points     Int // ignoré si mode == TIERED (les points viennent des paliers)
   mode       ScoreConditionMode   @default(ONE_TIME)
   appliesTo  ScoreConditionTarget @default(PLAYER)
   createdAt  DateTime             @default(now())
 
-  gameMode ScoreGameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+  gameMode ScoreGameMode        @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
   entries  ScoreEntry[]
+  tiers    ScoreConditionTier[]
 
   @@index([gameModeId])
+}
+
+/** Tranche de valeurs pour une condition TIERED, ex: "entre 5 et 9 kills =
+ * 10 pts". maxValue à null => tranche illimitée vers le haut ("10+"). Les
+ * points peuvent être négatifs (ex: pénalité de morts). */
+model ScoreConditionTier {
+  id          String @id @default(cuid())
+  conditionId String
+  minValue    Int
+  maxValue    Int?
+  points      Int
+
+  condition ScoreCondition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+
+  @@index([conditionId])
 }
 
 model ScoreBoard {

@@ -5,6 +5,7 @@ import { Trophy } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
+import { computeEntryPoints } from "@/lib/scoring";
 
 function medalColor(rank: number) {
   if (rank === 0) return "text-amber-300";
@@ -27,7 +28,14 @@ async function getRanking(gameModeId: string): Promise<RankingRow[]> {
     where: { condition: { gameModeId } },
     select: {
       quantity: true,
-      condition: { select: { points: true, appliesTo: true } },
+      condition: {
+        select: {
+          points: true,
+          appliesTo: true,
+          mode: true,
+          tiers: { select: { minValue: true, maxValue: true, points: true } },
+        },
+      },
       team: {
         select: {
           members: {
@@ -70,7 +78,7 @@ async function getRanking(gameModeId: string): Promise<RankingRow[]> {
   }
 
   for (const entry of entries) {
-    const points = entry.quantity * entry.condition.points;
+    const points = computeEntryPoints(entry.quantity, entry.condition);
 
     if (entry.condition.appliesTo === "TEAM" && entry.team) {
       for (const member of entry.team.members) {
@@ -168,7 +176,7 @@ export default async function PointsPage() {
                           </div>
 
                           <span className="neon-title neon-gradient-text shrink-0 text-lg font-black">
-                            {row.points} pt{row.points > 1 ? "s" : ""}
+                            {row.points} pt{Math.abs(row.points) > 1 ? "s" : ""}
                           </span>
                         </div>
                       );

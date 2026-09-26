@@ -21,8 +21,10 @@ function isNextRedirectError(error: unknown) {
 const createConditionSchema = z.object({
   gameModeId: z.string().min(1),
   label: z.string().trim().min(2).max(60),
-  points: z.coerce.number().int().min(0).max(1000),
-  mode: z.enum(["QUANTITY", "ONE_TIME"]),
+  // Peut être négatif (ex : -1 pt par mort). Ignoré si mode == TIERED, les
+  // points viennent alors des paliers créés ensuite sur la condition.
+  points: z.coerce.number().int().min(-1000).max(1000).default(0),
+  mode: z.enum(["QUANTITY", "ONE_TIME", "TIERED"]),
   appliesTo: z.enum(["TEAM", "PLAYER"]),
 });
 
