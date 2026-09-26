@@ -1,35 +1,7 @@
 import "server-only";
 import { db } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
-
-type ActivityAction =
-  | "REGISTRATION_CREATED"
-  | "REGISTRATION_APPROVED"
-  | "REGISTRATION_REJECTED"
-  | "ROLE_CHANGED"
-  | "ADMIN_PERMISSIONS_UPDATED"
-  | "CHAMA_TOGGLED"
-  | "AURA_TOGGLED"
-  | "PLAYER_BANNED"
-  | "PLAYER_UNBANNED"
-  | "PLAYER_DELETED"
-  | "PASSWORD_RESET"
-  | "WARNING_ADDED"
-  | "WARNING_REVOKED"
-  | "BADGE_CREATED"
-  | "BADGE_DELETED"
-  | "BADGE_AWARDED"
-  | "BADGE_REVOKED"
-  | "DISCORD_CHANNEL_CREATED"
-  | "DISCORD_CHANNEL_UPDATED"
-  | "DISCORD_CHANNEL_DELETED"
-  | "EVENT_CREATED"
-  | "EVENT_UPDATED"
-  | "EVENT_DELETED"
-  | "EVENT_ROSTER_UPDATED"
-  | "CONTACT_CLOSED"
-  | "SITE_CONFIG_UPDATED"
-  | "MIX_GENERATED";
+import type { ActivityAction } from "@/generated/prisma/enums";
 
 type LogActivityParams = {
   action: ActivityAction;

@@ -16,7 +16,8 @@ export type AdminSection =
   | "events"
   | "contact"
   | "settings"
-  | "mix";
+  | "mix"
+  | "points";
 
 export const ADMIN_SECTIONS: { key: AdminSection; label: string }[] = [
   { key: "players", label: "Joueurs" },
@@ -27,6 +28,7 @@ export const ADMIN_SECTIONS: { key: AdminSection; label: string }[] = [
   { key: "contact", label: "Contact" },
   { key: "settings", label: "Paramètres du site" },
   { key: "mix", label: "Mix (génération d'équipes)" },
+  { key: "points", label: "Points (classements configurables)" },
 ];
 
 export const ADMIN_PERMISSIONS = {
@@ -49,6 +51,14 @@ export const ADMIN_PERMISSIONS = {
   "mix.manage": {
     section: "mix",
     label: "Gérer tous les mix (Warzone/Ranked/BO7/Rocket League/Versus)",
+  },
+  "points.config": {
+    section: "points",
+    label: "Configurer les modes de jeu et leurs conditions de points",
+  },
+  "points.board": {
+    section: "points",
+    label: "Créer des tableaux et saisir les scores",
   },
 } as const satisfies Record<string, { section: AdminSection; label: string }>;
 
