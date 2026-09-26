@@ -8,6 +8,7 @@ import { createEvent } from "@/server/events/create-event";
 import { updateEvent } from "@/server/events/update-event";
 import { deleteEvent } from "@/server/events/delete-event";
 import { EventRosterModal } from "@/components/admin/event-roster-modal";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function formatDateForInput(value: Date | null) {
   if (!value) return "";
@@ -55,6 +56,8 @@ function getPresenceLabel(status: string) {
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Formulaire invalide. Vérifie les champs, les dates et les informations saisies.";
     case "server":
@@ -99,7 +102,7 @@ export default async function AdminEventsPage({
     roster_updated?: string;
   }>;
 }) {
-  const user = await requireAdmin();
+  const user = await requireAdmin("events");
 
   if (!user) {
     redirect("/dashboard");
@@ -174,6 +177,7 @@ export default async function AdminEventsPage({
           </p>
         </div>
 
+        {hasAdminPermission(user.role, user.adminPermissions, "events.manage") ? (
         <div className="neon-card p-5 md:p-8">
           <h3 className="text-xl font-bold text-white md:text-2xl">Créer un événement</h3>
 
@@ -328,6 +332,7 @@ export default async function AdminEventsPage({
             </div>
           </form>
         </div>
+        ) : null}
 
         <div className="grid gap-4 md:gap-6">
           {events.length === 0 ? (
@@ -405,24 +410,26 @@ export default async function AdminEventsPage({
                           Composition de l’équipe
                         </p>
 
-                        <div className="flex flex-wrap gap-2">
-                          <EventRosterModal
-                            eventId={event.id}
-                            role="TITULAIRE"
-                            label="Titulaires"
-                            candidates={rosterCandidates}
-                            selectedIds={titulaires.map((p) => p.userId)}
-                            accentClassName="border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
-                          />
-                          <EventRosterModal
-                            eventId={event.id}
-                            role="REMPLACANT"
-                            label="Remplaçants"
-                            candidates={rosterCandidates}
-                            selectedIds={remplacants.map((p) => p.userId)}
-                            accentClassName="border-amber-400/25 bg-amber-400/10 text-amber-300"
-                          />
-                        </div>
+                        {hasAdminPermission(user.role, user.adminPermissions, "events.roster") ? (
+                          <div className="flex flex-wrap gap-2">
+                            <EventRosterModal
+                              eventId={event.id}
+                              role="TITULAIRE"
+                              label="Titulaires"
+                              candidates={rosterCandidates}
+                              selectedIds={titulaires.map((p) => p.userId)}
+                              accentClassName="border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
+                            />
+                            <EventRosterModal
+                              eventId={event.id}
+                              role="REMPLACANT"
+                              label="Remplaçants"
+                              candidates={rosterCandidates}
+                              selectedIds={remplacants.map((p) => p.userId)}
+                              accentClassName="border-amber-400/25 bg-amber-400/10 text-amber-300"
+                            />
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -534,6 +541,8 @@ export default async function AdminEventsPage({
                       )}
                     </div>
 
+                    {hasAdminPermission(user.role, user.adminPermissions, "events.manage") ? (
+                    <>
                     <form
                       action={updateEvent}
                       encType="multipart/form-data"
@@ -693,6 +702,8 @@ export default async function AdminEventsPage({
                         Supprimer l’événement
                       </button>
                     </form>
+                    </>
+                    ) : null}
                   </div>
                 </div>
               );

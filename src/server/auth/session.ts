@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/prisma";
 import { logServerError } from "@/lib/log-error";
+import { hasAdminSectionAccess, type AdminSection } from "@/lib/admin-permissions";
 
 // ⚠️ redirect() de Next.js fonctionne en lançant une erreur spéciale pour
 // interrompre le rendu. Il ne faut jamais l'avaler dans un try/catch, sinon
@@ -27,6 +28,7 @@ type SessionUser = {
   role: string;
   status: string;
   registrationStatus: string;
+  adminPermissions: string[];
 };
 
 async function resolveSessionUser(): Promise<SessionUser | null> {
@@ -52,6 +54,7 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
       role: true,
       status: true,
       registrationStatus: true,
+      adminPermissions: true,
     },
   });
 
@@ -67,6 +70,7 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     role: dbUser.role,
     status: dbUser.status,
     registrationStatus: dbUser.registrationStatus,
+    adminPermissions: dbUser.adminPermissions,
   };
 }
 
@@ -160,7 +164,15 @@ export async function getApprovalWelcomeState(): Promise<boolean> {
   }
 }
 
-export async function requireAdmin() {
+/**
+ * `section` optionnel : en plus d'être ADMIN/SUPER_ADMIN, vérifie que
+ * l'utilisateur a accès à cette section précise (au moins une permission
+ * de `admin-permissions.ts` dedans). Un SUPER_ADMIN passe toujours,
+ * quelle que soit `section`. Sans `section`, se comporte comme avant
+ * (n'importe quel ADMIN/SUPER_ADMIN passe) — pour les pages qui gèrent
+ * elles-mêmes des permissions plus fines par bouton/formulaire.
+ */
+export async function requireAdmin(section?: AdminSection) {
   try {
     const user = await requireAuth();
 
@@ -174,10 +186,39 @@ export async function requireAdmin() {
       return null;
     }
 
+    if (section && !hasAdminSectionAccess(user.role, user.adminPermissions, section)) {
+      return null;
+    }
+
     return user;
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("REQUIRE_ADMIN_ERROR", error);
+    return null;
+  }
+}
+
+/**
+ * Réservé au SUPER_ADMIN (journal d'activité, gestion des permissions des
+ * admins) — un ADMIN classique, même avec toutes les permissions, ne
+ * passe pas ici.
+ */
+export async function requireSuperAdmin() {
+  try {
+    const user = await requireAuth();
+
+    if (!user) {
+      return null;
+    }
+
+    if (user.role !== "SUPER_ADMIN") {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    await logServerError("REQUIRE_SUPER_ADMIN_ERROR", error);
     return null;
   }
 }

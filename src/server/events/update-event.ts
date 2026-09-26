@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 import {
   deleteLocalEventImage,
   isLocalEventImage,
@@ -29,10 +31,14 @@ const ALLOWED_STATUSES = new Set([
 ]);
 
 export async function updateEvent(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("events");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "events.manage")) {
+    redirect("/admin/events?error=forbidden");
   }
 
   const id = String(formData.get("id") ?? "").trim();
@@ -107,6 +113,14 @@ export async function updateEvent(formData: FormData) {
     if (imageChanged && isLocalEventImage(previousImageUrl)) {
       await deleteLocalEventImage(previousImageUrl);
     }
+
+    await logActivity({
+      action: "EVENT_UPDATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: title,
+      metadata: { eventId: existing.id },
+    });
   } catch (error) {
     await logServerError("UPDATE_EVENT_ERROR", error);
     if (uploadedLocalImageUrl) {

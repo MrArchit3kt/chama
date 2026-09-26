@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getSessionUser } from "@/server/auth/session";
-import { mainLinks, adminLinks, adminMixLinks } from "@/lib/nav-links";
+import { mainLinks, adminLinks, adminMixLinks, superAdminLinks } from "@/lib/nav-links";
 
 export async function SiteSidebar() {
   const user = await getSessionUser();
   const canSeeAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
   return (
     <aside className="hidden w-72 shrink-0 lg:block">
@@ -112,6 +113,33 @@ export async function SiteSidebar() {
                   );
                 })}
               </div>
+
+              {isSuperAdmin ? (
+                <>
+                  <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-white/40">
+                    Super Admin
+                  </p>
+
+                  <div className="space-y-2">
+                    {superAdminLinks.map((item) => {
+                      const Icon = item.icon;
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="group flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-white/75 transition hover:border-fuchsia-400/15 hover:bg-white/[0.03] hover:text-white"
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-white/[0.03] transition group-hover:border-fuchsia-400/20 group-hover:bg-fuchsia-400/[0.06]">
+                            <Icon className="h-4 w-4 text-fuchsia-300/90" />
+                          </span>
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>

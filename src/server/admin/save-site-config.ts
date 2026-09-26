@@ -4,14 +4,20 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 const SITE_THEMES = ["DEFAULT", "HALLOWEEN", "CHRISTMAS"] as const;
 
 export async function saveSiteConfig(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("settings");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "settings.manage")) {
+    redirect("/admin/settings?error=forbidden");
   }
 
   const siteName = String(formData.get("siteName") ?? "").trim();
@@ -59,6 +65,13 @@ export async function saveSiteConfig(formData: FormData) {
         registrationsEnabled: formData.get("registrationsEnabled") === "on",
         theme,
       },
+    });
+
+    await logActivity({
+      action: "SITE_CONFIG_UPDATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: siteName,
     });
   } catch (error) {
     await logServerError("SAVE_SITE_CONFIG_ERROR", error);

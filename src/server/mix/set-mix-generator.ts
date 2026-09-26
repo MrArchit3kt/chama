@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 type RLTeamSize = "TWO" | "THREE";
@@ -64,10 +65,15 @@ function redirectTo(game: MixGame, qs: string): never {
 }
 
 export async function setMixGenerator(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const game = gameFrom(formData.get("game")) ?? "WARZONE";
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "mix.manage")) {
+    redirectTo(game, "?error=forbidden");
+  }
+
   const selectedAdminId = String(formData.get("selectedAdminId") ?? "").trim();
 
   // RL / Versus uniquement

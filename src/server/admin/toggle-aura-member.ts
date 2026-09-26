@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -16,10 +18,14 @@ function isNextRedirectError(error: unknown) {
 }
 
 export async function toggleAuraMember(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.aura.toggle")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -30,11 +36,21 @@ export async function toggleAuraMember(formData: FormData) {
   }
 
   try {
-    await db.user.update({
+    const targetUser = await db.user.update({
       where: { id: userId },
       data: {
         isAuraMember: nextValue === "true",
       },
+      select: { id: true, displayName: true, username: true },
+    });
+
+    await logActivity({
+      action: "AURA_TOGGLED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+      metadata: { enabled: nextValue === "true" },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

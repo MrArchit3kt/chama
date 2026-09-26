@@ -7,6 +7,7 @@ import { db } from "@/lib/prisma";
 import { approveRegistration } from "@/server/admin/approve-registration";
 import { rejectRegistration } from "@/server/admin/reject-registration";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function formatDate(value: Date | null) {
   if (!value) return "Jamais";
@@ -19,6 +20,8 @@ function formatDate(value: Date | null) {
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Requête invalide.";
     case "player_not_found":
@@ -39,7 +42,7 @@ export default async function AdminRegistrationsPage({
     rejected?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("registrations");
 
   if (!admin) {
     redirect("/dashboard");
@@ -183,22 +186,26 @@ export default async function AdminRegistrationsPage({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
-                    <form action={approveRegistration}>
-                      <input type="hidden" name="userId" value={user.id} />
-                      <button type="submit" className="neon-button w-full px-4 py-2.5 md:px-5 md:py-3">
-                        Accepter
-                      </button>
-                    </form>
+                    {hasAdminPermission(admin.role, admin.adminPermissions, "registrations.approve") ? (
+                      <form action={approveRegistration}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <button type="submit" className="neon-button w-full px-4 py-2.5 md:px-5 md:py-3">
+                          Accepter
+                        </button>
+                      </form>
+                    ) : null}
 
-                    <form action={rejectRegistration}>
-                      <input type="hidden" name="userId" value={user.id} />
-                      <button
-                        type="submit"
-                        className="neon-button-secondary w-full px-4 py-2.5 md:px-5 md:py-3"
-                      >
-                        Refuser
-                      </button>
-                    </form>
+                    {hasAdminPermission(admin.role, admin.adminPermissions, "registrations.reject") ? (
+                      <form action={rejectRegistration}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <button
+                          type="submit"
+                          className="neon-button-secondary w-full px-4 py-2.5 md:px-5 md:py-3"
+                        >
+                          Refuser
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
                 </div>
               </div>

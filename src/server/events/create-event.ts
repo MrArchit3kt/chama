@@ -5,6 +5,8 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 import {
   deleteLocalEventImage,
   resolveEventImageInput,
@@ -32,10 +34,14 @@ function slugify(value: string) {
 }
 
 export async function createEvent(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("events");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "events.manage")) {
+    redirect("/admin/events?error=forbidden");
   }
 
   const parsed = createEventSchema.safeParse({
@@ -125,6 +131,13 @@ export async function createEvent(formData: FormData) {
         });
       }
     }
+
+    await logActivity({
+      action: "EVENT_CREATED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: event.title,
+    });
   } catch (error) {
     await logServerError("CREATE_EVENT_ERROR", error);
     if (uploadedLocalImageUrl) {

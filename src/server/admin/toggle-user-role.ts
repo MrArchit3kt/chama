@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
 
 export async function toggleUserRole(formData: FormData) {
   const admin = await requireAdmin();
@@ -32,6 +33,8 @@ export async function toggleUserRole(formData: FormData) {
       where: { id: userId },
       select: {
         id: true,
+        displayName: true,
+        username: true,
         role: true,
       },
     });
@@ -64,6 +67,15 @@ export async function toggleUserRole(formData: FormData) {
     ]);
 
     await Promise.resolve(publishAdminEvent("players"));
+
+    await logActivity({
+      action: "ROLE_CHANGED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+      metadata: { previousRole: targetUser.role, nextRole },
+    });
   } catch (error) {
     await logServerError("TOGGLE_USER_ROLE_ERROR", error);
     redirect("/admin/players?error=server");

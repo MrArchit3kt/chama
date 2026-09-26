@@ -10,6 +10,8 @@ import { BADGE_ICONS, BADGE_COLORS, BADGE_CATEGORY_LABELS, getBadgeIcon, getBadg
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Formulaire invalide. Vérifie les champs (le code n’accepte que MAJUSCULES, chiffres et _).";
     case "code_taken":
@@ -26,7 +28,7 @@ export default async function AdminBadgesPage({
 }: {
   searchParams: Promise<{ error?: string; success?: string; deleted?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("badges");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};

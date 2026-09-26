@@ -47,7 +47,7 @@ export default async function AdminContactPage({
 }: {
   searchParams: Promise<{ error?: string; closed?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("contact");
 
   if (!admin) {
     redirect("/dashboard");
@@ -55,6 +55,7 @@ export default async function AdminContactPage({
 
   const sp = (await searchParams) ?? {};
   const hasError = sp.error === "server";
+  const isForbidden = sp.error === "forbidden";
   const isClosed = sp.closed === "1";
 
   const requests = await db.contactRequest.findMany({
@@ -106,6 +107,14 @@ export default async function AdminContactPage({
           <div className="neon-card p-4 md:p-6">
             <p className="text-sm font-medium text-rose-400">
               Erreur serveur pendant l’action demandée.
+            </p>
+          </div>
+        ) : null}
+
+        {isForbidden ? (
+          <div className="neon-card p-4 md:p-6">
+            <p className="text-sm font-medium text-rose-400">
+              Tu n’as pas les droits pour effectuer cette action.
             </p>
           </div>
         ) : null}

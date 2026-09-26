@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
 
 const registerSchema = z
   .object({
@@ -145,6 +146,13 @@ export async function registerUser(formData: FormData) {
         })),
       });
     }
+
+    await logActivity({
+      action: "REGISTRATION_CREATED",
+      actorId: newUser.id,
+      actorLabel: `${newUser.displayName} (@${newUser.username})`,
+      metadata: invitedByName ? { invitedByName } : undefined,
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("REGISTER_ERROR", error);

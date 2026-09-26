@@ -5,12 +5,18 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 export async function rejectRegistration(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("registrations");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "registrations.reject")) {
+    redirect("/admin/registrations?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -24,6 +30,8 @@ export async function rejectRegistration(formData: FormData) {
       where: { id: userId },
       select: {
         id: true,
+        displayName: true,
+        username: true,
       },
     });
 
@@ -43,6 +51,14 @@ export async function rejectRegistration(formData: FormData) {
 
     publishAdminEvent("players");
     publishAdminEvent("registrations");
+
+    await logActivity({
+      action: "REGISTRATION_REJECTED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel: `${targetUser.displayName} (@${targetUser.username})`,
+    });
   } catch (error) {
     await logServerError("REJECT_REGISTRATION_ERROR", error);
     redirect("/admin/registrations?error=server");

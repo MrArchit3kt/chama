@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -25,10 +27,14 @@ function isNextRedirectError(error: unknown) {
  * l'historique de modération d'un autre joueur.
  */
 export async function deletePlayer(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.delete")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const userId = String(formData.get("userId") ?? "").trim();
@@ -44,7 +50,7 @@ export async function deletePlayer(formData: FormData) {
   try {
     const target = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, displayName: true, username: true, role: true },
     });
 
     if (!target) {
@@ -56,6 +62,13 @@ export async function deletePlayer(formData: FormData) {
     }
 
     await db.user.delete({ where: { id: userId } });
+
+    await logActivity({
+      action: "PLAYER_DELETED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: `${target.displayName} (@${target.username})`,
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
 

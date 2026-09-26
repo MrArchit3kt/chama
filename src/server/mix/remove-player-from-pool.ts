@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
@@ -35,10 +36,14 @@ function backTo(game: MixGame) {
 }
 
 export async function removePlayerFromPool(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const game = gameFrom(formData.get("game"));
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "mix.manage")) {
+    redirect(`${backTo(game)}?error=forbidden`);
+  }
   const userId = String(formData.get("userId") ?? "").trim();
   const tempPlayerId = String(formData.get("tempPlayerId") ?? "").trim();
 

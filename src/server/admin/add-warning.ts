@@ -5,6 +5,8 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { publishAdminEvent } from "@/server/admin/admin-live-events";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 
 const WARNING_LIMIT_PER_TYPE = 5;
 
@@ -26,10 +28,14 @@ function isAllowedWarningType(value: string): value is AllowedWarningType {
 }
 
 export async function addWarning(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("players");
 
   if (!admin) {
     redirect("/dashboard");
+  }
+
+  if (!hasAdminPermission(admin.role, admin.adminPermissions, "players.warning.manage")) {
+    redirect("/admin/players?error=forbidden");
   }
 
   const targetUserId = String(formData.get("userId") ?? "").trim();
@@ -48,6 +54,8 @@ export async function addWarning(formData: FormData) {
     where: { id: targetUserId },
     select: {
       id: true,
+      displayName: true,
+      username: true,
       status: true,
     },
   });
@@ -55,6 +63,8 @@ export async function addWarning(formData: FormData) {
   if (!targetUser) {
     redirect("/admin/players?error=player_not_found");
   }
+
+  const targetLabel = `${targetUser.displayName} (@${targetUser.username})`;
 
   try {
     await db.warning.create({
@@ -65,6 +75,15 @@ export async function addWarning(formData: FormData) {
         message,
         status: "ACTIVE",
       },
+    });
+
+    await logActivity({
+      action: "WARNING_ADDED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetId: targetUser.id,
+      targetLabel,
+      metadata: { type: rawType, message },
     });
 
     const sameTypeActiveWarnings = await db.warning.count({
@@ -109,6 +128,18 @@ export async function addWarning(formData: FormData) {
           banTriggerType: rawType,
           isAvailableForMix: false,
           isOnline: false,
+        },
+      });
+
+      await logActivity({
+        action: "PLAYER_BANNED",
+        actorId: admin.id,
+        actorLabel: `${admin.name} (@${admin.username})`,
+        targetId: targetUser.id,
+        targetLabel,
+        metadata: {
+          automatic: true,
+          reason: `Ban automatique après ${sameTypeActiveWarnings} avertissements actifs du type ${rawType}.`,
         },
       });
 

@@ -19,6 +19,8 @@ const GAMES = [
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Formulaire invalide. L’ID de salon Discord doit être un nombre (clic droit sur le salon → Copier l’ID, mode développeur Discord activé).";
     case "server":
@@ -33,7 +35,7 @@ export default async function AdminDiscordPage({
 }: {
   searchParams: Promise<{ error?: string; success?: string; deleted?: string; updated?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("discord");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};

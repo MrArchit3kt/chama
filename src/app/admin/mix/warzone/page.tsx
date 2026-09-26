@@ -13,6 +13,8 @@ import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "invalid_count":
       return "Nombre de joueurs invalide pour une répartition en équipes de 3 et 4 (ex: 1, 2 ou 5).";
     case "locked":
@@ -66,7 +68,7 @@ export default async function AdminMixWarzonePage({
     session?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};

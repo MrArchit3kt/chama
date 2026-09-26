@@ -13,6 +13,8 @@ import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 
 function getErrorMessage(error?: string) {
   switch (error) {
+    case "forbidden":
+      return "Tu n’as pas les droits pour effectuer cette action.";
     case "invalid_count":
       return "En Ranked, le mix doit être en 3v3 uniquement : il faut un nombre de joueurs divisible par 3 (ex: 3, 6, 9, 12...).";
     case "locked":
@@ -45,7 +47,7 @@ export default async function AdminMixWarzoneRankedPage({
     session?: string;
   }>;
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("mix");
   if (!admin) redirect("/dashboard");
 
   const sp = (await searchParams) ?? {};
