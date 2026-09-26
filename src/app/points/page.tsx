@@ -6,6 +6,44 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { computeEntryPoints } from "@/lib/scoring";
+import { computeTournamentStandings } from "@/lib/tournament-standings";
+
+const conditionForScoringSelect = {
+  points: true,
+  mode: true,
+  tiers: { select: { minValue: true, maxValue: true, points: true } },
+} as const;
+
+async function getTournaments() {
+  const tournaments = await db.scoreTournament.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      boards: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          gameMode: { select: { name: true } },
+          teams: {
+            include: {
+              entries: { include: { condition: { select: conditionForScoringSelect } } },
+              members: {
+                include: { entries: { include: { condition: { select: conditionForScoringSelect } } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return tournaments
+    .filter((t) => t.boards.length > 0)
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      standings: computeTournamentStandings(t.boards),
+    }));
+}
 
 function medalColor(rank: number) {
   if (rank === 0) return "text-amber-300";
@@ -102,6 +140,7 @@ export default async function PointsPage() {
   });
 
   const rankings = await Promise.all(gameModes.map((mode) => getRanking(mode.id)));
+  const tournaments = await getTournaments();
 
   return (
     <SiteShell>
@@ -118,6 +157,75 @@ export default async function PointsPage() {
             chaque mode de jeu.
           </p>
         </div>
+
+        {tournaments.map((tournament) => (
+          <div key={tournament.id} className="neon-card p-5 md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                  Tournoi
+                </p>
+                <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">
+                  {tournament.name}
+                </h2>
+                {tournament.description ? (
+                  <p className="neon-text-muted mt-2 max-w-2xl text-sm leading-6">
+                    {tournament.description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            {tournament.standings.length === 0 ? (
+              <p className="neon-text-muted mt-4 text-sm">
+                Aucun score enregistré pour ce tournoi pour le moment.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-2">
+                {tournament.standings.map((row, rank) => (
+                  <div
+                    key={row.key}
+                    className={
+                      rank === 0
+                        ? "flex items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3"
+                        : "flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/2 px-4 py-3"
+                    }
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center text-sm font-black ${medalColor(rank)}`}
+                      >
+                        {rank < 3 ? <Trophy className="h-4 w-4" /> : rank + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">
+                          {row.name}
+                          {rank === 0 ? (
+                            <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
+                              Vainqueur
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="neon-text-muted truncate text-[11px]">
+                          {row.breakdown
+                            .map(
+                              (b) =>
+                                `${b.gameModeName} : ${b.points > 0 ? "+" : ""}${b.points} pt${Math.abs(b.points) > 1 ? "s" : ""}`,
+                            )
+                            .join(" · ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="neon-title neon-gradient-text shrink-0 text-lg font-black">
+                      {row.total} pt{Math.abs(row.total) > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
 
         {gameModes.length === 0 ? (
           <div className="neon-card p-5 md:p-8">

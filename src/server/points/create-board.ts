@@ -29,6 +29,7 @@ export async function createBoard(formData: FormData) {
   }
 
   const title = String(formData.get("title") ?? "").trim();
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
 
   try {
     const gameMode = await db.scoreGameMode.findUnique({
@@ -38,11 +39,22 @@ export async function createBoard(formData: FormData) {
 
     if (!gameMode) redirect("/admin/points?error=server");
 
+    let tournamentName: string | null = null;
+    if (tournamentId) {
+      const tournament = await db.scoreTournament.findUnique({
+        where: { id: tournamentId },
+        select: { id: true, name: true },
+      });
+      if (!tournament) redirect(`/admin/points/${gameModeId}?error=server`);
+      tournamentName = tournament.name;
+    }
+
     const board = await db.scoreBoard.create({
       data: {
         gameModeId: gameMode.id,
         title: title || null,
         createdById: admin.id,
+        tournamentId: tournamentId || null,
       },
     });
 
@@ -51,6 +63,7 @@ export async function createBoard(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: title ? `${gameMode.name} — ${title}` : gameMode.name,
+      metadata: tournamentName ? { tournament: tournamentName } : undefined,
     });
 
     redirect(`/admin/points/${gameModeId}?board=${board.id}&success=1`);

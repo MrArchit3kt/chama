@@ -14,6 +14,7 @@ import {
   ScrollText,
   ShieldCheck,
   Gem,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,6 +48,7 @@ export const adminLinks: NavLink[] = [
   { href: "/admin/registrations", label: "Admin Inscriptions", icon: Users },
   { href: "/admin/contact", label: "Admin Contact", icon: Mail },
   { href: "/admin/points", label: "Admin Points", icon: Gem },
+  { href: "/admin/tournaments", label: "Admin Tournois", icon: Award },
 ];
 
 export const adminMixLinks: NavLink[] = [
