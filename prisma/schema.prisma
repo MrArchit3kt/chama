@@ -395,8 +395,9 @@ model User {
   activityLogsAsTarget ActivityLog[] @relation("ActivityLogTarget")
 
   // ✅ Système de points
-  scoreBoardsCreated   ScoreBoard[]      @relation("ScoreBoardsCreated")
-  scoreTeamMemberships ScoreTeamMember[] @relation("ScoreTeamMemberships")
+  scoreBoardsCreated       ScoreBoard[]      @relation("ScoreBoardsCreated")
+  scoreTeamMemberships     ScoreTeamMember[] @relation("ScoreTeamMemberships")
+  scoreTournamentsCreated  ScoreTournament[] @relation("ScoreTournamentsCreated")
 
   @@index([registrationStatus])
   @@index([approvedById])
@@ -867,6 +868,9 @@ enum ActivityAction {
   SCORE_ENTRY_UPDATED
   SCORE_TIER_CREATED
   SCORE_TIER_DELETED
+  SCORE_TOURNAMENT_CREATED
+  SCORE_TOURNAMENT_DELETED
+  SCORE_BOARD_TOURNAMENT_SET
 }
 
 model ActivityLog {
@@ -952,17 +956,42 @@ model ScoreConditionTier {
 }
 
 model ScoreBoard {
+  id           String   @id @default(cuid())
+  gameModeId   String
+  title        String?
+  createdAt    DateTime @default(now())
+  createdById  String?
+  tournamentId String? // partie rattachée à un tournoi (facultatif)
+
+  gameMode   ScoreGameMode    @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+  createdBy  User?            @relation("ScoreBoardsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  tournament ScoreTournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  teams      ScoreTeam[]
+
+  @@index([gameModeId, createdAt])
+  @@index([tournamentId])
+}
+
+/**
+ * Regroupe plusieurs tableaux (même mode de jeu ou modes différents,
+ * ex: 3 parties Warzone/Rocket League/BO7 dans une même soirée) pour en
+ * cumuler les points par équipe et désigner un vainqueur global. Les
+ * équipes sont réconciliées entre tableaux par leur nom (comme les
+ * joueurs invités sont réconciliés entre tableaux par leur nom) : pas de
+ * roster persistant, juste une convention de nommage cohérente d'une
+ * partie à l'autre.
+ */
+model ScoreTournament {
   id          String   @id @default(cuid())
-  gameModeId  String
-  title       String?
+  name        String
+  description String?  @db.Text
   createdAt   DateTime @default(now())
   createdById String?
 
-  gameMode  ScoreGameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
-  createdBy User?         @relation("ScoreBoardsCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  teams     ScoreTeam[]
+  createdBy User?        @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  boards    ScoreBoard[]
 
-  @@index([gameModeId, createdAt])
+  @@index([createdAt])
 }
 
 model ScoreTeam {

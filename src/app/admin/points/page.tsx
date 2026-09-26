@@ -76,13 +76,20 @@ export default async function AdminPointsPage({
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Admin Points
           </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
-            Modes de jeu &amp; conditions de points
-          </h1>
+          <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+            <h1 className="neon-title neon-gradient-text text-2xl font-black md:text-3xl">
+              Modes de jeu &amp; conditions de points
+            </h1>
+            <Link href="/admin/tournaments" className="neon-button-secondary px-4 py-2 text-sm">
+              Gérer les tournois
+            </Link>
+          </div>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Crée un mode de jeu, définis ses conditions (qui rapportent des
             points à l’équipe ou à un joueur précis), puis va sur sa page
-            pour créer des tableaux et saisir les scores.
+            pour créer des tableaux et saisir les scores. Pour cumuler
+            plusieurs parties (même sur des modes différents) et désigner
+            une équipe gagnante finale, utilise la section « Tournois ».
           </p>
         </div>
 

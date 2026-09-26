@@ -9,6 +9,7 @@ import { createBoard } from "@/server/points/create-board";
 import { addScoreTeam } from "@/server/points/add-score-team";
 import { addScoreTeamMember } from "@/server/points/add-score-team-member";
 import { saveScoreEntries } from "@/server/points/save-score-entries";
+import { setBoardTournament } from "@/server/points/set-board-tournament";
 import { BoardHistory } from "@/components/points/board-history";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
@@ -113,6 +114,7 @@ export default async function AdminPointsModePage({
   } as const;
 
   const boardsInclude = {
+    tournament: { select: { id: true, name: true } },
     teams: {
       include: {
         members: {
@@ -144,6 +146,11 @@ export default async function AdminPointsModePage({
     where: { status: "ACTIVE", registrationStatus: "APPROVED" },
     select: { id: true, displayName: true, username: true },
     orderBy: { displayName: "asc" },
+  });
+
+  const tournaments = await db.scoreTournament.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true },
   });
 
   return (
@@ -201,21 +208,68 @@ export default async function AdminPointsModePage({
                     ? latestBoard.title || `Tableau du ${formatDate(latestBoard.createdAt)}`
                     : "Aucun tableau pour le moment"}
                 </h2>
+                {latestBoard?.tournament ? (
+                  <Link
+                    href="/admin/tournaments"
+                    className="neon-badge mt-1.5 inline-flex text-[10px] hover:border-cyan-400/40"
+                  >
+                    Tournoi : {latestBoard.tournament.name}
+                  </Link>
+                ) : null}
               </div>
 
-              <form action={createBoard} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <form
+                action={createBoard}
+                className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+              >
                 <input type="hidden" name="gameModeId" value={gameMode.id} />
                 <input
                   name="title"
                   type="text"
                   placeholder="Titre du tableau (optionnel)"
-                  className="w-full px-3 py-2.5 text-sm sm:min-w-[220px]"
+                  className="w-full px-3 py-2.5 text-sm sm:min-w-55"
                 />
+                <select name="tournamentId" defaultValue="" className="w-full px-3 py-2.5 text-sm">
+                  <option value="">Partie indépendante (pas de tournoi)</option>
+                  {tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
                 <button type="submit" className="neon-button px-4 py-2.5 text-sm">
                   Nouveau tableau
                 </button>
               </form>
             </div>
+
+            {latestBoard && tournaments.length > 0 ? (
+              <form
+                action={setBoardTournament}
+                className="mt-3 flex flex-wrap items-center gap-2"
+              >
+                <input type="hidden" name="gameModeId" value={gameMode.id} />
+                <input type="hidden" name="boardId" value={latestBoard.id} />
+                <label className="text-[11px] text-white/50">
+                  Rattacher ce tableau à un tournoi :
+                </label>
+                <select
+                  name="tournamentId"
+                  defaultValue={latestBoard.tournament?.id ?? ""}
+                  className="px-2.5 py-1.5 text-xs"
+                >
+                  <option value="">Aucun</option>
+                  {tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" className="neon-button-secondary px-3 py-1.5 text-xs">
+                  Enregistrer
+                </button>
+              </form>
+            ) : null}
 
             <BoardHistory
               boards={pastBoards}
