@@ -22,7 +22,7 @@ function getErrorMessage(error?: string) {
     case "validation":
       return "Formulaire invalide. Vérifie les champs.";
     case "team_count_required":
-      return "Indique un nombre d’équipes pour un mode « Libre choix » ou « Aléatoire ».";
+      return "Indique un nombre d’équipes (requis pour Organigramme, ou pour Classique en « Libre choix » / « Aléatoire »).";
     case "modes_required":
       return "Choisis au moins un mode de jeu pour un tournoi au format « Classique ».";
     case "server":
@@ -219,8 +219,7 @@ export default async function AdminTournamentsPage({
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-white">
-                  Composition des équipes (format Classique uniquement — un tournoi Organigramme
-                  se peuple d’équipes déclarées directement sur sa page)
+                  Composition des équipes (format Classique uniquement)
                 </label>
                 <div className="grid gap-2">
                   <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
@@ -253,10 +252,17 @@ export default async function AdminTournamentsPage({
                   </label>
                 </div>
 
+                <p className="neon-text-muted mt-3 text-xs leading-5">
+                  En format Organigramme, ce choix ne s’applique pas : les équipes ci-dessous
+                  (nombre requis) sont créées immédiatement avec un nom par défaut (« Équipe 1 »,
+                  « Équipe 2 »...) et prêtes à recevoir des joueurs dès l’ouverture du tournoi.
+                </p>
+
                 <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold text-white/70">
-                      Nombre d’équipes (requis si Libre choix / Aléatoire)
+                      Nombre d’équipes (requis pour Organigramme, ou pour Classique en Libre
+                      choix/Aléatoire)
                     </label>
                     <input
                       name="teamCount"

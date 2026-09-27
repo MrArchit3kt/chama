@@ -33,11 +33,12 @@ const createTournamentSchema = z.object({
  * sur une partie par mode de jeu, comportement historique) ou BRACKET
  * (élimination directe — équipes appariées, le vainqueur avance, jusqu'au
  * champion). Les modes de jeu (`gameModeIds`) ne sont requis qu'en CLASSIC
- * — un bracket n'a pas besoin de tableau/conditions de points, juste des
- * équipes déclarées séparément (voir add-bracket-team.ts).
+ * — un bracket n'a pas besoin de tableau/conditions de points.
  *
- * `teamMode`/`teamCount`/`maxMembersPerTeam` ne s'appliquent qu'au format
- * CLASSIC (composition des équipes des parties à points).
+ * En BRACKET, `teamCount` est requis : les équipes ("Équipe 1".."Équipe N")
+ * sont créées immédiatement, prêtes à recevoir des joueurs (voir
+ * add-bracket-team-member.ts), sans attendre une étape séparée.
+ * `teamMode`/`maxMembersPerTeam` restent propres au format CLASSIC.
  */
 export async function createTournament(formData: FormData) {
   const admin = await requireAdmin("points");
@@ -73,6 +74,10 @@ export async function createTournament(formData: FormData) {
     redirect("/admin/tournaments?error=team_count_required");
   }
 
+  if (parsed.data.format === "BRACKET" && !parsed.data.teamCount) {
+    redirect("/admin/tournaments?error=team_count_required");
+  }
+
   try {
     const validModes =
       parsed.data.gameModeIds.length > 0
@@ -98,6 +103,15 @@ export async function createTournament(formData: FormData) {
         gameModes: { connect: validModes.map((m) => ({ id: m.id })) },
       },
     });
+
+    if (parsed.data.format === "BRACKET" && parsed.data.teamCount) {
+      await db.scoreBracketTeam.createMany({
+        data: Array.from({ length: parsed.data.teamCount }, (_, i) => ({
+          tournamentId: tournament.id,
+          name: `Équipe ${i + 1}`,
+        })),
+      });
+    }
 
     await logActivity({
       action: "SCORE_TOURNAMENT_CREATED",
