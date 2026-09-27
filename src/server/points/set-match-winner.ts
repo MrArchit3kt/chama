@@ -40,7 +40,7 @@ export async function setMatchWinner(formData: FormData) {
   try {
     const match = await db.scoreMatch.findUnique({
       where: { id: matchId },
-      select: { tournamentId: true, round: true, teamAName: true, teamBName: true },
+      select: { tournamentId: true, bracketType: true, round: true, teamAName: true, teamBName: true },
     });
 
     if (!match || match.tournamentId !== tournamentId) redirect(`${backTo}?error=server`);
@@ -48,8 +48,11 @@ export async function setMatchWinner(formData: FormData) {
       redirect(`${backTo}?error=validation`);
     }
 
+    // Un tour n'est modifiable que s'il est le plus récent de SON propre
+    // bracket (WINNERS et LOSERS avancent indépendamment). La grande
+    // finale n'a qu'un seul tour, toujours modifiable.
     const latestRound = await db.scoreMatch.aggregate({
-      where: { tournamentId },
+      where: { tournamentId, bracketType: match.bracketType },
       _max: { round: true },
     });
 

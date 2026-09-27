@@ -1,14 +1,72 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, Skull } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { computeEntryPoints } from "@/lib/scoring";
 import { computeTournamentStandings } from "@/lib/tournament-standings";
+import { groupRounds, getBracketState } from "@/lib/bracket";
 import { joinScoreTeam } from "@/server/points/join-score-team";
 import { leaveScoreTeam } from "@/server/points/leave-score-team";
+
+type BracketMatch = {
+  id: string;
+  teamAName: string | null;
+  teamBName: string | null;
+  winnerName: string | null;
+};
+
+function BracketMatchCard({ match, accent }: { match: BracketMatch; accent: "emerald" | "rose" | "amber" }) {
+  const winnerBg = {
+    emerald: "bg-emerald-400/10 text-emerald-300",
+    rose: "bg-rose-400/10 text-rose-300",
+    amber: "bg-amber-400/10 text-amber-300",
+  }[accent];
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/2 p-3">
+      {[match.teamAName, match.teamBName].map((teamName, i) =>
+        teamName ? (
+          <p
+            key={i}
+            className={
+              match.winnerName === teamName
+                ? `truncate rounded-lg px-2 py-1.5 text-sm font-bold ${winnerBg}`
+                : "truncate px-2 py-1.5 text-sm text-white/80"
+            }
+          >
+            {teamName}
+          </p>
+        ) : (
+          <p key={i} className="px-2 py-1.5 text-sm italic text-white/30">
+            (bye)
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
+function BracketRoundColumn({
+  label,
+  matches,
+  accent,
+}: {
+  label: string;
+  matches: BracketMatch[];
+  accent: "emerald" | "rose";
+}) {
+  return (
+    <div className="grid content-center gap-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">{label}</p>
+      {matches.map((match) => (
+        <BracketMatchCard key={match.id} match={match} accent={accent} />
+      ))}
+    </div>
+  );
+}
 
 const conditionForScoringSelect = {
   points: true,
@@ -95,21 +153,17 @@ async function getBracketTournaments() {
   return tournaments
     .filter((t) => t.matches.length > 0)
     .map((t) => {
-      const rounds = [...new Set(t.matches.map((m) => m.round))].sort((a, b) => a - b);
-      const latestRound = rounds[rounds.length - 1];
-      const latestMatches = t.matches.filter((m) => m.round === latestRound);
-      const champion = latestMatches.length === 1 ? latestMatches[0].winnerName : null;
+      const { champion } = getBracketState(t.matches);
+      const grandFinal = t.matches.find((m) => m.bracketType === "GRAND_FINAL") ?? null;
 
       return {
         id: t.id,
         name: t.name,
         description: t.description,
         champion,
-        rounds: rounds.map((round) => ({
-          round,
-          isFinal: t.matches.filter((m) => m.round === round).length === 1,
-          matches: t.matches.filter((m) => m.round === round),
-        })),
+        grandFinal,
+        winnersRounds: groupRounds(t.matches, "WINNERS"),
+        losersRounds: groupRounds(t.matches, "LOSERS"),
       };
     });
 }
@@ -256,57 +310,72 @@ export default async function PointsPage({
         ) : null}
 
         {bracketTournaments.map((tournament) => (
-          <div key={tournament.id} className="neon-card p-5 md:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
-                  Tournoi — Organigramme
-                </p>
-                <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">{tournament.name}</h2>
-                {tournament.description ? (
-                  <p className="neon-text-muted mt-2 max-w-2xl text-sm leading-6">
-                    {tournament.description}
+          <div key={tournament.id} className="grid gap-4">
+            <div className="neon-card p-5 md:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                    Tournoi — Organigramme
                   </p>
+                  <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">{tournament.name}</h2>
+                  {tournament.description ? (
+                    <p className="neon-text-muted mt-2 max-w-2xl text-sm leading-6">
+                      {tournament.description}
+                    </p>
+                  ) : null}
+                </div>
+                {tournament.champion ? (
+                  <span className="flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-amber-300">
+                    <Trophy className="h-4 w-4" /> Champion : {tournament.champion}
+                  </span>
                 ) : null}
               </div>
-              {tournament.champion ? (
-                <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-sm font-black uppercase tracking-widest text-amber-300">
-                  🏆 Champion : {tournament.champion}
-                </span>
-              ) : null}
             </div>
 
-            <div className="mt-4 grid gap-5 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(200px,1fr)]">
-              {tournament.rounds.map(({ round, isFinal, matches }) => (
-                <div key={round} className="grid gap-2.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                    {isFinal ? "Finale" : `Tour ${round}`}
-                  </p>
-                  {matches.map((match) => (
-                    <div key={match.id} className="rounded-2xl border border-white/8 bg-white/2 p-3">
-                      {[match.teamAName, match.teamBName].map((teamName, i) =>
-                        teamName ? (
-                          <p
-                            key={i}
-                            className={
-                              match.winnerName === teamName
-                                ? "truncate rounded-lg bg-emerald-400/10 px-2 py-1.5 text-sm font-bold text-emerald-300"
-                                : "truncate px-2 py-1.5 text-sm text-white/80"
-                            }
-                          >
-                            {teamName}
-                          </p>
-                        ) : (
-                          <p key={i} className="px-2 py-1.5 text-sm italic text-white/30">
-                            (bye)
-                          </p>
-                        ),
-                      )}
-                    </div>
+            <div className="neon-card overflow-hidden p-5 md:p-8">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+                <Trophy className="h-3.5 w-3.5" /> Bracket Gagnants
+              </p>
+              <div className="mt-4 grid gap-6 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(190px,1fr)]">
+                {tournament.winnersRounds.map(({ round, matches }) => (
+                  <BracketRoundColumn
+                    key={`wb-${round}`}
+                    label={matches.length === 1 ? "Finale Gagnants" : `Tour ${round}`}
+                    matches={matches}
+                    accent="emerald"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {tournament.losersRounds.length > 0 ? (
+              <div className="neon-card overflow-hidden p-5 md:p-8">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-300">
+                  <Skull className="h-3.5 w-3.5" /> Bracket Perdants
+                </p>
+                <div className="mt-4 grid gap-6 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(190px,1fr)]">
+                  {tournament.losersRounds.map(({ round, matches }) => (
+                    <BracketRoundColumn
+                      key={`lb-${round}`}
+                      label={matches.length === 1 ? "Finale Perdants" : `Tour ${round}`}
+                      matches={matches}
+                      accent="rose"
+                    />
                   ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : null}
+
+            {tournament.grandFinal ? (
+              <div className="neon-card border-amber-400/25 p-5 md:p-8">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-300">
+                  <Trophy className="h-3.5 w-3.5" /> Grande finale
+                </p>
+                <div className="mx-auto mt-4 max-w-sm">
+                  <BracketMatchCard match={tournament.grandFinal} accent="amber" />
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
 

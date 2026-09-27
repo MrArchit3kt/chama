@@ -1063,20 +1063,32 @@ model ScoreBracketTeam {
  * (équipe qualifiée d'office, pas d'adversaire ce tour). Les équipes sont
  * référencées par leur nom (comme partout ailleurs dans le système de
  * points), pas par une relation stricte. */
+enum ScoreMatchBracketType {
+  WINNERS // bracket principal : une défaite = descente en LOSERS
+  LOSERS // bracket des perdants : une défaite ici = élimination définitive
+  GRAND_FINAL // vainqueur WINNERS vs vainqueur LOSERS, désigne le champion
+}
+
 model ScoreMatch {
-  id           String   @id @default(cuid())
+  id           String                @id @default(cuid())
   tournamentId String
+  bracketType  ScoreMatchBracketType @default(WINNERS)
   round        Int
   position     Int
   teamAName    String?
   teamBName    String?
   winnerName   String?
-  createdAt    DateTime @default(now())
+  // Le perdant de ce match a-t-il déjà été inséré dans le bracket LOSERS ?
+  // Évite de le réinjecter plusieurs fois si "Générer le tour suivant"
+  // est déclenché plusieurs fois pendant que l'autre bracket rattrape son
+  // retard. Non pertinent (toujours false) pour LOSERS/GRAND_FINAL.
+  lbSeeded     Boolean               @default(false)
+  createdAt    DateTime              @default(now())
 
   tournament ScoreTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
-  @@unique([tournamentId, round, position])
-  @@index([tournamentId, round])
+  @@unique([tournamentId, bracketType, round, position])
+  @@index([tournamentId, bracketType, round])
 }
 
 model ScoreTeam {
