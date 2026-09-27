@@ -9,6 +9,7 @@ import { createGameMode } from "@/server/points/create-game-mode";
 import { toggleGameMode } from "@/server/points/toggle-game-mode";
 import { createCondition } from "@/server/points/create-condition";
 import { deleteCondition } from "@/server/points/delete-condition";
+import { updateCondition } from "@/server/points/update-condition";
 import { createTier } from "@/server/points/create-tier";
 import { deleteTier } from "@/server/points/delete-tier";
 import { hasAdminPermission } from "@/lib/admin-permissions";
@@ -317,6 +318,47 @@ export default async function AdminPointsPage({
                                 </form>
                               ) : null}
                             </div>
+                          ) : null}
+
+                          {canConfig ? (
+                            <details className="group mt-2">
+                              <summary className="cursor-pointer list-none rounded-lg border border-white/10 px-2 py-1 text-center text-[11px] font-semibold text-white/70 transition hover:border-cyan-400/30 hover:text-white">
+                                Modifier
+                              </summary>
+                              <form
+                                action={updateCondition}
+                                className="mt-1.5 grid gap-1.5"
+                              >
+                                <input type="hidden" name="id" value={condition.id} />
+                                <input
+                                  name="label"
+                                  type="text"
+                                  required
+                                  defaultValue={condition.label}
+                                  className="w-full px-2 py-1.5 text-xs"
+                                />
+                                {condition.mode !== "TIERED" ? (
+                                  <input
+                                    name="points"
+                                    type="number"
+                                    min={-1000}
+                                    max={1000}
+                                    defaultValue={condition.points}
+                                    className="w-full px-2 py-1.5 text-xs"
+                                  />
+                                ) : (
+                                  <p className="text-[10px] text-white/40">
+                                    Points ignorés (type Paliers) — ajuste-les palier par palier ci-dessus.
+                                  </p>
+                                )}
+                                <button
+                                  type="submit"
+                                  className="neon-button-secondary px-2 py-1.5 text-[11px]"
+                                >
+                                  Enregistrer
+                                </button>
+                              </form>
+                            </details>
                           ) : null}
 
                           {canConfig ? (

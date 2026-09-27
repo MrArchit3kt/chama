@@ -9,7 +9,7 @@ import { db } from "@/lib/prisma";
 import { createTournament } from "@/server/points/create-tournament";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { hasAdminPermission } from "@/lib/admin-permissions";
-import { computeTournamentStandings } from "@/lib/tournament-standings";
+import { computeTournamentStandings, findLikelyDuplicateTeamNames } from "@/lib/tournament-standings";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(value);
@@ -160,6 +160,7 @@ export default async function AdminTournamentsPage({
           <div className="grid gap-4">
             {tournaments.map((tournament) => {
               const standings = computeTournamentStandings(tournament.boards);
+              const duplicateWarnings = findLikelyDuplicateTeamNames(standings);
 
               return (
                 <div key={tournament.id} className="neon-card p-5 md:p-8">
@@ -173,18 +174,45 @@ export default async function AdminTournamentsPage({
                       ) : null}
                     </div>
 
-                    {canManage ? (
-                      <form action={deleteTournament}>
-                        <input type="hidden" name="id" value={tournament.id} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                    <div className="flex items-center gap-2">
+                      {tournament.boards.length > 0 ? (
+                        <a
+                          href={`/admin/tournaments/export?id=${tournament.id}`}
+                          className="neon-button-secondary px-3 py-1.5 text-xs"
                         >
-                          Supprimer le tournoi
-                        </button>
-                      </form>
-                    ) : null}
+                          Exporter CSV
+                        </a>
+                      ) : null}
+                      {canManage ? (
+                        <form action={deleteTournament}>
+                          <input type="hidden" name="id" value={tournament.id} />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                          >
+                            Supprimer le tournoi
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
+
+                  {duplicateWarnings.length > 0 ? (
+                    <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] p-3.5">
+                      <p className="text-xs font-semibold text-amber-300">
+                        ⚠️ Noms d’équipe qui se ressemblent — vérifie qu’il ne s’agit pas d’une
+                        faute de frappe (les points ne se cumulent que si le nom est identique
+                        d’une partie à l’autre) :
+                      </p>
+                      <ul className="mt-1.5 text-xs text-amber-200/80">
+                        {duplicateWarnings.map(([a, b]) => (
+                          <li key={`${a}-${b}`}>
+                            « {a} » et « {b} »
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
 
                   <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
