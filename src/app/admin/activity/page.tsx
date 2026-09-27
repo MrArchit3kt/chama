@@ -49,6 +49,10 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_BOARD_DELETED: "Tableau de points supprimé",
   SCORE_TEAM_DELETED: "Équipe (points) supprimée",
   SCORE_TEAM_MEMBER_REMOVED: "Joueur retiré d’une équipe (points)",
+  SCORE_TOURNAMENT_STARTED: "Tournoi démarré",
+  SCORE_TEAM_JOINED: "Joueur a rejoint une équipe (tournoi)",
+  SCORE_TEAM_LEFT: "Joueur a quitté une équipe (tournoi)",
+  SCORE_TEAMS_RANDOMIZED: "Équipes tirées au sort (tournoi)",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);

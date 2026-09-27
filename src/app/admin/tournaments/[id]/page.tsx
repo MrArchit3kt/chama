@@ -8,6 +8,8 @@ import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { createBoard } from "@/server/points/create-board";
 import { deleteTournament } from "@/server/points/delete-tournament";
+import { startTournament } from "@/server/points/start-tournament";
+import { generateRandomTeams } from "@/server/points/generate-random-teams";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints } from "@/lib/scoring";
 import {
@@ -29,6 +31,12 @@ function getErrorMessage(error?: string) {
       return "Ce mode de jeu ne fait pas partie de ce tournoi.";
     case "mode_already_used":
       return "Ce tournoi a déjà une partie pour ce mode de jeu.";
+    case "no_board":
+      return "Crée d’abord une partie (pour n’importe quel mode) avant de tirer les équipes au sort.";
+    case "pool_too_large":
+      return "Trop de joueurs sélectionnés pour la capacité configurée (nombre d’équipes × joueurs max).";
+    case "locked":
+      return "Le tournoi a démarré, la composition des équipes est verrouillée.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -36,11 +44,24 @@ function getErrorMessage(error?: string) {
   }
 }
 
+function teamModeLabel(mode: string) {
+  if (mode === "SELF_JOIN") return "Libre choix";
+  if (mode === "RANDOM") return "Aléatoire";
+  return "Manuel";
+}
+
 function medalColor(rank: number) {
   if (rank === 0) return "text-amber-300";
   if (rank === 1) return "text-white/70";
   if (rank === 2) return "text-orange-400";
   return "text-white/30";
+}
+
+function memberLabel(member: {
+  guestName: string | null;
+  user: { displayName: string; username: string } | null;
+}) {
+  return member.user ? member.user.displayName : member.guestName ?? "Invité";
 }
 
 const conditionForScoringSelect = {
@@ -74,10 +95,14 @@ export default async function AdminTournamentDetailPage({
         include: {
           gameMode: { select: { id: true, name: true } },
           teams: {
+            orderBy: { createdAt: "asc" },
             include: {
               entries: { include: { condition: { select: conditionForScoringSelect } } },
               members: {
-                include: { entries: { include: { condition: { select: conditionForScoringSelect } } } },
+                include: {
+                  user: { select: { displayName: true, username: true } },
+                  entries: { include: { condition: { select: conditionForScoringSelect } } },
+                },
               },
             },
           },
@@ -91,6 +116,15 @@ export default async function AdminTournamentDetailPage({
   const standings = computeTournamentStandings(tournament.boards);
   const duplicateWarnings = findLikelyDuplicateTeamNames(standings);
   const returnTo = `/admin/tournaments/${tournament.id}`;
+
+  const eligibleUsers =
+    tournament.teamMode === "RANDOM"
+      ? await db.user.findMany({
+          where: { status: "ACTIVE", registrationStatus: "APPROVED" },
+          select: { id: true, displayName: true, username: true },
+          orderBy: { displayName: "asc" },
+        })
+      : [];
 
   return (
     <SiteShell>
@@ -110,6 +144,27 @@ export default async function AdminTournamentDetailPage({
             </p>
           ) : null}
 
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
+            {tournament.teamCount ? (
+              <span className="neon-badge text-[10px]">{tournament.teamCount} équipes</span>
+            ) : null}
+            {tournament.maxMembersPerTeam ? (
+              <span className="neon-badge text-[10px]">
+                Max {tournament.maxMembersPerTeam} joueur{tournament.maxMembersPerTeam > 1 ? "s" : ""}/équipe
+              </span>
+            ) : null}
+            {tournament.startedAt ? (
+              <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
+                Démarré le {formatDate(tournament.startedAt)}
+              </span>
+            ) : (
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">
+                Composition ouverte
+              </span>
+            )}
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
             {tournament.boards.length > 0 ? (
               <a
@@ -118,6 +173,14 @@ export default async function AdminTournamentDetailPage({
               >
                 Exporter CSV
               </a>
+            ) : null}
+            {canManage && !tournament.startedAt ? (
+              <form action={startTournament}>
+                <input type="hidden" name="tournamentId" value={tournament.id} />
+                <button type="submit" className="neon-button px-4 py-2 text-sm">
+                  Démarrer le tournoi
+                </button>
+              </form>
             ) : null}
             {canManage ? (
               <form action={deleteTournament}>
@@ -131,6 +194,14 @@ export default async function AdminTournamentDetailPage({
               </form>
             ) : null}
           </div>
+
+          {canManage && !tournament.startedAt && tournament.teamMode !== "MANUAL" ? (
+            <p className="neon-text-muted mt-3 text-xs">
+              « Démarrer le tournoi » verrouille la composition des équipes (plus de
+              changement d’équipe par les joueurs, plus de nouveau tirage au sort). Fais-le
+              une fois les équipes définitives.
+            </p>
+          ) : null}
         </div>
 
         {errorMessage ? (
@@ -142,6 +213,99 @@ export default async function AdminTournamentDetailPage({
         {isSuccess ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-emerald-400">Enregistré avec succès.</p>
+          </div>
+        ) : null}
+
+        {tournament.teamMode === "SELF_JOIN" && !tournament.startedAt ? (
+          <div className="neon-card p-5 md:p-8">
+            <p className="text-sm font-medium text-cyan-300">
+              Mode « Libre choix » : les joueurs choisissent eux-mêmes leur équipe depuis la
+              page <Link href="/points" className="underline hover:text-white">Points</Link>,
+              une fois qu’au moins une partie a été créée ci-dessous.
+            </p>
+          </div>
+        ) : null}
+
+        {canManage && tournament.teamMode === "RANDOM" && !tournament.startedAt ? (
+          <div className="neon-card p-5 md:p-8">
+            <h2 className="text-xl font-bold text-white md:text-2xl">
+              Tirage au sort des équipes
+            </h2>
+            <p className="neon-text-muted mt-2 text-sm leading-6">
+              Sélectionne les joueurs (et/ou ajoute des invités) à répartir, puis lance le
+              tirage — refaisable tant que le tournoi n’a pas démarré. La composition est
+              reprise automatiquement sur les autres parties déjà créées.
+            </p>
+
+            <form action={generateRandomTeams} className="mt-4 grid gap-4">
+              <input type="hidden" name="tournamentId" value={tournament.id} />
+
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-white/70">
+                    Nombre d’équipes
+                  </label>
+                  <input
+                    name="teamCount"
+                    type="number"
+                    min={2}
+                    max={20}
+                    required
+                    defaultValue={tournament.teamCount ?? undefined}
+                    className="w-full px-3 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-white/70">
+                    Joueurs max par équipe (optionnel)
+                  </label>
+                  <input
+                    name="maxMembersPerTeam"
+                    type="number"
+                    min={1}
+                    max={50}
+                    defaultValue={tournament.maxMembersPerTeam ?? undefined}
+                    className="w-full px-3 py-2.5 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-white">
+                  Joueurs inscrits à inclure dans le tirage
+                </label>
+                {eligibleUsers.length === 0 ? (
+                  <p className="neon-text-muted text-sm">Aucun joueur éligible.</p>
+                ) : (
+                  <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-2xl border border-white/8 bg-white/2 p-3 sm:grid-cols-2 md:grid-cols-3">
+                    {eligibleUsers.map((u) => (
+                      <label key={u.id} className="flex items-center gap-2 text-sm text-white/80">
+                        <input type="checkbox" name="userIds" value={u.id} className="h-4 w-4" />
+                        {u.displayName} (@{u.username})
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-white">
+                  Joueurs invités à inclure (optionnel, un nom par ligne)
+                </label>
+                <textarea
+                  name="guestNames"
+                  rows={3}
+                  placeholder={"Kevin\nSarah\n..."}
+                  className="w-full px-4 py-3"
+                />
+              </div>
+
+              <div>
+                <button type="submit" className="neon-button px-5 py-2.5">
+                  Générer les équipes
+                </button>
+              </div>
+            </form>
           </div>
         ) : null}
 
@@ -186,6 +350,7 @@ export default async function AdminTournamentDetailPage({
             const teamTotals = board.teams
               .map((team) => ({
                 name: team.name,
+                members: team.members.map(memberLabel),
                 total:
                   team.entries.reduce((sum, e) => sum + computeEntryPoints(e.quantity, e.condition), 0) +
                   team.members.reduce(
@@ -222,12 +387,17 @@ export default async function AdminTournamentDetailPage({
                     {teamTotals.map((t) => (
                       <div
                         key={t.name}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm"
+                        className="rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm"
                       >
-                        <span className="truncate text-white/85">{t.name}</span>
-                        <span className="neon-badge shrink-0 text-[10px]">
-                          {t.total} pt{Math.abs(t.total) > 1 ? "s" : ""}
-                        </span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate font-semibold text-white/85">{t.name}</span>
+                          <span className="neon-badge shrink-0 text-[10px]">
+                            {t.total} pt{Math.abs(t.total) > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <p className="neon-text-muted mt-1 truncate text-[11px]">
+                          {t.members.length > 0 ? t.members.join(", ") : "Aucun joueur"}
+                        </p>
                       </div>
                     ))}
                   </div>

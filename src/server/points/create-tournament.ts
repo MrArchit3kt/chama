@@ -22,6 +22,9 @@ const createTournamentSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(500).optional(),
   gameModeIds: z.array(z.string().min(1)).min(1, "Au moins un mode de jeu est requis"),
+  teamMode: z.enum(["MANUAL", "SELF_JOIN", "RANDOM"]),
+  teamCount: z.coerce.number().int().min(2).max(20).optional(),
+  maxMembersPerTeam: z.coerce.number().int().min(1).max(50).optional(),
 });
 
 /**
@@ -29,6 +32,13 @@ const createTournamentSchema = z.object({
  * Warzone + BO7 + Rocket League) — le site sait ainsi d'avance combien de
  * parties le composent, et une seule partie par mode pourra y être créée
  * (contrainte @@unique([tournamentId, gameModeId]) sur ScoreBoard).
+ *
+ * `teamMode` détermine comment les équipes se peuplent : MANUAL (l'admin
+ * ajoute tout à la main, comme avant), SELF_JOIN (les joueurs choisissent
+ * eux-mêmes leur équipe sur /points) ou RANDOM (l'admin tire au sort depuis
+ * /admin/tournaments/[id]). `teamCount`/`maxMembersPerTeam` sont optionnels
+ * en mode MANUAL, mais utiles pour pré-créer des équipes vides nommées dès
+ * la 1ère partie.
  */
 export async function createTournament(formData: FormData) {
   const admin = await requireAdmin("points");
@@ -39,15 +49,24 @@ export async function createTournament(formData: FormData) {
   }
 
   const rawDescription = String(formData.get("description") ?? "").trim();
+  const rawTeamCount = String(formData.get("teamCount") ?? "").trim();
+  const rawMaxMembers = String(formData.get("maxMembersPerTeam") ?? "").trim();
 
   const parsed = createTournamentSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     description: rawDescription || undefined,
     gameModeIds: formData.getAll("gameModeIds").map((v) => String(v)),
+    teamMode: String(formData.get("teamMode") ?? "MANUAL"),
+    teamCount: rawTeamCount || undefined,
+    maxMembersPerTeam: rawMaxMembers || undefined,
   });
 
   if (!parsed.success) {
     redirect("/admin/tournaments?error=validation");
+  }
+
+  if (parsed.data.teamMode !== "MANUAL" && !parsed.data.teamCount) {
+    redirect("/admin/tournaments?error=team_count_required");
   }
 
   try {
@@ -63,6 +82,9 @@ export async function createTournament(formData: FormData) {
         name: parsed.data.name,
         description: parsed.data.description ?? null,
         createdById: admin.id,
+        teamMode: parsed.data.teamMode,
+        teamCount: parsed.data.teamCount ?? null,
+        maxMembersPerTeam: parsed.data.maxMembersPerTeam ?? null,
         gameModes: { connect: validModes.map((m) => ({ id: m.id })) },
       },
     });
@@ -72,7 +94,7 @@ export async function createTournament(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: tournament.name,
-      metadata: { modes: validModes.map((m) => m.name) },
+      metadata: { modes: validModes.map((m) => m.name), teamMode: parsed.data.teamMode },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

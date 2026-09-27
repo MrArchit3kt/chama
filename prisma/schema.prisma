@@ -875,6 +875,10 @@ enum ActivityAction {
   SCORE_BOARD_DELETED
   SCORE_TEAM_DELETED
   SCORE_TEAM_MEMBER_REMOVED
+  SCORE_TOURNAMENT_STARTED
+  SCORE_TEAM_JOINED
+  SCORE_TEAM_LEFT
+  SCORE_TEAMS_RANDOMIZED
 }
 
 model ActivityLog {
@@ -990,12 +994,29 @@ model ScoreBoard {
  * roster persistant, juste une convention de nommage cohérente d'une
  * partie à l'autre.
  */
+enum ScoreTournamentTeamMode {
+  MANUAL // l'admin crée les équipes/joueurs à la main sur chaque partie (défaut, comportement historique)
+  SELF_JOIN // les joueurs choisissent eux-mêmes leur équipe depuis /points
+  RANDOM // l'admin tire les équipes au sort à partir d'un pool choisi
+}
+
 model ScoreTournament {
   id          String   @id @default(cuid())
   name        String
   description String?  @db.Text
   createdAt   DateTime @default(now())
   createdById String?
+
+  // Nombre d'équipes / taille max souhaités (optionnels : laissés vides,
+  // tout reste manuel comme avant). Utilisés pour auto-créer les équipes
+  // à la 1ère partie et pour les modes SELF_JOIN/RANDOM.
+  teamCount         Int?
+  maxMembersPerTeam Int?
+  teamMode          ScoreTournamentTeamMode @default(MANUAL)
+  // Une fois définie, plus aucun changement de composition d'équipe par
+  // les joueurs (SELF_JOIN) ni de nouveau tirage au sort (RANDOM) —
+  // l'admin garde la main via les outils existants (ajout/retrait manuel).
+  startedAt         DateTime?
 
   createdBy User?            @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
   // Modes de jeu retenus pour ce tournoi (choisis à la création) : le
@@ -1008,9 +1029,10 @@ model ScoreTournament {
 }
 
 model ScoreTeam {
-  id      String @id @default(cuid())
-  boardId String
-  name    String
+  id        String   @id @default(cuid())
+  boardId   String
+  name      String
+  createdAt DateTime @default(now())
 
   board   ScoreBoard        @relation(fields: [boardId], references: [id], onDelete: Cascade)
   members ScoreTeamMember[]
@@ -1029,6 +1051,10 @@ model ScoreTeamMember {
   user    User?        @relation("ScoreTeamMemberships", fields: [userId], references: [id], onDelete: SetNull)
   entries ScoreEntry[]
 
+  // Un même joueur inscrit ne peut apparaître qu'une fois dans une équipe
+  // donnée (les invités, userId = NULL, ne sont pas concernés par cette
+  // contrainte — Postgres traite chaque NULL comme distinct).
+  @@unique([teamId, userId])
   @@index([teamId])
   @@index([userId])
 }
