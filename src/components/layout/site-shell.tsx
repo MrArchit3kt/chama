@@ -7,6 +7,7 @@ import { AutoRefresh } from "@/components/layout/auto-refresh";
 import { ScrollRestoration } from "@/components/layout/scroll-restoration";
 import { ChamaWelcomePopup } from "@/components/layout/chama-welcome-popup";
 import { ApprovalWelcomePopup } from "@/components/layout/approval-welcome-popup";
+import { PushOptInPrompt } from "@/components/notifications/push-opt-in-prompt";
 import { SiteThemeOverlay } from "@/components/theme/site-theme-overlay";
 import { getSessionUser, getChamaWelcomeState, getApprovalWelcomeState } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
@@ -42,6 +43,8 @@ export async function SiteShell({ children }: SiteShellProps) {
       ) : showChamaWelcome ? (
         <ChamaWelcomePopup />
       ) : null}
+
+      {user ? <PushOptInPrompt /> : null}
 
       <div className="mx-auto max-w-7xl">
         <MobileNav canSeeAdmin={canSeeAdmin} isSuperAdmin={isSuperAdmin} />
