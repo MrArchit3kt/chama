@@ -22,16 +22,18 @@ export async function addScoreTeam(formData: FormData) {
 
   const gameModeId = String(formData.get("gameModeId") ?? "").trim();
   const boardId = String(formData.get("boardId") ?? "").trim();
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
 
-  const backTo = `/admin/points/${gameModeId}?board=${boardId}`;
+  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
-    redirect(`${backTo}&error=forbidden`);
+    redirect(`${backTo}?error=forbidden`);
   }
 
   if (!gameModeId || !boardId || !name) {
-    redirect(`${backTo}&error=validation`);
+    redirect(`${backTo}?error=validation`);
   }
 
   try {
@@ -41,7 +43,7 @@ export async function addScoreTeam(formData: FormData) {
     });
 
     if (!board || board.gameModeId !== gameModeId) {
-      redirect(`${backTo}&error=server`);
+      redirect(`${backTo}?error=server`);
     }
 
     await db.scoreTeam.create({
@@ -50,8 +52,8 @@ export async function addScoreTeam(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("ADD_SCORE_TEAM_ERROR", error);
-    redirect(`${backTo}&error=server`);
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect(`${backTo}&team_added=1`);
+  redirect(`${backTo}?team_added=1`);
 }

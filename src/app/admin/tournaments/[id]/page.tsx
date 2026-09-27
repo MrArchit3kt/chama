@@ -7,11 +7,17 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { createBoard } from "@/server/points/create-board";
+import { deleteBoard } from "@/server/points/delete-board";
+import { addScoreTeam } from "@/server/points/add-score-team";
+import { deleteScoreTeam } from "@/server/points/delete-score-team";
+import { addScoreTeamMember } from "@/server/points/add-score-team-member";
+import { removeScoreTeamMember } from "@/server/points/remove-score-team-member";
+import { saveScoreEntries } from "@/server/points/save-score-entries";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { startTournament } from "@/server/points/start-tournament";
 import { generateRandomTeams } from "@/server/points/generate-random-teams";
 import { hasAdminPermission } from "@/lib/admin-permissions";
-import { computeEntryPoints } from "@/lib/scoring";
+import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
 import {
   computeTournamentStandings,
   findLikelyDuplicateTeamNames,
@@ -27,6 +33,8 @@ function getErrorMessage(error?: string) {
       return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Formulaire invalide. Vérifie les champs.";
+    case "already_in_team":
+      return "Ce joueur est déjà dans cette équipe.";
     case "mode_not_in_tournament":
       return "Ce mode de jeu ne fait pas partie de ce tournoi.";
     case "mode_already_used":
@@ -64,18 +72,56 @@ function memberLabel(member: {
   return member.user ? member.user.displayName : member.guestName ?? "Invité";
 }
 
+function formatTierRange(tier: { minValue: number; maxValue: number | null }) {
+  return tier.maxValue === null ? `${tier.minValue}+` : `${tier.minValue}–${tier.maxValue}`;
+}
+
+/** Petit indice à côté du label de la condition dans le formulaire de
+ * saisie : points fixes pour QUANTITY/ONE_TIME, liste des paliers pour
+ * TIERED. */
+function conditionHint(
+  condition: ConditionForScoring & { tiers: { minValue: number; maxValue: number | null; points: number }[] },
+) {
+  if (condition.mode !== "TIERED") {
+    return `${condition.points} pt${Math.abs(condition.points) > 1 ? "s" : ""}`;
+  }
+  if (condition.tiers.length === 0) return "aucun palier";
+  return condition.tiers
+    .map((t) => `${formatTierRange(t)}:${t.points > 0 ? "+" : ""}${t.points}`)
+    .join(" · ");
+}
+
 const conditionForScoringSelect = {
   points: true,
   mode: true,
   tiers: { select: { minValue: true, maxValue: true, points: true } },
 } as const;
 
+type EntryWithCondition = {
+  quantity: number;
+  conditionId: string;
+  condition: ConditionForScoring;
+};
+
+function sumEntries(entries: EntryWithCondition[]) {
+  return entries.reduce((sum, e) => sum + computeEntryPoints(e.quantity, e.condition), 0);
+}
+
+function findEntry(entries: EntryWithCondition[], conditionId: string) {
+  return entries.find((e) => e.conditionId === conditionId);
+}
+
 export default async function AdminTournamentDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    success?: string;
+    team_added?: string;
+    member_added?: string;
+  }>;
 }) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
@@ -86,11 +132,16 @@ export default async function AdminTournamentDetailPage({
   const sp = (await searchParams) ?? {};
   const errorMessage = getErrorMessage(sp.error);
   const isSuccess = sp.success === "1";
+  const isTeamAdded = sp.team_added === "1";
+  const isMemberAdded = sp.member_added === "1";
 
   const tournament = await db.scoreTournament.findUnique({
     where: { id },
     include: {
-      gameModes: { orderBy: { createdAt: "asc" } },
+      gameModes: {
+        orderBy: { createdAt: "asc" },
+        include: { conditions: { orderBy: { createdAt: "asc" }, include: { tiers: true } } },
+      },
       boards: {
         include: {
           gameMode: { select: { id: true, name: true } },
@@ -100,7 +151,7 @@ export default async function AdminTournamentDetailPage({
               entries: { include: { condition: { select: conditionForScoringSelect } } },
               members: {
                 include: {
-                  user: { select: { displayName: true, username: true } },
+                  user: { select: { id: true, displayName: true, username: true } },
                   entries: { include: { condition: { select: conditionForScoringSelect } } },
                 },
               },
@@ -115,16 +166,12 @@ export default async function AdminTournamentDetailPage({
 
   const standings = computeTournamentStandings(tournament.boards);
   const duplicateWarnings = findLikelyDuplicateTeamNames(standings);
-  const returnTo = `/admin/tournaments/${tournament.id}`;
 
-  const eligibleUsers =
-    tournament.teamMode === "RANDOM"
-      ? await db.user.findMany({
-          where: { status: "ACTIVE", registrationStatus: "APPROVED" },
-          select: { id: true, displayName: true, username: true },
-          orderBy: { displayName: "asc" },
-        })
-      : [];
+  const eligibleUsers = await db.user.findMany({
+    where: { status: "ACTIVE", registrationStatus: "APPROVED" },
+    select: { id: true, displayName: true, username: true },
+    orderBy: { displayName: "asc" },
+  });
 
   return (
     <SiteShell>
@@ -166,14 +213,6 @@ export default async function AdminTournamentDetailPage({
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {tournament.boards.length > 0 ? (
-              <a
-                href={`/admin/tournaments/export?id=${tournament.id}`}
-                className="neon-button-secondary px-4 py-2 text-sm"
-              >
-                Exporter CSV
-              </a>
-            ) : null}
             {canManage && !tournament.startedAt ? (
               <form action={startTournament}>
                 <input type="hidden" name="tournamentId" value={tournament.id} />
@@ -213,6 +252,18 @@ export default async function AdminTournamentDetailPage({
         {isSuccess ? (
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-emerald-400">Enregistré avec succès.</p>
+          </div>
+        ) : null}
+
+        {isTeamAdded ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-emerald-300">Équipe ajoutée avec succès.</p>
+          </div>
+        ) : null}
+
+        {isMemberAdded ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-emerald-300">Joueur ajouté à l’équipe.</p>
           </div>
         ) : null}
 
@@ -331,7 +382,6 @@ export default async function AdminTournamentDetailPage({
                     <form action={createBoard} className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <input type="hidden" name="gameModeId" value={mode.id} />
                       <input type="hidden" name="tournamentId" value={tournament.id} />
-                      <input type="hidden" name="returnTo" value={returnTo} />
                       <input
                         name="title"
                         type="text"
@@ -347,19 +397,8 @@ export default async function AdminTournamentDetailPage({
               );
             }
 
-            const teamTotals = board.teams
-              .map((team) => ({
-                name: team.name,
-                members: team.members.map(memberLabel),
-                total:
-                  team.entries.reduce((sum, e) => sum + computeEntryPoints(e.quantity, e.condition), 0) +
-                  team.members.reduce(
-                    (sum, m) =>
-                      sum + m.entries.reduce((s, e) => s + computeEntryPoints(e.quantity, e.condition), 0),
-                    0,
-                  ),
-              }))
-              .sort((a, b) => b.total - a.total);
+            const teamConditions = mode.conditions.filter((c) => c.appliesTo === "TEAM");
+            const playerConditions = mode.conditions.filter((c) => c.appliesTo === "PLAYER");
 
             return (
               <div key={mode.id} className="neon-card p-5 md:p-8">
@@ -370,36 +409,263 @@ export default async function AdminTournamentDetailPage({
                       {board.title || `Partie du ${formatDate(board.createdAt)}`}
                     </p>
                   </div>
-                  <Link
-                    href={`/admin/points/${mode.id}?board=${board.id}`}
-                    className="neon-button px-4 py-2 text-sm"
-                  >
-                    Gérer cette partie
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`/admin/tournaments/board-export?board=${board.id}`}
+                      className="neon-badge text-[11px] hover:border-cyan-400/40"
+                    >
+                      Exporter CSV
+                    </a>
+                    {canManage ? (
+                      <form action={deleteBoard}>
+                        <input type="hidden" name="gameModeId" value={mode.id} />
+                        <input type="hidden" name="boardId" value={board.id} />
+                        <input type="hidden" name="tournamentId" value={tournament.id} />
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-rose-400/20 px-2.5 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                          title="Supprimer cette partie et tous ses scores"
+                        >
+                          Supprimer cette partie
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
                 </div>
 
-                {teamTotals.length === 0 ? (
-                  <p className="neon-text-muted mt-3 text-sm">
-                    Aucune équipe pour l’instant sur cette partie.
-                  </p>
+                {canManage ? (
+                  <form
+                    action={addScoreTeam}
+                    className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_auto]"
+                  >
+                    <input type="hidden" name="gameModeId" value={mode.id} />
+                    <input type="hidden" name="boardId" value={board.id} />
+                    <input type="hidden" name="tournamentId" value={tournament.id} />
+                    <input
+                      name="name"
+                      type="text"
+                      required
+                      placeholder="Nom de l’équipe"
+                      className="w-full px-4 py-2.5 text-sm"
+                    />
+                    <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
+                      Ajouter une équipe
+                    </button>
+                  </form>
+                ) : null}
+
+                {board.teams.length === 0 ? (
+                  <p className="neon-text-muted mt-3 text-sm">Aucune équipe sur cette partie pour le moment.</p>
                 ) : (
-                  <div className="mt-3 grid gap-1.5">
-                    {teamTotals.map((t) => (
-                      <div
-                        key={t.name}
-                        className="rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate font-semibold text-white/85">{t.name}</span>
-                          <span className="neon-badge shrink-0 text-[10px]">
-                            {t.total} pt{Math.abs(t.total) > 1 ? "s" : ""}
-                          </span>
+                  <div className="mt-4 grid gap-3">
+                    {board.teams.map((team) => {
+                      const teamTotal =
+                        sumEntries(team.entries) +
+                        team.members.reduce((sum, m) => sum + sumEntries(m.entries), 0);
+
+                      return (
+                        <div key={team.id} className="rounded-2xl border border-white/8 bg-white/2 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h4 className="font-bold text-white">{team.name}</h4>
+                            <div className="flex items-center gap-2">
+                              <span className="neon-badge">
+                                {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
+                              </span>
+                              {canManage ? (
+                                <form action={deleteScoreTeam}>
+                                  <input type="hidden" name="gameModeId" value={mode.id} />
+                                  <input type="hidden" name="boardId" value={board.id} />
+                                  <input type="hidden" name="teamId" value={team.id} />
+                                  <input type="hidden" name="tournamentId" value={tournament.id} />
+                                  <button
+                                    type="submit"
+                                    className="rounded-lg border border-rose-400/20 px-2 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                  >
+                                    Supprimer l’équipe
+                                  </button>
+                                </form>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {canManage ? (
+                            <form action={saveScoreEntries} className="mt-3 grid gap-4">
+                              <input type="hidden" name="gameModeId" value={mode.id} />
+                              <input type="hidden" name="boardId" value={board.id} />
+                              <input type="hidden" name="teamId" value={team.id} />
+                              <input type="hidden" name="tournamentId" value={tournament.id} />
+
+                              {teamConditions.length > 0 ? (
+                                <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-3.5">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                                    Conditions d’équipe
+                                  </p>
+                                  <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
+                                    {teamConditions.map((condition) => {
+                                      const existing = findEntry(team.entries, condition.id);
+                                      const fieldName = `team_condition_${condition.id}`;
+
+                                      return (
+                                        <label
+                                          key={condition.id}
+                                          className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-xs text-white/80"
+                                        >
+                                          <span>
+                                            {condition.label}{" "}
+                                            <span className="text-white/40">({conditionHint(condition)})</span>
+                                          </span>
+                                          {condition.mode === "ONE_TIME" ? (
+                                            <input
+                                              type="checkbox"
+                                              name={fieldName}
+                                              defaultChecked={Boolean(existing)}
+                                              className="h-4 w-4 shrink-0"
+                                            />
+                                          ) : (
+                                            <input
+                                              type="number"
+                                              name={fieldName}
+                                              min={0}
+                                              max={999}
+                                              defaultValue={existing?.quantity ?? ""}
+                                              placeholder="0"
+                                              className="w-16 shrink-0 px-2 py-1 text-center text-xs"
+                                            />
+                                          )}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {team.members.length > 0 ? (
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                  {team.members.map((member) => {
+                                    const memberTotal = sumEntries(member.entries);
+                                    const label = memberLabel(member);
+                                    const sub = member.user ? `@${member.user.username}` : "Invité";
+
+                                    return (
+                                      <div
+                                        key={member.id}
+                                        className="rounded-2xl border border-white/8 bg-black/20 p-3.5"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-white">{label}</p>
+                                            <p className="neon-text-muted truncate text-[11px]">{sub}</p>
+                                          </div>
+                                          <div className="flex shrink-0 items-center gap-1.5">
+                                            <span className="neon-badge text-[10px]">
+                                              {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
+                                            </span>
+                                            {canManage ? (
+                                              // formAction : soumet ce même formulaire
+                                              // (saveScoreEntries) vers une autre action pour ce
+                                              // seul bouton — évite d'imbriquer un <form>.
+                                              <button
+                                                type="submit"
+                                                formAction={removeScoreTeamMember}
+                                                name="memberId"
+                                                value={member.id}
+                                                className="rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                                title="Retirer ce joueur de l’équipe"
+                                              >
+                                                ✕
+                                              </button>
+                                            ) : null}
+                                          </div>
+                                        </div>
+
+                                        {playerConditions.length > 0 ? (
+                                          <div className="mt-2.5 grid gap-1.5">
+                                            {playerConditions.map((condition) => {
+                                              const existing = findEntry(member.entries, condition.id);
+                                              const fieldName = `member_condition_${member.id}_${condition.id}`;
+
+                                              return (
+                                                <label
+                                                  key={condition.id}
+                                                  className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-white/80"
+                                                >
+                                                  <span>
+                                                    {condition.label}{" "}
+                                                    <span className="text-white/40">
+                                                      ({conditionHint(condition)})
+                                                    </span>
+                                                  </span>
+                                                  {condition.mode === "ONE_TIME" ? (
+                                                    <input
+                                                      type="checkbox"
+                                                      name={fieldName}
+                                                      defaultChecked={Boolean(existing)}
+                                                      className="h-4 w-4 shrink-0"
+                                                    />
+                                                  ) : (
+                                                    <input
+                                                      type="number"
+                                                      name={fieldName}
+                                                      min={0}
+                                                      max={999}
+                                                      defaultValue={existing?.quantity ?? ""}
+                                                      placeholder="0"
+                                                      className="w-16 shrink-0 px-2 py-1 text-center text-xs"
+                                                    />
+                                                  )}
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+
+                              <div>
+                                <button type="submit" className="neon-button px-5 py-2.5 text-sm">
+                                  Enregistrer les scores
+                                </button>
+                              </div>
+                            </form>
+                          ) : null}
+
+                          {canManage ? (
+                            <form
+                              action={addScoreTeamMember}
+                              className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_1fr_auto]"
+                            >
+                              <input type="hidden" name="gameModeId" value={mode.id} />
+                              <input type="hidden" name="boardId" value={board.id} />
+                              <input type="hidden" name="teamId" value={team.id} />
+                              <input type="hidden" name="tournamentId" value={tournament.id} />
+
+                              <select name="userId" defaultValue="" className="w-full px-3 py-2.5 text-sm">
+                                <option value="">Joueur inscrit (optionnel)</option>
+                                {eligibleUsers.map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.displayName} (@{u.username})
+                                  </option>
+                                ))}
+                              </select>
+
+                              <input
+                                name="guestName"
+                                type="text"
+                                placeholder="Ou nom d’un joueur invité"
+                                className="w-full px-3 py-2.5 text-sm"
+                              />
+
+                              <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
+                                Ajouter à l’équipe
+                              </button>
+                            </form>
+                          ) : null}
                         </div>
-                        <p className="neon-text-muted mt-1 truncate text-[11px]">
-                          {t.members.length > 0 ? t.members.join(", ") : "Aucun joueur"}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

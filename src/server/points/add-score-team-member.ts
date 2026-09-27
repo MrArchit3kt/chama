@@ -25,15 +25,17 @@ export async function addScoreTeamMember(formData: FormData) {
   const teamId = String(formData.get("teamId") ?? "").trim();
   const userId = String(formData.get("userId") ?? "").trim();
   const guestName = String(formData.get("guestName") ?? "").trim();
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
 
-  const backTo = `/admin/points/${gameModeId}?board=${boardId}`;
+  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
-    redirect(`${backTo}&error=forbidden`);
+    redirect(`${backTo}?error=forbidden`);
   }
 
   if (!gameModeId || !boardId || !teamId || (!userId && !guestName)) {
-    redirect(`${backTo}&error=validation`);
+    redirect(`${backTo}?error=validation`);
   }
 
   try {
@@ -47,12 +49,12 @@ export async function addScoreTeamMember(formData: FormData) {
     });
 
     if (!team || team.board.gameModeId !== gameModeId) {
-      redirect(`${backTo}&error=server`);
+      redirect(`${backTo}?error=server`);
     }
 
     if (userId) {
       if (team.members.some((m) => m.userId === userId)) {
-        redirect(`${backTo}&error=already_in_team`);
+        redirect(`${backTo}?error=already_in_team`);
       }
 
       const user = await db.user.findUnique({
@@ -61,7 +63,7 @@ export async function addScoreTeamMember(formData: FormData) {
       });
 
       if (!user || user.status !== "ACTIVE" || user.registrationStatus !== "APPROVED") {
-        redirect(`${backTo}&error=server`);
+        redirect(`${backTo}?error=server`);
       }
 
       await db.scoreTeamMember.create({
@@ -75,8 +77,8 @@ export async function addScoreTeamMember(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("ADD_SCORE_TEAM_MEMBER_ERROR", error);
-    redirect(`${backTo}&error=server`);
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect(`${backTo}&member_added=1`);
+  redirect(`${backTo}?member_added=1`);
 }

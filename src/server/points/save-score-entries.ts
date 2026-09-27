@@ -46,15 +46,17 @@ export async function saveScoreEntries(formData: FormData) {
   const gameModeId = String(formData.get("gameModeId") ?? "").trim();
   const boardId = String(formData.get("boardId") ?? "").trim();
   const teamId = String(formData.get("teamId") ?? "").trim();
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
 
-  const backTo = `/admin/points/${gameModeId}?board=${boardId}`;
+  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
-    redirect(`${backTo}&error=forbidden`);
+    redirect(`${backTo}?error=forbidden`);
   }
 
   if (!gameModeId || !boardId || !teamId) {
-    redirect("/admin/points?error=validation");
+    redirect(`${backTo}?error=validation`);
   }
 
   try {
@@ -68,7 +70,7 @@ export async function saveScoreEntries(formData: FormData) {
     });
 
     if (!team || team.board.gameModeId !== gameModeId) {
-      redirect(`${backTo}&error=server`);
+      redirect(`${backTo}?error=server`);
     }
 
     const conditions = await db.scoreCondition.findMany({
@@ -126,8 +128,8 @@ export async function saveScoreEntries(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("SAVE_SCORE_ENTRIES_ERROR", error);
-    redirect(`${backTo}&error=server`);
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect(`${backTo}&success=1`);
+  redirect(`${backTo}?success=1`);
 }

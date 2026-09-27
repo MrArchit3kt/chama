@@ -18,60 +18,48 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-/** Cible de retour après création — whitelist un préfixe interne pour
- * éviter tout risque d'open redirect via un champ de formulaire. */
-function safeReturnTo(raw: string | null, fallback: string): string {
-  if (raw && raw.startsWith("/admin/")) return raw;
-  return fallback;
-}
-
+/**
+ * Crée une partie (tableau) pour un mode de jeu donné, toujours rattachée à
+ * un tournoi — il n'existe plus de partie indépendante : même une session
+ * ponctuelle passe par un tournoi (avec un seul mode sélectionné). Appelée
+ * exclusivement depuis /admin/tournaments/[id].
+ */
 export async function createBoard(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
 
   const gameModeId = String(formData.get("gameModeId") ?? "").trim();
-  if (!gameModeId) redirect("/admin/points?error=validation");
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
+
+  if (!gameModeId || !tournamentId) redirect("/admin/tournaments?error=validation");
+
+  const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
-    redirect(`/admin/points/${gameModeId}?error=forbidden`);
+    redirect(`${backTo}?error=forbidden`);
   }
 
   const title = String(formData.get("title") ?? "").trim();
-  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
-  const returnTo = safeReturnTo(
-    formData.get("returnTo") ? String(formData.get("returnTo")) : null,
-    `/admin/points/${gameModeId}`,
-  );
 
   try {
-    const gameMode = await db.scoreGameMode.findUnique({
-      where: { id: gameModeId },
-      select: { id: true, name: true },
-    });
-
-    if (!gameMode) redirect("/admin/points?error=server");
-
-    let tournamentName: string | null = null;
-    if (tournamentId) {
-      const tournament = await db.scoreTournament.findUnique({
+    const [gameMode, tournament] = await Promise.all([
+      db.scoreGameMode.findUnique({ where: { id: gameModeId }, select: { id: true, name: true } }),
+      db.scoreTournament.findUnique({
         where: { id: tournamentId },
         select: {
-          id: true,
           name: true,
           gameModes: { select: { id: true } },
           boards: { where: { gameModeId }, select: { id: true } },
         },
-      });
+      }),
+    ]);
 
-      if (!tournament) redirect(`${returnTo}?error=server`);
-      if (!tournament.gameModes.some((m) => m.id === gameModeId)) {
-        redirect(`${returnTo}?error=mode_not_in_tournament`);
-      }
-      if (tournament.boards.length > 0) {
-        redirect(`${returnTo}?error=mode_already_used`);
-      }
-
-      tournamentName = tournament.name;
+    if (!gameMode || !tournament) redirect(`${backTo}?error=server`);
+    if (!tournament.gameModes.some((m) => m.id === gameModeId)) {
+      redirect(`${backTo}?error=mode_not_in_tournament`);
+    }
+    if (tournament.boards.length > 0) {
+      redirect(`${backTo}?error=mode_already_used`);
     }
 
     const board = await db.scoreBoard.create({
@@ -79,29 +67,24 @@ export async function createBoard(formData: FormData) {
         gameModeId: gameMode.id,
         title: title || null,
         createdById: admin.id,
-        tournamentId: tournamentId || null,
+        tournamentId,
       },
     });
 
-    if (tournamentId) {
-      await provisionBoardTeams(board.id, tournamentId);
-    }
+    await provisionBoardTeams(board.id, tournamentId);
 
     await logActivity({
       action: "SCORE_BOARD_CREATED",
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: title ? `${gameMode.name} — ${title}` : gameMode.name,
-      metadata: tournamentName ? { tournament: tournamentName } : undefined,
+      metadata: { tournament: tournament.name },
     });
-
-    if (returnTo.startsWith("/admin/tournaments/")) {
-      redirect(`${returnTo}?success=1`);
-    }
-    redirect(`/admin/points/${gameModeId}?board=${board.id}&success=1`);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("CREATE_BOARD_ERROR", error);
-    redirect(`${returnTo}?error=server`);
+    redirect(`${backTo}?error=server`);
   }
+
+  redirect(`${backTo}?success=1`);
 }
