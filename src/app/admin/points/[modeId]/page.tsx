@@ -10,6 +10,9 @@ import { addScoreTeam } from "@/server/points/add-score-team";
 import { addScoreTeamMember } from "@/server/points/add-score-team-member";
 import { saveScoreEntries } from "@/server/points/save-score-entries";
 import { setBoardTournament } from "@/server/points/set-board-tournament";
+import { deleteBoard } from "@/server/points/delete-board";
+import { deleteScoreTeam } from "@/server/points/delete-score-team";
+import { removeScoreTeamMember } from "@/server/points/remove-score-team-member";
 import { BoardHistory } from "@/components/points/board-history";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
@@ -208,14 +211,37 @@ export default async function AdminPointsModePage({
                     ? latestBoard.title || `Tableau du ${formatDate(latestBoard.createdAt)}`
                     : "Aucun tableau pour le moment"}
                 </h2>
-                {latestBoard?.tournament ? (
-                  <Link
-                    href="/admin/tournaments"
-                    className="neon-badge mt-1.5 inline-flex text-[10px] hover:border-cyan-400/40"
-                  >
-                    Tournoi : {latestBoard.tournament.name}
-                  </Link>
-                ) : null}
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  {latestBoard?.tournament ? (
+                    <Link
+                      href="/admin/tournaments"
+                      className="neon-badge inline-flex text-[10px] hover:border-cyan-400/40"
+                    >
+                      Tournoi : {latestBoard.tournament.name}
+                    </Link>
+                  ) : null}
+                  {latestBoard ? (
+                    <a
+                      href={`/admin/points/${gameMode.id}/export?board=${latestBoard.id}`}
+                      className="neon-badge text-[10px] hover:border-cyan-400/40"
+                    >
+                      Exporter CSV
+                    </a>
+                  ) : null}
+                  {latestBoard ? (
+                    <form action={deleteBoard}>
+                      <input type="hidden" name="gameModeId" value={gameMode.id} />
+                      <input type="hidden" name="boardId" value={latestBoard.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg border border-rose-400/20 px-2 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                        title="Supprimer ce tableau et tous ses scores"
+                      >
+                        Supprimer ce tableau
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
               </div>
 
               <form
@@ -325,9 +351,25 @@ export default async function AdminPointsModePage({
                     <div key={team.id} className="neon-card p-5 md:p-8">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <h4 className="text-lg font-bold text-white md:text-xl">{team.name}</h4>
-                        <span className="neon-badge">
-                          {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="neon-badge">
+                            {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
+                          </span>
+                          {canBoard ? (
+                            <form action={deleteScoreTeam}>
+                              <input type="hidden" name="gameModeId" value={gameMode.id} />
+                              <input type="hidden" name="boardId" value={latestBoard.id} />
+                              <input type="hidden" name="teamId" value={team.id} />
+                              <button
+                                type="submit"
+                                className="rounded-lg border border-rose-400/20 px-2 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                title="Supprimer cette équipe et ses scores"
+                              >
+                                Supprimer l’équipe
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
                       </div>
 
                       {canBoard ? (
@@ -399,9 +441,26 @@ export default async function AdminPointsModePage({
                                         <p className="truncate text-sm font-bold text-white">{label}</p>
                                         <p className="neon-text-muted truncate text-[11px]">{sub}</p>
                                       </div>
-                                      <span className="neon-badge shrink-0 text-[10px]">
-                                        {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
-                                      </span>
+                                      <div className="flex shrink-0 items-center gap-1.5">
+                                        <span className="neon-badge text-[10px]">
+                                          {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
+                                        </span>
+                                        {canBoard ? (
+                                          // formAction : soumet ce même formulaire (saveScoreEntries)
+                                          // vers une autre action pour ce seul bouton — évite d'imbriquer
+                                          // un <form> dans un <form>, invalide en HTML.
+                                          <button
+                                            type="submit"
+                                            formAction={removeScoreTeamMember}
+                                            name="memberId"
+                                            value={member.id}
+                                            className="rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                            title="Retirer ce joueur de l’équipe"
+                                          >
+                                            ✕
+                                          </button>
+                                        ) : null}
+                                      </div>
                                     </div>
 
                                     {playerConditions.length > 0 ? (
