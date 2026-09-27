@@ -7,12 +7,31 @@ import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { computeEntryPoints } from "@/lib/scoring";
 import { computeTournamentStandings } from "@/lib/tournament-standings";
+import { joinScoreTeam } from "@/server/points/join-score-team";
+import { leaveScoreTeam } from "@/server/points/leave-score-team";
 
 const conditionForScoringSelect = {
   points: true,
   mode: true,
   tiers: { select: { minValue: true, maxValue: true, points: true } },
 } as const;
+
+function getErrorMessage(error?: string) {
+  switch (error) {
+    case "forbidden":
+      return "Ce tournoi n’est pas en mode « libre choix ».";
+    case "locked":
+      return "Le tournoi a démarré, la composition des équipes est verrouillée.";
+    case "team_full":
+      return "Cette équipe est déjà complète.";
+    case "validation":
+      return "Action invalide.";
+    case "server":
+      return "Erreur serveur pendant l’action demandée.";
+    default:
+      return null;
+  }
+}
 
 async function getTournaments() {
   const tournaments = await db.scoreTournament.findMany({
@@ -23,10 +42,14 @@ async function getTournaments() {
         include: {
           gameMode: { select: { name: true } },
           teams: {
+            orderBy: { createdAt: "asc" },
             include: {
               entries: { include: { condition: { select: conditionForScoringSelect } } },
               members: {
-                include: { entries: { include: { condition: { select: conditionForScoringSelect } } } },
+                include: {
+                  user: { select: { displayName: true, username: true } },
+                  entries: { include: { condition: { select: conditionForScoringSelect } } },
+                },
               },
             },
           },
@@ -41,6 +64,20 @@ async function getTournaments() {
       id: t.id,
       name: t.name,
       description: t.description,
+      teamMode: t.teamMode,
+      startedAt: t.startedAt,
+      maxMembersPerTeam: t.maxMembersPerTeam,
+      // Partie de référence : la composition d'équipes est la même sur
+      // toutes les parties du tournoi, on peut donc se baser sur la
+      // première pour l'affichage "rejoindre une équipe".
+      referenceBoardTeams: t.boards[0].teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        members: team.members.map((m) => ({
+          userId: m.userId,
+          label: m.user ? m.user.displayName : m.guestName ?? "Invité",
+        })),
+      })),
       standings: computeTournamentStandings(t.boards),
     }));
 }
@@ -130,9 +167,18 @@ async function getRanking(gameModeId: string): Promise<RankingRow[]> {
   return [...totals.values()].sort((a, b) => b.points - a.points);
 }
 
-export default async function PointsPage() {
+export default async function PointsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; joined?: string; left?: string }>;
+}) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
+
+  const sp = (await searchParams) ?? {};
+  const errorMessage = getErrorMessage(sp.error);
+  const isJoined = sp.joined === "1";
+  const isLeft = sp.left === "1";
 
   const gameModes = await db.scoreGameMode.findMany({
     where: { isActive: true },
@@ -158,7 +204,30 @@ export default async function PointsPage() {
           </p>
         </div>
 
-        {tournaments.map((tournament) => (
+        {errorMessage ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-rose-400">{errorMessage}</p>
+          </div>
+        ) : null}
+
+        {isJoined ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-emerald-400">Tu as rejoint l’équipe.</p>
+          </div>
+        ) : null}
+
+        {isLeft ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">Tu as quitté l’équipe.</p>
+          </div>
+        ) : null}
+
+        {tournaments.map((tournament) => {
+          const myTeam = tournament.referenceBoardTeams.find((t) =>
+            t.members.some((m) => m.userId === sessionUser.id),
+          );
+
+          return (
           <div key={tournament.id} className="neon-card p-5 md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -175,6 +244,83 @@ export default async function PointsPage() {
                 ) : null}
               </div>
             </div>
+
+            {tournament.teamMode === "SELF_JOIN" ? (
+              <div className="mt-4 rounded-2xl border border-cyan-400/15 bg-cyan-400/4 p-3.5 md:p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                  Équipes
+                </p>
+
+                {tournament.startedAt ? (
+                  <p className="neon-text-muted mt-2 text-xs">
+                    Le tournoi a démarré, la composition des équipes est verrouillée.
+                  </p>
+                ) : null}
+
+                <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                  {tournament.referenceBoardTeams.map((team) => {
+                    const isMine = team.id === myTeam?.id;
+                    const isFull = Boolean(
+                      tournament.maxMembersPerTeam &&
+                        team.members.length >= tournament.maxMembersPerTeam &&
+                        !isMine,
+                    );
+
+                    return (
+                      <div
+                        key={team.id}
+                        className={
+                          isMine
+                            ? "rounded-xl border border-cyan-400/30 bg-cyan-400/[0.08] p-3"
+                            : "rounded-xl border border-white/8 bg-white/2 p-3"
+                        }
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-bold text-white">
+                            {team.name}
+                            {tournament.maxMembersPerTeam ? (
+                              <span className="neon-text-muted ml-1.5 text-[11px] font-normal">
+                                ({team.members.length}/{tournament.maxMembersPerTeam})
+                              </span>
+                            ) : null}
+                          </span>
+
+                          {!tournament.startedAt ? (
+                            isMine ? (
+                              <form action={leaveScoreTeam}>
+                                <input type="hidden" name="tournamentId" value={tournament.id} />
+                                <button
+                                  type="submit"
+                                  className="shrink-0 rounded-lg border border-rose-400/20 px-2.5 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                >
+                                  Quitter
+                                </button>
+                              </form>
+                            ) : (
+                              <form action={joinScoreTeam}>
+                                <input type="hidden" name="teamId" value={team.id} />
+                                <button
+                                  type="submit"
+                                  disabled={isFull}
+                                  className="neon-button-secondary shrink-0 px-2.5 py-1 text-[11px] disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {isFull ? "Complet" : "Rejoindre"}
+                                </button>
+                              </form>
+                            )
+                          ) : null}
+                        </div>
+                        <p className="neon-text-muted mt-1.5 truncate text-[11px]">
+                          {team.members.length > 0
+                            ? team.members.map((m) => m.label).join(", ")
+                            : "Aucun joueur"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             {tournament.standings.length === 0 ? (
               <p className="neon-text-muted mt-4 text-sm">
@@ -225,7 +371,8 @@ export default async function PointsPage() {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {gameModes.length === 0 ? (
           <div className="neon-card p-5 md:p-8">

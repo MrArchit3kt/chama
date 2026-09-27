@@ -6,6 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { provisionBoardTeams } from "@/lib/tournament-team-sync";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -81,6 +82,10 @@ export async function createBoard(formData: FormData) {
         tournamentId: tournamentId || null,
       },
     });
+
+    if (tournamentId) {
+      await provisionBoardTeams(board.id, tournamentId);
+    }
 
     await logActivity({
       action: "SCORE_BOARD_CREATED",

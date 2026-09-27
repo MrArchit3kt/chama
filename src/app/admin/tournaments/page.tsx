@@ -21,11 +21,19 @@ function getErrorMessage(error?: string) {
       return "Tu n’as pas les droits pour effectuer cette action.";
     case "validation":
       return "Formulaire invalide. Vérifie les champs.";
+    case "team_count_required":
+      return "Indique un nombre d’équipes pour un mode « Libre choix » ou « Aléatoire ».";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
       return null;
   }
+}
+
+function teamModeLabel(mode: string) {
+  if (mode === "SELF_JOIN") return "Libre choix";
+  if (mode === "RANDOM") return "Aléatoire";
+  return "Manuel";
 }
 
 function medalColor(rank: number) {
@@ -174,6 +182,71 @@ export default async function AdminTournamentsPage({
               </div>
 
               <div>
+                <label className="mb-2 block text-sm font-semibold text-white">
+                  Composition des équipes
+                </label>
+                <div className="grid gap-2">
+                  <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
+                    <input
+                      type="radio"
+                      name="teamMode"
+                      value="MANUAL"
+                      defaultChecked
+                      className="mt-0.5 h-4 w-4"
+                    />
+                    <span>
+                      <span className="font-semibold text-white">Manuel</span> — tu crées les
+                      équipes et ajoutes les joueurs toi-même sur chaque partie (comme avant).
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
+                    <input type="radio" name="teamMode" value="SELF_JOIN" className="mt-0.5 h-4 w-4" />
+                    <span>
+                      <span className="font-semibold text-white">Libre choix</span> — les joueurs
+                      choisissent eux-mêmes leur équipe depuis la page Points (boutons « Rejoindre
+                      Équipe 1 », etc.).
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
+                    <input type="radio" name="teamMode" value="RANDOM" className="mt-0.5 h-4 w-4" />
+                    <span>
+                      <span className="font-semibold text-white">Aléatoire</span> — tu choisis un
+                      pool de joueurs et le site tire les équipes au sort.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-white/70">
+                      Nombre d’équipes (requis si Libre choix / Aléatoire)
+                    </label>
+                    <input
+                      name="teamCount"
+                      type="number"
+                      min={2}
+                      max={20}
+                      placeholder="Ex : 4"
+                      className="w-full px-3 py-2.5 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-white/70">
+                      Joueurs max par équipe (optionnel)
+                    </label>
+                    <input
+                      name="maxMembersPerTeam"
+                      type="number"
+                      min={1}
+                      max={50}
+                      placeholder="Ex : 4"
+                      className="w-full px-3 py-2.5 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <button type="submit" className="neon-button px-5 py-2.5">
                   Créer le tournoi
                 </button>
@@ -196,7 +269,15 @@ export default async function AdminTournamentsPage({
                 <div key={tournament.id} className="neon-card p-5 md:p-8">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-white md:text-xl">{tournament.name}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-white md:text-xl">{tournament.name}</h3>
+                        <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
+                        {tournament.startedAt ? (
+                          <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
+                            Démarré
+                          </span>
+                        ) : null}
+                      </div>
                       {tournament.description ? (
                         <p className="neon-text-muted mt-1.5 max-w-2xl text-sm leading-6">
                           {tournament.description}
