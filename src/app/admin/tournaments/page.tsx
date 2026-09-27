@@ -108,12 +108,19 @@ export default async function AdminTournamentsPage({
     <SiteShell>
       <div className="grid gap-4 md:gap-6">
         <div className="neon-card p-5 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-            Admin Tournois
-          </p>
-          <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
-            Tournois multi-parties
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                Admin Tournois
+              </p>
+              <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
+                Tournois multi-parties
+              </h1>
+            </div>
+            <Link href="/admin/tournaments/guide" className="neon-button-secondary px-4 py-2 text-sm">
+              📖 Guide
+            </Link>
+          </div>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             C’est ici que tout se passe pour lancer une session de jeu —
             même une seule partie ponctuelle sur un seul mode. Choisis le ou

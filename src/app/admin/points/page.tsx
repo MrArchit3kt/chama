@@ -81,9 +81,14 @@ export default async function AdminPointsPage({
             <h1 className="neon-title neon-gradient-text text-2xl font-black md:text-3xl">
               Modes de jeu &amp; conditions de points
             </h1>
-            <Link href="/admin/tournaments" className="neon-button-secondary px-4 py-2 text-sm">
-              Gérer les tournois
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/admin/tournaments/guide" className="neon-button-secondary px-4 py-2 text-sm">
+                📖 Guide
+              </Link>
+              <Link href="/admin/tournaments" className="neon-button-secondary px-4 py-2 text-sm">
+                Gérer les tournois
+              </Link>
+            </div>
           </div>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Crée un mode de jeu et définis ses conditions (qui rapportent des

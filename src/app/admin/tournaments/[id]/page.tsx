@@ -50,8 +50,6 @@ function getErrorMessage(error?: string) {
       return "Ce tournoi a déjà une partie pour ce mode de jeu.";
     case "no_board":
       return "Crée d’abord une partie (pour n’importe quel mode) avant de tirer les équipes au sort.";
-    case "pool_too_large":
-      return "Trop de joueurs sélectionnés pour la capacité configurée (nombre d’équipes × joueurs max).";
     case "locked":
       return "Le tournoi a démarré, la composition des équipes est verrouillée.";
     case "not_enough_teams":
@@ -142,6 +140,7 @@ export default async function AdminTournamentDetailPage({
     success?: string;
     team_added?: string;
     member_added?: string;
+    teams_adjusted?: string;
   }>;
 }) {
   const admin = await requireAdmin("points");
@@ -155,6 +154,7 @@ export default async function AdminTournamentDetailPage({
   const isSuccess = sp.success === "1";
   const isTeamAdded = sp.team_added === "1";
   const isMemberAdded = sp.member_added === "1";
+  const teamsAdjustedTo = sp.teams_adjusted ? Number(sp.teams_adjusted) : null;
 
   const tournament = await db.scoreTournament.findUnique({
     where: { id },
@@ -410,6 +410,15 @@ export default async function AdminTournamentDetailPage({
           </div>
         ) : null}
 
+        {teamsAdjustedTo ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-cyan-300">
+              Trop de joueurs pour le nombre d’équipes demandé : ajusté automatiquement à{" "}
+              {teamsAdjustedTo} équipes pour que tout le monde ait une place.
+            </p>
+          </div>
+        ) : null}
+
         {tournament.format === "CLASSIC" && tournament.teamMode === "SELF_JOIN" && !tournament.startedAt ? (
           <div className="neon-card p-5 md:p-8">
             <p className="text-sm font-medium text-cyan-300">
@@ -485,7 +494,7 @@ export default async function AdminTournamentDetailPage({
                           defaultChecked={interestedIds.has(u.id)}
                           className="h-4 w-4"
                         />
-                        {u.displayName} (@{u.username})
+                        {u.displayName}
                         {interestedIds.has(u.id) ? <span className="text-cyan-300">🙋</span> : null}
                       </label>
                     ))}
@@ -870,7 +879,7 @@ export default async function AdminTournamentDetailPage({
                                 <option value="">Joueur inscrit (optionnel)</option>
                                 {eligibleUsers.map((u) => (
                                   <option key={u.id} value={u.id}>
-                                    {u.displayName} (@{u.username})
+                                    {u.displayName}
                                   </option>
                                 ))}
                               </select>
@@ -1070,7 +1079,7 @@ export default async function AdminTournamentDetailPage({
                                 <option value="">Joueur inscrit</option>
                                 {eligibleUsers.map((u) => (
                                   <option key={u.id} value={u.id}>
-                                    {u.displayName} (@{u.username})
+                                    {u.displayName}
                                   </option>
                                 ))}
                               </select>

@@ -85,9 +85,15 @@ export async function generateRandomTeams(formData: FormData) {
     ];
 
     if (pool.length === 0) redirect(`${backTo}?error=validation`);
-    if (maxMembersPerTeam && pool.length > teamCount * maxMembersPerTeam) {
-      redirect(`${backTo}?error=pool_too_large`);
-    }
+
+    // Si le pool dépasse la capacité demandée (nombre d'équipes × joueurs
+    // max), on ajoute automatiquement les équipes nécessaires plutôt que
+    // de refuser — comme le système de Mix qui complète avec des équipes
+    // supplémentaires pour ne laisser personne de côté.
+    const effectiveTeamCount = maxMembersPerTeam
+      ? Math.max(teamCount, Math.ceil(pool.length / maxMembersPerTeam))
+      : teamCount;
+    const wasAdjusted = effectiveTeamCount !== teamCount;
 
     const referenceBoard = await db.scoreBoard.findFirst({
       where: { tournamentId },
@@ -98,8 +104,8 @@ export async function generateRandomTeams(formData: FormData) {
     if (!referenceBoard) redirect(`${backTo}?error=no_board`);
 
     let teams = referenceBoard.teams;
-    if (teams.length < teamCount) {
-      const missing = teamCount - teams.length;
+    if (teams.length < effectiveTeamCount) {
+      const missing = effectiveTeamCount - teams.length;
       await db.scoreTeam.createMany({
         data: Array.from({ length: missing }, (_, i) => ({
           boardId: referenceBoard.id,
@@ -113,7 +119,7 @@ export async function generateRandomTeams(formData: FormData) {
       });
     }
 
-    const drawTeams = teams.slice(0, teamCount);
+    const drawTeams = teams.slice(0, effectiveTeamCount);
 
     // Repart de zéro : un tirage au sort remplace la composition
     // précédente sur TOUTES les parties déjà créées du tournoi.
@@ -132,7 +138,7 @@ export async function generateRandomTeams(formData: FormData) {
 
     await db.scoreTournament.update({
       where: { id: tournamentId },
-      data: { teamCount, maxMembersPerTeam },
+      data: { teamCount: effectiveTeamCount, maxMembersPerTeam },
     });
 
     await logActivity({
@@ -140,8 +146,12 @@ export async function generateRandomTeams(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: `Tournoi ${tournamentId.slice(-6).toUpperCase()}`,
-      metadata: { teamCount, poolSize: pool.length },
+      metadata: { teamCount: effectiveTeamCount, poolSize: pool.length, adjusted: wasAdjusted },
     });
+
+    if (wasAdjusted) {
+      redirect(`${backTo}?success=1&teams_adjusted=${effectiveTeamCount}`);
+    }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("GENERATE_RANDOM_TEAMS_ERROR", error);
