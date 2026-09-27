@@ -23,6 +23,8 @@ function getErrorMessage(error?: string) {
       return "Formulaire invalide. Vérifie les champs.";
     case "team_count_required":
       return "Indique un nombre d’équipes pour un mode « Libre choix » ou « Aléatoire ».";
+    case "modes_required":
+      return "Choisis au moins un mode de jeu pour un tournoi au format « Classique ».";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -34,6 +36,10 @@ function teamModeLabel(mode: string) {
   if (mode === "SELF_JOIN") return "Libre choix";
   if (mode === "RANDOM") return "Aléatoire";
   return "Manuel";
+}
+
+function formatLabel(format: string) {
+  return format === "BRACKET" ? "Organigramme" : "Classique";
 }
 
 function medalColor(rank: number) {
@@ -88,6 +94,8 @@ export default async function AdminTournamentsPage({
           },
         },
       },
+      bracketTeams: { select: { id: true } },
+      matches: { orderBy: { round: "desc" }, select: { round: true, winnerName: true } },
     },
   });
 
@@ -160,8 +168,35 @@ export default async function AdminTournamentsPage({
               </div>
 
               <div>
+                <label className="mb-2 block text-sm font-semibold text-white">Format</label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
+                    <input
+                      type="radio"
+                      name="format"
+                      value="CLASSIC"
+                      defaultChecked
+                      className="mt-0.5 h-4 w-4"
+                    />
+                    <span>
+                      <span className="font-semibold text-white">Classique</span> — cumul de
+                      points sur une partie par mode de jeu, classement final.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
+                    <input type="radio" name="format" value="BRACKET" className="mt-0.5 h-4 w-4" />
+                    <span>
+                      <span className="font-semibold text-white">Organigramme</span> — élimination
+                      directe, équipe 1 vs équipe 2, etc., le vainqueur avance jusqu’au champion.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
                 <label className="mb-2 block text-sm font-semibold text-white">
-                  Modes de jeu du tournoi (une partie sera créée pour chacun)
+                  Modes de jeu du tournoi (une partie sera créée pour chacun — requis en format
+                  Classique, ignoré en Organigramme)
                 </label>
                 {activeGameModes.length === 0 ? (
                   <p className="neon-text-muted text-sm">
@@ -184,7 +219,8 @@ export default async function AdminTournamentsPage({
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-white">
-                  Composition des équipes
+                  Composition des équipes (format Classique uniquement — un tournoi Organigramme
+                  se peuple d’équipes déclarées directement sur sa page)
                 </label>
                 <div className="grid gap-2">
                   <label className="flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/2 px-3 py-2.5 text-sm text-white/80">
@@ -272,7 +308,10 @@ export default async function AdminTournamentsPage({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-lg font-bold text-white md:text-xl">{tournament.name}</h3>
-                        <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
+                        <span className="neon-badge text-[10px]">{formatLabel(tournament.format)}</span>
+                        {tournament.format === "CLASSIC" ? (
+                          <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
+                        ) : null}
                         {tournament.startedAt ? (
                           <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
                             Démarré
@@ -291,9 +330,9 @@ export default async function AdminTournamentsPage({
                         href={`/admin/tournaments/${tournament.id}`}
                         className="neon-button px-3 py-1.5 text-xs"
                       >
-                        Gérer les parties
+                        Ouvrir le tournoi
                       </Link>
-                      {tournament.boards.length > 0 ? (
+                      {tournament.format === "CLASSIC" && tournament.boards.length > 0 ? (
                         <a
                           href={`/admin/tournaments/export?id=${tournament.id}`}
                           className="neon-button-secondary px-3 py-1.5 text-xs"
@@ -315,94 +354,126 @@ export default async function AdminTournamentsPage({
                     </div>
                   </div>
 
-                  {duplicateWarnings.length > 0 ? (
-                    <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] p-3.5">
-                      <p className="text-xs font-semibold text-amber-300">
-                        ⚠️ Noms d’équipe qui se ressemblent — vérifie qu’il ne s’agit pas d’une
-                        faute de frappe (les points ne se cumulent que si le nom est identique
-                        d’une partie à l’autre) :
-                      </p>
-                      <ul className="mt-1.5 text-xs text-amber-200/80">
-                        {duplicateWarnings.map(([a, b]) => (
-                          <li key={`${a}-${b}`}>
-                            « {a} » et « {b} »
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-
-                  <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                      Parties ({tournament.boards.length}/{tournament.gameModes.length} modes joués)
-                    </p>
-
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      {tournament.gameModes.map((mode) => {
-                        const board = tournament.boards.find((b) => b.gameModeId === mode.id);
-
-                        return board ? (
-                          <Link
-                            key={mode.id}
-                            href={`/admin/tournaments/${tournament.id}`}
-                            className="neon-badge text-[11px] hover:border-cyan-400/40"
-                          >
-                            {mode.name}
-                            {board.title ? ` — ${board.title}` : ` (${formatDate(board.createdAt)})`}
-                          </Link>
-                        ) : (
-                          <span
-                            key={mode.id}
-                            className="rounded-full border border-dashed border-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white/40"
-                          >
-                            {mode.name} — pas encore jouée
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {standings.length > 0 ? (
-                    <div className="mt-4 grid gap-2">
-                      {standings.map((row, rank) => (
-                        <div
-                          key={row.key}
-                          className={
-                            rank === 0
-                              ? "flex items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3"
-                              : "flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/2 px-4 py-3"
-                          }
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center text-sm font-black ${medalColor(rank)}`}
-                            >
-                              {rank < 3 ? <Trophy className="h-4 w-4" /> : rank + 1}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-bold text-white">
-                                {row.name}
-                                {rank === 0 ? (
-                                  <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
-                                    Vainqueur
-                                  </span>
-                                ) : null}
-                              </p>
-                              <p className="neon-text-muted truncate text-[11px]">
-                                {row.breakdown
-                                  .map((b) => `${b.gameModeName} : ${b.points > 0 ? "+" : ""}${b.points} pt${Math.abs(b.points) > 1 ? "s" : ""}`)
-                                  .join(" · ")}
-                              </p>
-                            </div>
-                          </div>
-
-                          <span className="neon-title neon-gradient-text shrink-0 text-lg font-black">
-                            {row.total} pt{Math.abs(row.total) > 1 ? "s" : ""}
-                          </span>
+                  {tournament.format === "CLASSIC" ? (
+                    <>
+                      {duplicateWarnings.length > 0 ? (
+                        <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] p-3.5">
+                          <p className="text-xs font-semibold text-amber-300">
+                            ⚠️ Noms d’équipe qui se ressemblent — vérifie qu’il ne s’agit pas
+                            d’une faute de frappe (les points ne se cumulent que si le nom est
+                            identique d’une partie à l’autre) :
+                          </p>
+                          <ul className="mt-1.5 text-xs text-amber-200/80">
+                            {duplicateWarnings.map(([a, b]) => (
+                              <li key={`${a}-${b}`}>
+                                « {a} » et « {b} »
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ))}
+                      ) : null}
+
+                      <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                          Parties ({tournament.boards.length}/{tournament.gameModes.length} modes joués)
+                        </p>
+
+                        <div className="mt-2.5 flex flex-wrap gap-2">
+                          {tournament.gameModes.map((mode) => {
+                            const board = tournament.boards.find((b) => b.gameModeId === mode.id);
+
+                            return board ? (
+                              <Link
+                                key={mode.id}
+                                href={`/admin/tournaments/${tournament.id}`}
+                                className="neon-badge text-[11px] hover:border-cyan-400/40"
+                              >
+                                {mode.name}
+                                {board.title ? ` — ${board.title}` : ` (${formatDate(board.createdAt)})`}
+                              </Link>
+                            ) : (
+                              <span
+                                key={mode.id}
+                                className="rounded-full border border-dashed border-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white/40"
+                              >
+                                {mode.name} — pas encore jouée
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {standings.length > 0 ? (
+                        <div className="mt-4 grid gap-2">
+                          {standings.map((row, rank) => (
+                            <div
+                              key={row.key}
+                              className={
+                                rank === 0
+                                  ? "flex items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3"
+                                  : "flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/2 px-4 py-3"
+                              }
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center text-sm font-black ${medalColor(rank)}`}
+                                >
+                                  {rank < 3 ? <Trophy className="h-4 w-4" /> : rank + 1}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-white">
+                                    {row.name}
+                                    {rank === 0 ? (
+                                      <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
+                                        Vainqueur
+                                      </span>
+                                    ) : null}
+                                  </p>
+                                  <p className="neon-text-muted truncate text-[11px]">
+                                    {row.breakdown
+                                      .map((b) => `${b.gameModeName} : ${b.points > 0 ? "+" : ""}${b.points} pt${Math.abs(b.points) > 1 ? "s" : ""}`)
+                                      .join(" · ")}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <span className="neon-title neon-gradient-text shrink-0 text-lg font-black">
+                                {row.total} pt{Math.abs(row.total) > 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                        {tournament.bracketTeams.length} équipe{tournament.bracketTeams.length > 1 ? "s" : ""}
+                      </p>
+                      {tournament.matches.length === 0 ? (
+                        <p className="neon-text-muted mt-2 text-sm">
+                          {tournament.startedAt
+                            ? "Bracket démarré sans match généré (erreur ?)."
+                            : "Bracket pas encore démarré."}
+                        </p>
+                      ) : (
+                        (() => {
+                          const latestRound = tournament.matches[0].round;
+                          const latestMatches = tournament.matches.filter((m) => m.round === latestRound);
+                          const champion =
+                            latestMatches.length === 1 ? latestMatches[0].winnerName : null;
+
+                          return (
+                            <p className="neon-text-muted mt-2 text-sm">
+                              {champion
+                                ? `🏆 Champion : ${champion}`
+                                : `Tour ${latestRound} en cours (${latestMatches.filter((m) => m.winnerName).length}/${latestMatches.length} décidés)`}
+                            </p>
+                          );
+                        })()
+                      )}
                     </div>
-                  ) : null}
+                  )}
                 </div>
               );
             })}

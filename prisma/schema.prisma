@@ -879,6 +879,9 @@ enum ActivityAction {
   SCORE_TEAM_JOINED
   SCORE_TEAM_LEFT
   SCORE_TEAMS_RANDOMIZED
+  SCORE_BRACKET_TEAM_ADDED
+  SCORE_MATCH_WINNER_SET
+  SCORE_BRACKET_ROUND_ADVANCED
 }
 
 model ActivityLog {
@@ -1000,32 +1003,80 @@ enum ScoreTournamentTeamMode {
   RANDOM // l'admin tire les équipes au sort à partir d'un pool choisi
 }
 
+enum ScoreTournamentFormat {
+  CLASSIC // cumul de points sur une partie par mode de jeu (comportement historique)
+  BRACKET // élimination directe : équipes appariées, le vainqueur avance
+}
+
 model ScoreTournament {
-  id          String   @id @default(cuid())
+  id          String                @id @default(cuid())
   name        String
-  description String?  @db.Text
-  createdAt   DateTime @default(now())
+  description String?               @db.Text
+  createdAt   DateTime              @default(now())
   createdById String?
+  format      ScoreTournamentFormat @default(CLASSIC)
 
   // Nombre d'équipes / taille max souhaités (optionnels : laissés vides,
   // tout reste manuel comme avant). Utilisés pour auto-créer les équipes
-  // à la 1ère partie et pour les modes SELF_JOIN/RANDOM.
+  // à la 1ère partie et pour les modes SELF_JOIN/RANDOM (format CLASSIC
+  // uniquement — un bracket gère ses équipes séparément, voir
+  // ScoreBracketTeam).
   teamCount         Int?
   maxMembersPerTeam Int?
   teamMode          ScoreTournamentTeamMode @default(MANUAL)
-  // Une fois définie, plus aucun changement de composition d'équipe par
-  // les joueurs (SELF_JOIN) ni de nouveau tirage au sort (RANDOM) —
-  // l'admin garde la main via les outils existants (ajout/retrait manuel).
+  // Une fois définie : format CLASSIC => plus aucun changement de
+  // composition d'équipe par les joueurs (SELF_JOIN) ni de nouveau tirage
+  // au sort (RANDOM) ; format BRACKET => le 1er tour est généré à partir
+  // des équipes déclarées et la liste des équipes est verrouillée.
   startedAt         DateTime?
 
   createdBy User?            @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
   // Modes de jeu retenus pour ce tournoi (choisis à la création) : le
   // site sait ainsi d'avance combien de parties composent le tournoi et
   // pour quels modes, sans attendre que des tableaux soient créés.
-  gameModes   ScoreGameMode[] @relation("ScoreTournamentGameModes")
-  boards      ScoreBoard[]
+  // Optionnel pour un tournoi BRACKET (informatif seulement, aucun
+  // tableau n'est créé pour ce format).
+  gameModes    ScoreGameMode[] @relation("ScoreTournamentGameModes")
+  boards       ScoreBoard[]
+  bracketTeams ScoreBracketTeam[]
+  matches      ScoreMatch[]
 
   @@index([createdAt])
+}
+
+/** Équipe déclarée pour un tournoi en format BRACKET — juste un nom,
+ * indépendant du système ScoreTeam/ScoreTeamMember (qui suit des joueurs
+ * précis pour le calcul de points, inutile pour un simple gagnant/perdant). */
+model ScoreBracketTeam {
+  id           String   @id @default(cuid())
+  tournamentId String
+  name         String
+  createdAt    DateTime @default(now())
+
+  tournament ScoreTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, name])
+  @@index([tournamentId])
+}
+
+/** Un match d'un bracket à élimination directe. `teamBName` null = "bye"
+ * (équipe qualifiée d'office, pas d'adversaire ce tour). Les équipes sont
+ * référencées par leur nom (comme partout ailleurs dans le système de
+ * points), pas par une relation stricte. */
+model ScoreMatch {
+  id           String   @id @default(cuid())
+  tournamentId String
+  round        Int
+  position     Int
+  teamAName    String?
+  teamBName    String?
+  winnerName   String?
+  createdAt    DateTime @default(now())
+
+  tournament ScoreTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, round, position])
+  @@index([tournamentId, round])
 }
 
 model ScoreTeam {

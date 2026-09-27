@@ -16,6 +16,10 @@ import { saveScoreEntries } from "@/server/points/save-score-entries";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { startTournament } from "@/server/points/start-tournament";
 import { generateRandomTeams } from "@/server/points/generate-random-teams";
+import { addBracketTeam } from "@/server/points/add-bracket-team";
+import { removeBracketTeam } from "@/server/points/remove-bracket-team";
+import { setMatchWinner } from "@/server/points/set-match-winner";
+import { advanceBracketRound } from "@/server/points/advance-bracket-round";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
 import {
@@ -45,6 +49,8 @@ function getErrorMessage(error?: string) {
       return "Trop de joueurs sélectionnés pour la capacité configurée (nombre d’équipes × joueurs max).";
     case "locked":
       return "Le tournoi a démarré, la composition des équipes est verrouillée.";
+    case "not_enough_teams":
+      return "Il faut au moins 2 équipes pour démarrer un bracket.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -56,6 +62,10 @@ function teamModeLabel(mode: string) {
   if (mode === "SELF_JOIN") return "Libre choix";
   if (mode === "RANDOM") return "Aléatoire";
   return "Manuel";
+}
+
+function formatLabel(format: string) {
+  return format === "BRACKET" ? "Organigramme" : "Classique";
 }
 
 function medalColor(rank: number) {
@@ -159,6 +169,8 @@ export default async function AdminTournamentDetailPage({
           },
         },
       },
+      bracketTeams: { orderBy: { createdAt: "asc" } },
+      matches: { orderBy: [{ round: "asc" }, { position: "asc" }] },
     },
   });
 
@@ -172,6 +184,14 @@ export default async function AdminTournamentDetailPage({
     select: { id: true, displayName: true, username: true },
     orderBy: { displayName: "asc" },
   });
+
+  const rounds = [...new Set(tournament.matches.map((m) => m.round))].sort((a, b) => a - b);
+  const latestRound = rounds[rounds.length - 1];
+  const latestRoundMatches = tournament.matches.filter((m) => m.round === latestRound);
+  const isChampionDecided = latestRoundMatches.length === 1 && Boolean(latestRoundMatches[0]?.winnerName);
+  const champion = isChampionDecided ? latestRoundMatches[0].winnerName : null;
+  const canAdvanceRound =
+    latestRoundMatches.length > 1 && latestRoundMatches.every((m) => Boolean(m.winnerName));
 
   return (
     <SiteShell>
@@ -192,15 +212,24 @@ export default async function AdminTournamentDetailPage({
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
-            {tournament.teamCount ? (
-              <span className="neon-badge text-[10px]">{tournament.teamCount} équipes</span>
-            ) : null}
-            {tournament.maxMembersPerTeam ? (
+            <span className="neon-badge text-[10px]">{formatLabel(tournament.format)}</span>
+            {tournament.format === "CLASSIC" ? (
+              <>
+                <span className="neon-badge text-[10px]">{teamModeLabel(tournament.teamMode)}</span>
+                {tournament.teamCount ? (
+                  <span className="neon-badge text-[10px]">{tournament.teamCount} équipes</span>
+                ) : null}
+                {tournament.maxMembersPerTeam ? (
+                  <span className="neon-badge text-[10px]">
+                    Max {tournament.maxMembersPerTeam} joueur{tournament.maxMembersPerTeam > 1 ? "s" : ""}/équipe
+                  </span>
+                ) : null}
+              </>
+            ) : (
               <span className="neon-badge text-[10px]">
-                Max {tournament.maxMembersPerTeam} joueur{tournament.maxMembersPerTeam > 1 ? "s" : ""}/équipe
+                {tournament.bracketTeams.length} équipe{tournament.bracketTeams.length > 1 ? "s" : ""}
               </span>
-            ) : null}
+            )}
             {tournament.startedAt ? (
               <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
                 Démarré le {formatDate(tournament.startedAt)}
@@ -234,11 +263,17 @@ export default async function AdminTournamentDetailPage({
             ) : null}
           </div>
 
-          {canManage && !tournament.startedAt && tournament.teamMode !== "MANUAL" ? (
+          {canManage && !tournament.startedAt && tournament.format === "CLASSIC" && tournament.teamMode !== "MANUAL" ? (
             <p className="neon-text-muted mt-3 text-xs">
               « Démarrer le tournoi » verrouille la composition des équipes (plus de
               changement d’équipe par les joueurs, plus de nouveau tirage au sort). Fais-le
               une fois les équipes définitives.
+            </p>
+          ) : null}
+          {canManage && !tournament.startedAt && tournament.format === "BRACKET" ? (
+            <p className="neon-text-muted mt-3 text-xs">
+              « Démarrer le tournoi » génère le 1er tour à partir des équipes déclarées
+              ci-dessous et verrouille la liste (plus d’ajout/retrait d’équipe ensuite).
             </p>
           ) : null}
         </div>
@@ -267,7 +302,7 @@ export default async function AdminTournamentDetailPage({
           </div>
         ) : null}
 
-        {tournament.teamMode === "SELF_JOIN" && !tournament.startedAt ? (
+        {tournament.format === "CLASSIC" && tournament.teamMode === "SELF_JOIN" && !tournament.startedAt ? (
           <div className="neon-card p-5 md:p-8">
             <p className="text-sm font-medium text-cyan-300">
               Mode « Libre choix » : les joueurs choisissent eux-mêmes leur équipe depuis la
@@ -277,7 +312,7 @@ export default async function AdminTournamentDetailPage({
           </div>
         ) : null}
 
-        {canManage && tournament.teamMode === "RANDOM" && !tournament.startedAt ? (
+        {canManage && tournament.format === "CLASSIC" && tournament.teamMode === "RANDOM" && !tournament.startedAt ? (
           <div className="neon-card p-5 md:p-8">
             <h2 className="text-xl font-bold text-white md:text-2xl">
               Tirage au sort des équipes
@@ -360,6 +395,8 @@ export default async function AdminTournamentDetailPage({
           </div>
         ) : null}
 
+        {tournament.format === "CLASSIC" ? (
+        <>
         <div className="grid gap-4">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
             Parties du tournoi ({tournament.boards.length}/{tournament.gameModes.length})
@@ -744,6 +781,143 @@ export default async function AdminTournamentDetailPage({
             </div>
           )}
         </div>
+        </>
+        ) : (
+          <>
+            {!tournament.startedAt ? (
+              <div className="neon-card p-5 md:p-8">
+                <h2 className="text-xl font-bold text-white md:text-2xl">Équipes du bracket</h2>
+                <p className="neon-text-muted mt-2 text-sm leading-6">
+                  Déclare les équipes qui participent — le tirage au sort du 1er tour se fait
+                  automatiquement au clic sur « Démarrer le tournoi » ci-dessus.
+                </p>
+
+                {canManage ? (
+                  <form action={addBracketTeam} className="mt-4 grid gap-2.5">
+                    <input type="hidden" name="tournamentId" value={tournament.id} />
+                    <textarea
+                      name="names"
+                      rows={4}
+                      placeholder={"Les Loups\nLes Renards\n..."}
+                      className="w-full px-4 py-3"
+                    />
+                    <div>
+                      <button type="submit" className="neon-button px-4 py-2.5 text-sm">
+                        Ajouter
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
+
+                {tournament.bracketTeams.length === 0 ? (
+                  <p className="neon-text-muted mt-4 text-sm">Aucune équipe déclarée pour le moment.</p>
+                ) : (
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                    {tournament.bracketTeams.map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm"
+                      >
+                        <span className="truncate text-white/85">{team.name}</span>
+                        {canManage ? (
+                          <form action={removeBracketTeam}>
+                            <input type="hidden" name="id" value={team.id} />
+                            <input type="hidden" name="tournamentId" value={tournament.id} />
+                            <button
+                              type="submit"
+                              className="shrink-0 rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                            >
+                              ✕
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="neon-card p-5 md:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl font-bold text-white md:text-2xl">Bracket</h2>
+                  {champion ? (
+                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-sm font-black uppercase tracking-widest text-amber-300">
+                      🏆 Champion : {champion}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 grid gap-5 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(220px,1fr)]">
+                  {rounds.map((round) => {
+                    const roundMatches = tournament.matches.filter((m) => m.round === round);
+                    const isLatest = round === latestRound;
+
+                    return (
+                      <div key={round} className="grid gap-2.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                          {roundMatches.length === 1 ? "Finale" : `Tour ${round}`}
+                        </p>
+
+                        {roundMatches.map((match) => {
+                          const isBye = !match.teamAName || !match.teamBName;
+                          const canDeclare = canManage && isLatest && !isBye && !match.winnerName;
+
+                          return (
+                            <div
+                              key={match.id}
+                              className="rounded-2xl border border-white/8 bg-white/2 p-3"
+                            >
+                              {[match.teamAName, match.teamBName].map((teamName, i) =>
+                                teamName ? (
+                                  <div
+                                    key={i}
+                                    className={
+                                      match.winnerName === teamName
+                                        ? "flex items-center justify-between gap-2 rounded-lg bg-emerald-400/10 px-2 py-1.5 text-sm font-bold text-emerald-300"
+                                        : "flex items-center justify-between gap-2 px-2 py-1.5 text-sm text-white/80"
+                                    }
+                                  >
+                                    <span className="truncate">{teamName}</span>
+                                    {canDeclare ? (
+                                      <form action={setMatchWinner}>
+                                        <input type="hidden" name="matchId" value={match.id} />
+                                        <input type="hidden" name="tournamentId" value={tournament.id} />
+                                        <input type="hidden" name="winnerName" value={teamName} />
+                                        <button
+                                          type="submit"
+                                          className="shrink-0 rounded-lg border border-emerald-400/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
+                                        >
+                                          Gagne
+                                        </button>
+                                      </form>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <div key={i} className="px-2 py-1.5 text-sm text-white/30 italic">
+                                    (bye)
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {canManage && canAdvanceRound ? (
+                  <form action={advanceBracketRound} className="mt-5">
+                    <input type="hidden" name="tournamentId" value={tournament.id} />
+                    <button type="submit" className="neon-button px-5 py-2.5 text-sm">
+                      Générer le tour suivant
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </SiteShell>
   );

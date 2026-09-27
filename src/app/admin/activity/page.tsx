@@ -53,6 +53,9 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_TEAM_JOINED: "Joueur a rejoint une équipe (tournoi)",
   SCORE_TEAM_LEFT: "Joueur a quitté une équipe (tournoi)",
   SCORE_TEAMS_RANDOMIZED: "Équipes tirées au sort (tournoi)",
+  SCORE_BRACKET_TEAM_ADDED: "Équipe(s) ajoutée(s) à un bracket",
+  SCORE_MATCH_WINNER_SET: "Vainqueur de match déclaré (bracket)",
+  SCORE_BRACKET_ROUND_ADVANCED: "Tour suivant généré (bracket)",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);

@@ -6,6 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { generateFirstRound } from "@/lib/bracket";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -17,9 +18,13 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-/** Verrouille la composition des équipes : plus de rejoindre/quitter
- * (SELF_JOIN) ni de nouveau tirage au sort (RANDOM). L'admin garde la main
- * via les outils d'ajout/retrait manuel déjà existants. */
+/**
+ * Verrouille la composition des équipes : plus de rejoindre/quitter
+ * (SELF_JOIN) ni de nouveau tirage au sort (RANDOM) en format CLASSIC.
+ * En format BRACKET, génère aussi le 1er tour à partir des équipes
+ * déclarées et verrouille la liste des équipes. L'admin garde la main via
+ * les outils d'ajout/retrait manuel déjà existants (CLASSIC uniquement).
+ */
 export async function startTournament(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
@@ -36,20 +41,44 @@ export async function startTournament(formData: FormData) {
   try {
     const tournament = await db.scoreTournament.findUnique({
       where: { id: tournamentId },
-      select: { name: true, startedAt: true },
+      select: {
+        name: true,
+        startedAt: true,
+        format: true,
+        bracketTeams: { select: { name: true } },
+      },
     });
 
     if (!tournament) redirect("/admin/tournaments?error=server");
-    if (!tournament.startedAt) {
-      await db.scoreTournament.update({ where: { id: tournamentId }, data: { startedAt: new Date() } });
+    if (tournament.startedAt) redirect(`${backTo}?success=1`);
 
-      await logActivity({
-        action: "SCORE_TOURNAMENT_STARTED",
-        actorId: admin.id,
-        actorLabel: `${admin.name} (@${admin.username})`,
-        targetLabel: tournament.name,
+    if (tournament.format === "BRACKET") {
+      if (tournament.bracketTeams.length < 2) {
+        redirect(`${backTo}?error=not_enough_teams`);
+      }
+
+      const firstRound = generateFirstRound(tournament.bracketTeams.map((t) => t.name));
+
+      await db.scoreMatch.createMany({
+        data: firstRound.map((m) => ({
+          tournamentId,
+          round: m.round,
+          position: m.position,
+          teamAName: m.teamAName,
+          teamBName: m.teamBName,
+          winnerName: m.winnerName,
+        })),
       });
     }
+
+    await db.scoreTournament.update({ where: { id: tournamentId }, data: { startedAt: new Date() } });
+
+    await logActivity({
+      action: "SCORE_TOURNAMENT_STARTED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: tournament.name,
+    });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("START_TOURNAMENT_ERROR", error);
