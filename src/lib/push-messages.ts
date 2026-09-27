@@ -19,6 +19,17 @@ export function eventPublishedPush(eventTitle: string) {
   return { title: "Nouvel événement CHAMA", body: pickMessage(bodies) };
 }
 
+export function eventUpdatedPush(eventTitle: string) {
+  const bodies = [
+    `${eventTitle} vient d'être mis à jour — vérifie ce qui a changé.`,
+    `📝 Modifs sur ${eventTitle}. Un coup d'œil pour être sûr de rien louper.`,
+    `${eventTitle} a été modifié par un admin.`,
+    `Mise à jour de ${eventTitle} : les infos ont changé, va checker.`,
+    `⚠️ ${eventTitle} a évolué depuis la dernière fois — jette un œil.`,
+  ];
+  return { title: "Événement modifié", body: pickMessage(bodies) };
+}
+
 export function tournamentPublishedPush(tournamentName: string) {
   const bodies = [
     `Un nouveau tournoi est lancé : ${tournamentName}. Inscris-toi vite !`,

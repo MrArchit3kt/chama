@@ -11,6 +11,8 @@ import {
   isLocalEventImage,
   resolveEventImageInput,
 } from "@/server/events/_event-image";
+import { sendPushToUsers } from "@/lib/push";
+import { eventUpdatedPush } from "@/lib/push-messages";
 
 function slugify(value: string) {
   return value
@@ -91,8 +93,9 @@ export async function updateEvent(formData: FormData) {
 
     const nextImageUrl = imageResult.nextImageUrl;
     const previousImageUrl = existing.coverImageUrl;
+    const publishInApp = formData.get("publishInApp") === "on";
 
-    await db.event.update({
+    const event = await db.event.update({
       where: { id },
       data: {
         title,
@@ -102,7 +105,7 @@ export async function updateEvent(formData: FormData) {
         endDate: finalEndDate,
         coverImageUrl: nextImageUrl,
         status: status as "DRAFT" | "PUBLISHED" | "LIVE" | "COMPLETED" | "CANCELLED",
-        publishInApp: formData.get("publishInApp") === "on",
+        publishInApp,
         publishToDiscord: formData.get("publishToDiscord") === "on",
         publishToWhatsApp: formData.get("publishToWhatsApp") === "on",
       },
@@ -112,6 +115,35 @@ export async function updateEvent(formData: FormData) {
 
     if (imageChanged && isLocalEventImage(previousImageUrl)) {
       await deleteLocalEventImage(previousImageUrl);
+    }
+
+    // Notifie les joueurs de la modification — même logique que sur la
+    // création (voir create-event.ts), sauf pour un événement en DRAFT ou
+    // CANCELLED (pas encore/plus visible, pas la peine d'alerter dessus).
+    if (publishInApp && (status === "PUBLISHED" || status === "LIVE")) {
+      const users = await db.user.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      });
+
+      if (users.length > 0) {
+        await db.notification.createMany({
+          data: users.map((user) => ({
+            userId: user.id,
+            eventId: event.id,
+            type: "EVENT_UPDATED",
+            channel: "IN_APP",
+            status: "PENDING",
+            title: `Événement modifié : ${event.title}`,
+            message: `Les informations de « ${event.title} » ont changé.`,
+          })),
+        });
+
+        await sendPushToUsers(
+          users.map((user) => user.id),
+          { ...eventUpdatedPush(event.title), url: "/events" },
+        );
+      }
     }
 
     await logActivity({
