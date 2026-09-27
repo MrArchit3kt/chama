@@ -10,6 +10,7 @@ import { createTournament } from "@/server/points/create-tournament";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeTournamentStandings, findLikelyDuplicateTeamNames } from "@/lib/tournament-standings";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(value);
@@ -382,12 +383,13 @@ export default async function AdminTournamentsPage({
                       {canManage ? (
                         <form action={deleteTournament}>
                           <input type="hidden" name="id" value={tournament.id} />
-                          <button
-                            type="submit"
+                          <ConfirmDeleteButton
+                            confirmTitle={`Supprimer « ${tournament.name} » ?`}
+                            confirmDescription="Supprime aussi toutes ses parties, équipes et scores. Cette action est irréversible."
                             className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
                           >
                             Supprimer le tournoi
-                          </button>
+                          </ConfirmDeleteButton>
                         </form>
                       ) : null}
                     </div>

@@ -14,6 +14,7 @@ import { createTier } from "@/server/points/create-tier";
 import { deleteTier } from "@/server/points/delete-tier";
 import { deleteGameMode } from "@/server/points/delete-game-mode";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -205,9 +206,9 @@ export default async function AdminPointsPage({
                     {canConfig ? (
                       <form action={deleteGameMode}>
                         <input type="hidden" name="id" value={gameMode.id} />
-                        <button
-                          type="submit"
-                          title={
+                        <ConfirmDeleteButton
+                          confirmTitle={`Supprimer « ${gameMode.name} » ?`}
+                          confirmDescription={
                             gameMode._count.boards > 0 || gameMode._count.tournaments > 0
                               ? `Supprime aussi ${gameMode._count.boards} tableau${gameMode._count.boards > 1 ? "x" : ""} et tous ses scores. Détache le mode des tournois qui l’utilisent (sans les supprimer). Préfère « Désactiver » pour garder l’historique.`
                               : "Supprimer ce mode de jeu et ses conditions."
@@ -215,7 +216,7 @@ export default async function AdminPointsPage({
                           className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
                         >
                           Supprimer
-                        </button>
+                        </ConfirmDeleteButton>
                       </form>
                     ) : null}
                   </div>
@@ -279,13 +280,13 @@ export default async function AdminPointsPage({
                                         {canConfig ? (
                                           <form action={deleteTier}>
                                             <input type="hidden" name="id" value={tier.id} />
-                                            <button
-                                              type="submit"
+                                            <ConfirmDeleteButton
+                                              confirmTitle="Supprimer ce palier ?"
+                                              confirmDescription={`Palier ${formatTierRange(tier)} (${tier.points > 0 ? "+" : ""}${tier.points} pts).`}
                                               className="text-rose-300/70 hover:text-rose-300"
-                                              title="Supprimer ce palier"
                                             >
                                               ✕
-                                            </button>
+                                            </ConfirmDeleteButton>
                                           </form>
                                         ) : null}
                                       </span>
@@ -379,12 +380,13 @@ export default async function AdminPointsPage({
                           {canConfig ? (
                             <form action={deleteCondition} className="mt-2">
                               <input type="hidden" name="id" value={condition.id} />
-                              <button
-                                type="submit"
+                              <ConfirmDeleteButton
+                                confirmTitle={`Supprimer la condition « ${condition.label} » ?`}
+                                confirmDescription="Les scores déjà saisis avec cette condition disparaissent aussi."
                                 className="w-full rounded-lg border border-rose-400/20 px-2 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
                               >
                                 Supprimer la condition
-                              </button>
+                              </ConfirmDeleteButton>
                             </form>
                           ) : null}
                         </div>

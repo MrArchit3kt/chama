@@ -7,6 +7,7 @@ import { db } from "@/lib/prisma";
 import { createEvent } from "@/server/events/create-event";
 import { updateEvent } from "@/server/events/update-event";
 import { deleteEvent } from "@/server/events/delete-event";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { EventRosterModal } from "@/components/admin/event-roster-modal";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 
@@ -695,12 +696,13 @@ export default async function AdminEventsPage({
 
                     <form action={deleteEvent}>
                       <input type="hidden" name="id" value={event.id} />
-                      <button
-                        type="submit"
+                      <ConfirmDeleteButton
+                        confirmTitle={`Supprimer « ${event.title} » ?`}
+                        confirmDescription="Cette action est irréversible."
                         className="neon-button-secondary px-4 py-2.5 md:px-6 md:py-3"
                       >
                         Supprimer l’événement
-                      </button>
+                      </ConfirmDeleteButton>
                     </form>
                     </>
                     ) : null}

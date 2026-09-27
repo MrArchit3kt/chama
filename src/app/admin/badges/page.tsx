@@ -6,6 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { createBadge } from "@/server/admin/create-badge";
 import { deleteBadge } from "@/server/admin/delete-badge";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { BADGE_ICONS, BADGE_COLORS, BADGE_CATEGORY_LABELS, getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 
 function getErrorMessage(error?: string) {
@@ -188,9 +189,17 @@ export default async function AdminBadgesPage({
 
                     <form action={deleteBadge} className="mt-3">
                       <input type="hidden" name="id" value={badge.id} />
-                      <button type="submit" className="neon-button-secondary w-full px-3 py-2 text-xs">
+                      <ConfirmDeleteButton
+                        confirmTitle={`Supprimer le badge « ${badge.name} » ?`}
+                        confirmDescription={
+                          badge._count.users > 0
+                            ? `Le retire aussi de ${badge._count.users} joueur${badge._count.users > 1 ? "s" : ""}.`
+                            : undefined
+                        }
+                        className="neon-button-secondary w-full px-3 py-2 text-xs"
+                      >
                         Supprimer
-                      </button>
+                      </ConfirmDeleteButton>
                     </form>
                   </div>
                 );
