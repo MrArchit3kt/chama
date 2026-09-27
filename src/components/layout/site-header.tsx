@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { HeaderActionsCarousel } from "@/components/layout/header-actions-carousel";
 import { ChristmasGarland } from "@/components/theme/christmas-garland";
+import { AppBadgeSync } from "@/components/notifications/app-badge-sync";
 
 // ✅ Largeur fixe : tous les boutons ont exactement la même taille dans le
 // carrousel, quelle que soit la longueur du texte (qui tronque avec
@@ -34,6 +35,7 @@ export async function SiteHeader() {
 
   return (
     <header className="relative mb-6">
+      {user ? <AppBadgeSync count={unreadNotificationsCount} /> : null}
       {showChristmasGarland ? <ChristmasGarland /> : null}
       <nav className="neon-card p-3 md:p-3.5">
         <HeaderActionsCarousel>

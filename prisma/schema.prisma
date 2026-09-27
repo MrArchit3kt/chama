@@ -101,6 +101,8 @@ enum NotificationType {
   BAN_APPLIED
   BAN_LIFTED
   RULES_UPDATED
+  TOURNAMENT_PUBLISHED
+  TOURNAMENT_STARTING_SOON
   INFO
 }
 
@@ -407,6 +409,9 @@ model User {
   scoreBracketTeamMemberships ScoreBracketTeamMember[]  @relation("ScoreBracketTeamMemberships")
   scoreTournamentInterests    ScoreTournamentInterest[] @relation("ScoreTournamentInterests")
 
+  // ✅ Notifications push (navigateur/PWA)
+  pushSubscriptions PushSubscription[]
+
   @@index([registrationStatus])
   @@index([approvedById])
   @@index([rejectedById])
@@ -626,6 +631,22 @@ model Notification {
   @@index([channel])
   @@index([status])
   @@index([createdAt])
+}
+
+// Abonnement Web Push d'un navigateur (un par appareil/navigateur installé,
+// pas par utilisateur — quelqu'un connecté sur téléphone + PC a 2 lignes).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model MixSession {
@@ -1042,6 +1063,10 @@ model ScoreTournament {
   // Date à laquelle le tournoi doit se dérouler (facultative, distincte de
   // createdAt qui reflète juste le moment où l'admin l'a configuré dans le site).
   scheduledAt DateTime?
+  // Horodatage du rappel "le tournoi commence bientôt" (push), pour ne
+  // l'envoyer qu'une seule fois même si le job de vérification tourne
+  // plusieurs fois avant le début du tournoi.
+  startingSoonNotifiedAt DateTime?
 
   // Nombre d'équipes / taille max souhaités (optionnels : laissés vides,
   // tout reste manuel comme avant). Utilisés pour auto-créer les équipes
