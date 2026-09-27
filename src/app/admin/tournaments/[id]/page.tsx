@@ -18,6 +18,8 @@ import { startTournament } from "@/server/points/start-tournament";
 import { generateRandomTeams } from "@/server/points/generate-random-teams";
 import { addBracketTeam } from "@/server/points/add-bracket-team";
 import { removeBracketTeam } from "@/server/points/remove-bracket-team";
+import { addBracketTeamMember } from "@/server/points/add-bracket-team-member";
+import { removeBracketTeamMember } from "@/server/points/remove-bracket-team-member";
 import { setMatchWinner } from "@/server/points/set-match-winner";
 import { advanceBracketRound } from "@/server/points/advance-bracket-round";
 import { groupRounds, getBracketState } from "@/lib/bracket";
@@ -54,6 +56,8 @@ function getErrorMessage(error?: string) {
       return "Il faut au moins 2 équipes pour démarrer un bracket.";
     case "already_final":
       return "Le tournoi est déjà terminé, il n’y a rien à générer de plus.";
+    case "team_full":
+      return "Cette équipe est déjà complète.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -172,7 +176,12 @@ export default async function AdminTournamentDetailPage({
           },
         },
       },
-      bracketTeams: { orderBy: { createdAt: "asc" } },
+      bracketTeams: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          members: { include: { user: { select: { id: true, displayName: true, username: true } } } },
+        },
+      },
       matches: { orderBy: [{ round: "asc" }, { position: "asc" }] },
     },
   });
@@ -892,27 +901,98 @@ export default async function AdminTournamentDetailPage({
                 {tournament.bracketTeams.length === 0 ? (
                   <p className="neon-text-muted mt-4 text-sm">Aucune équipe déclarée pour le moment.</p>
                 ) : (
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                    {tournament.bracketTeams.map((team) => (
-                      <div
-                        key={team.id}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm"
-                      >
-                        <span className="truncate text-white/85">{team.name}</span>
-                        {canManage ? (
-                          <form action={removeBracketTeam}>
-                            <input type="hidden" name="id" value={team.id} />
-                            <input type="hidden" name="tournamentId" value={tournament.id} />
-                            <button
-                              type="submit"
-                              className="shrink-0 rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {tournament.bracketTeams.map((team) => {
+                      const isFull = Boolean(
+                        tournament.maxMembersPerTeam && team.members.length >= tournament.maxMembersPerTeam,
+                      );
+
+                      return (
+                        <div key={team.id} className="rounded-2xl border border-white/8 bg-white/2 p-3.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-bold text-white">
+                              {team.name}
+                              {tournament.maxMembersPerTeam ? (
+                                <span className="neon-text-muted ml-1.5 text-[11px] font-normal">
+                                  ({team.members.length}/{tournament.maxMembersPerTeam})
+                                </span>
+                              ) : null}
+                            </span>
+                            {canManage ? (
+                              <form action={removeBracketTeam}>
+                                <input type="hidden" name="id" value={team.id} />
+                                <input type="hidden" name="tournamentId" value={tournament.id} />
+                                <button
+                                  type="submit"
+                                  className="shrink-0 rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                  title="Supprimer cette équipe"
+                                >
+                                  Supprimer l’équipe
+                                </button>
+                              </form>
+                            ) : null}
+                          </div>
+
+                          {team.members.length > 0 ? (
+                            <div className="mt-2.5 grid gap-1.5">
+                              {team.members.map((member) => (
+                                <div
+                                  key={member.id}
+                                  className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-black/20 px-2.5 py-1.5 text-xs text-white/80"
+                                >
+                                  <span className="truncate">{memberLabel(member)}</span>
+                                  {canManage ? (
+                                    <form action={removeBracketTeamMember}>
+                                      <input type="hidden" name="memberId" value={member.id} />
+                                      <input type="hidden" name="tournamentId" value={tournament.id} />
+                                      <button
+                                        type="submit"
+                                        className="shrink-0 text-rose-300/70 hover:text-rose-300"
+                                        title="Retirer ce joueur"
+                                      >
+                                        ✕
+                                      </button>
+                                    </form>
+                                  ) : null}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="neon-text-muted mt-2.5 text-xs">Aucun joueur pour l’instant.</p>
+                          )}
+
+                          {canManage && !isFull ? (
+                            <form
+                              action={addBracketTeamMember}
+                              className="mt-2.5 grid gap-1.5 border-t border-white/8 pt-2.5 sm:grid-cols-[1fr_1fr_auto]"
                             >
-                              ✕
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    ))}
+                              <input type="hidden" name="bracketTeamId" value={team.id} />
+                              <input type="hidden" name="tournamentId" value={tournament.id} />
+                              <select name="userId" defaultValue="" className="w-full px-2.5 py-2 text-xs">
+                                <option value="">Joueur inscrit</option>
+                                {eligibleUsers.map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.displayName} (@{u.username})
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                name="guestName"
+                                type="text"
+                                placeholder="Ou invité"
+                                className="w-full px-2.5 py-2 text-xs"
+                              />
+                              <button
+                                type="submit"
+                                className="neon-button-secondary px-3 py-2 text-xs"
+                              >
+                                Ajouter
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

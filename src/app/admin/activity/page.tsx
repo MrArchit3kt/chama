@@ -56,6 +56,8 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_BRACKET_TEAM_ADDED: "Équipe(s) ajoutée(s) à un bracket",
   SCORE_MATCH_WINNER_SET: "Vainqueur de match déclaré (bracket)",
   SCORE_BRACKET_ROUND_ADVANCED: "Tour suivant généré (bracket)",
+  SCORE_BRACKET_TEAM_MEMBER_ADDED: "Joueur ajouté à une équipe de bracket",
+  SCORE_BRACKET_TEAM_MEMBER_REMOVED: "Joueur retiré d’une équipe de bracket",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);
