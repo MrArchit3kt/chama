@@ -35,6 +35,7 @@ function getErrorMessage(error?: string) {
 
 async function getTournaments() {
   const tournaments = await db.scoreTournament.findMany({
+    where: { format: "CLASSIC" },
     orderBy: { createdAt: "desc" },
     include: {
       boards: {
@@ -80,6 +81,37 @@ async function getTournaments() {
       })),
       standings: computeTournamentStandings(t.boards),
     }));
+}
+
+async function getBracketTournaments() {
+  const tournaments = await db.scoreTournament.findMany({
+    where: { format: "BRACKET" },
+    orderBy: { createdAt: "desc" },
+    include: {
+      matches: { orderBy: [{ round: "asc" }, { position: "asc" }] },
+    },
+  });
+
+  return tournaments
+    .filter((t) => t.matches.length > 0)
+    .map((t) => {
+      const rounds = [...new Set(t.matches.map((m) => m.round))].sort((a, b) => a - b);
+      const latestRound = rounds[rounds.length - 1];
+      const latestMatches = t.matches.filter((m) => m.round === latestRound);
+      const champion = latestMatches.length === 1 ? latestMatches[0].winnerName : null;
+
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        champion,
+        rounds: rounds.map((round) => ({
+          round,
+          isFinal: t.matches.filter((m) => m.round === round).length === 1,
+          matches: t.matches.filter((m) => m.round === round),
+        })),
+      };
+    });
 }
 
 function medalColor(rank: number) {
@@ -187,6 +219,7 @@ export default async function PointsPage({
 
   const rankings = await Promise.all(gameModes.map((mode) => getRanking(mode.id)));
   const tournaments = await getTournaments();
+  const bracketTournaments = await getBracketTournaments();
 
   return (
     <SiteShell>
@@ -221,6 +254,61 @@ export default async function PointsPage({
             <p className="text-sm font-medium text-amber-300">Tu as quitté l’équipe.</p>
           </div>
         ) : null}
+
+        {bracketTournaments.map((tournament) => (
+          <div key={tournament.id} className="neon-card p-5 md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                  Tournoi — Organigramme
+                </p>
+                <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">{tournament.name}</h2>
+                {tournament.description ? (
+                  <p className="neon-text-muted mt-2 max-w-2xl text-sm leading-6">
+                    {tournament.description}
+                  </p>
+                ) : null}
+              </div>
+              {tournament.champion ? (
+                <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-sm font-black uppercase tracking-widest text-amber-300">
+                  🏆 Champion : {tournament.champion}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid gap-5 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(200px,1fr)]">
+              {tournament.rounds.map(({ round, isFinal, matches }) => (
+                <div key={round} className="grid gap-2.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                    {isFinal ? "Finale" : `Tour ${round}`}
+                  </p>
+                  {matches.map((match) => (
+                    <div key={match.id} className="rounded-2xl border border-white/8 bg-white/2 p-3">
+                      {[match.teamAName, match.teamBName].map((teamName, i) =>
+                        teamName ? (
+                          <p
+                            key={i}
+                            className={
+                              match.winnerName === teamName
+                                ? "truncate rounded-lg bg-emerald-400/10 px-2 py-1.5 text-sm font-bold text-emerald-300"
+                                : "truncate px-2 py-1.5 text-sm text-white/80"
+                            }
+                          >
+                            {teamName}
+                          </p>
+                        ) : (
+                          <p key={i} className="px-2 py-1.5 text-sm italic text-white/30">
+                            (bye)
+                          </p>
+                        ),
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
 
         {tournaments.map((tournament) => {
           const myTeam = tournament.referenceBoardTeams.find((t) =>

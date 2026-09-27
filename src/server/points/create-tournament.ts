@@ -21,24 +21,23 @@ function isNextRedirectError(error: unknown) {
 const createTournamentSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(500).optional(),
-  gameModeIds: z.array(z.string().min(1)).min(1, "Au moins un mode de jeu est requis"),
+  format: z.enum(["CLASSIC", "BRACKET"]),
+  gameModeIds: z.array(z.string().min(1)),
   teamMode: z.enum(["MANUAL", "SELF_JOIN", "RANDOM"]),
   teamCount: z.coerce.number().int().min(2).max(20).optional(),
   maxMembersPerTeam: z.coerce.number().int().min(1).max(50).optional(),
 });
 
 /**
- * Un tournoi déclare dès sa création les modes de jeu qu'il regroupe (ex :
- * Warzone + BO7 + Rocket League) — le site sait ainsi d'avance combien de
- * parties le composent, et une seule partie par mode pourra y être créée
- * (contrainte @@unique([tournamentId, gameModeId]) sur ScoreBoard).
+ * Un tournoi déclare dès sa création son format : CLASSIC (cumul de points
+ * sur une partie par mode de jeu, comportement historique) ou BRACKET
+ * (élimination directe — équipes appariées, le vainqueur avance, jusqu'au
+ * champion). Les modes de jeu (`gameModeIds`) ne sont requis qu'en CLASSIC
+ * — un bracket n'a pas besoin de tableau/conditions de points, juste des
+ * équipes déclarées séparément (voir add-bracket-team.ts).
  *
- * `teamMode` détermine comment les équipes se peuplent : MANUAL (l'admin
- * ajoute tout à la main, comme avant), SELF_JOIN (les joueurs choisissent
- * eux-mêmes leur équipe sur /points) ou RANDOM (l'admin tire au sort depuis
- * /admin/tournaments/[id]). `teamCount`/`maxMembersPerTeam` sont optionnels
- * en mode MANUAL, mais utiles pour pré-créer des équipes vides nommées dès
- * la 1ère partie.
+ * `teamMode`/`teamCount`/`maxMembersPerTeam` ne s'appliquent qu'au format
+ * CLASSIC (composition des équipes des parties à points).
  */
 export async function createTournament(formData: FormData) {
   const admin = await requireAdmin("points");
@@ -55,6 +54,7 @@ export async function createTournament(formData: FormData) {
   const parsed = createTournamentSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     description: rawDescription || undefined,
+    format: String(formData.get("format") ?? "CLASSIC"),
     gameModeIds: formData.getAll("gameModeIds").map((v) => String(v)),
     teamMode: String(formData.get("teamMode") ?? "MANUAL"),
     teamCount: rawTeamCount || undefined,
@@ -65,23 +65,33 @@ export async function createTournament(formData: FormData) {
     redirect("/admin/tournaments?error=validation");
   }
 
-  if (parsed.data.teamMode !== "MANUAL" && !parsed.data.teamCount) {
+  if (parsed.data.format === "CLASSIC" && parsed.data.gameModeIds.length === 0) {
+    redirect("/admin/tournaments?error=modes_required");
+  }
+
+  if (parsed.data.format === "CLASSIC" && parsed.data.teamMode !== "MANUAL" && !parsed.data.teamCount) {
     redirect("/admin/tournaments?error=team_count_required");
   }
 
   try {
-    const validModes = await db.scoreGameMode.findMany({
-      where: { id: { in: parsed.data.gameModeIds } },
-      select: { id: true, name: true },
-    });
+    const validModes =
+      parsed.data.gameModeIds.length > 0
+        ? await db.scoreGameMode.findMany({
+            where: { id: { in: parsed.data.gameModeIds } },
+            select: { id: true, name: true },
+          })
+        : [];
 
-    if (validModes.length === 0) redirect("/admin/tournaments?error=validation");
+    if (parsed.data.format === "CLASSIC" && validModes.length === 0) {
+      redirect("/admin/tournaments?error=validation");
+    }
 
     const tournament = await db.scoreTournament.create({
       data: {
         name: parsed.data.name,
         description: parsed.data.description ?? null,
         createdById: admin.id,
+        format: parsed.data.format,
         teamMode: parsed.data.teamMode,
         teamCount: parsed.data.teamCount ?? null,
         maxMembersPerTeam: parsed.data.maxMembersPerTeam ?? null,
@@ -94,13 +104,13 @@ export async function createTournament(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: tournament.name,
-      metadata: { modes: validModes.map((m) => m.name), teamMode: parsed.data.teamMode },
+      metadata: { format: parsed.data.format, modes: validModes.map((m) => m.name), teamMode: parsed.data.teamMode },
     });
+
+    redirect(`/admin/tournaments/${tournament.id}?success=1`);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("CREATE_TOURNAMENT_ERROR", error);
     redirect("/admin/tournaments?error=server");
   }
-
-  redirect("/admin/tournaments?success=1");
 }
