@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { syncTeamRosterToOtherBoards } from "@/lib/tournament-team-sync";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -43,7 +44,7 @@ export async function addScoreTeamMember(formData: FormData) {
       where: { id: teamId },
       select: {
         id: true,
-        board: { select: { gameModeId: true } },
+        board: { select: { gameModeId: true, finishedAt: true } },
         members: { select: { userId: true } },
       },
     });
@@ -51,6 +52,7 @@ export async function addScoreTeamMember(formData: FormData) {
     if (!team || team.board.gameModeId !== gameModeId) {
       redirect(`${backTo}?error=server`);
     }
+    if (team.board.finishedAt) redirect(`${backTo}?error=board_finished`);
 
     if (userId) {
       if (team.members.some((m) => m.userId === userId)) {
@@ -74,6 +76,10 @@ export async function addScoreTeamMember(formData: FormData) {
         data: { teamId, guestName },
       });
     }
+
+    // Propage ce membre aux autres parties déjà créées du tournoi qui ont
+    // une équipe du même nom (même logique qu'à la création d'une partie).
+    await syncTeamRosterToOtherBoards(tournamentId, boardId);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("ADD_SCORE_TEAM_MEMBER_ERROR", error);

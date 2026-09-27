@@ -13,6 +13,8 @@ import { deleteScoreTeam } from "@/server/points/delete-score-team";
 import { addScoreTeamMember } from "@/server/points/add-score-team-member";
 import { removeScoreTeamMember } from "@/server/points/remove-score-team-member";
 import { saveScoreEntries } from "@/server/points/save-score-entries";
+import { finishBoard } from "@/server/points/finish-board";
+import { reopenBoard } from "@/server/points/reopen-board";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { startTournament } from "@/server/points/start-tournament";
 import { generateRandomTeams } from "@/server/points/generate-random-teams";
@@ -58,6 +60,8 @@ function getErrorMessage(error?: string) {
       return "Le tournoi est déjà terminé, il n’y a rien à générer de plus.";
     case "team_full":
       return "Cette équipe est déjà complète.";
+    case "board_finished":
+      return "Cette partie est terminée et verrouillée — clique sur « Modifier les scores » pour la rouvrir.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -517,8 +521,17 @@ export default async function AdminTournamentDetailPage({
             Parties du tournoi ({tournament.boards.length}/{tournament.gameModes.length})
           </p>
 
-          {tournament.gameModes.map((mode) => {
+          {tournament.gameModes.map((mode, modeIndex) => {
             const board = tournament.boards.find((b) => b.gameModeId === mode.id);
+            const previousMode = modeIndex > 0 ? tournament.gameModes[modeIndex - 1] : null;
+            const previousBoard = previousMode
+              ? tournament.boards.find((b) => b.gameModeId === previousMode.id)
+              : null;
+            // La 1ère partie est toujours créable ; les suivantes se
+            // débloquent une fois la précédente terminée — évite d'avoir
+            // plusieurs parties ouvertes en parallèle et la confusion sur
+            // laquelle saisir (voir aussi le verrou par partie ci-dessous).
+            const isUnlocked = modeIndex === 0 || Boolean(previousBoard?.finishedAt);
 
             if (!board) {
               return (
@@ -530,7 +543,12 @@ export default async function AdminTournamentDetailPage({
                     </span>
                   </div>
 
-                  {canManage ? (
+                  {!isUnlocked ? (
+                    <p className="neon-text-muted mt-4 text-sm">
+                      🔒 Termine d’abord « {previousMode?.name} » (bouton « Terminer la partie »)
+                      pour débloquer celle-ci.
+                    </p>
+                  ) : canManage ? (
                     <form action={createBoard} className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <input type="hidden" name="gameModeId" value={mode.id} />
                       <input type="hidden" name="tournamentId" value={tournament.id} />
@@ -549,6 +567,8 @@ export default async function AdminTournamentDetailPage({
               );
             }
 
+            const isFinished = Boolean(board.finishedAt);
+
             const teamConditions = mode.conditions.filter((c) => c.appliesTo === "TEAM");
             const playerConditions = mode.conditions.filter((c) => c.appliesTo === "PLAYER");
 
@@ -556,7 +576,18 @@ export default async function AdminTournamentDetailPage({
               <div key={mode.id} className="neon-card p-5 md:p-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-white md:text-xl">{mode.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-white md:text-xl">{mode.name}</h3>
+                      {isFinished ? (
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">
+                          Terminée
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">
+                          En cours
+                        </span>
+                      )}
+                    </div>
                     <p className="neon-text-muted mt-1 text-xs">
                       {board.title || `Partie du ${formatDate(board.createdAt)}`}
                     </p>
@@ -568,6 +599,28 @@ export default async function AdminTournamentDetailPage({
                     >
                       Exporter CSV
                     </a>
+                    {canManage && !isFinished ? (
+                      <form action={finishBoard}>
+                        <input type="hidden" name="boardId" value={board.id} />
+                        <input type="hidden" name="tournamentId" value={tournament.id} />
+                        <button
+                          type="submit"
+                          className="neon-button px-3 py-1.5 text-xs"
+                          title="Verrouille les scores et débloque la partie suivante"
+                        >
+                          Terminer la partie
+                        </button>
+                      </form>
+                    ) : null}
+                    {canManage && isFinished ? (
+                      <form action={reopenBoard}>
+                        <input type="hidden" name="boardId" value={board.id} />
+                        <input type="hidden" name="tournamentId" value={tournament.id} />
+                        <button type="submit" className="neon-button-secondary px-3 py-1.5 text-xs">
+                          Modifier les scores
+                        </button>
+                      </form>
+                    ) : null}
                     {canManage ? (
                       <form action={deleteBoard}>
                         <input type="hidden" name="gameModeId" value={mode.id} />
@@ -585,7 +638,7 @@ export default async function AdminTournamentDetailPage({
                   </div>
                 </div>
 
-                {canManage ? (
+                {canManage && !isFinished ? (
                   <form
                     action={addScoreTeam}
                     className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_auto]"
@@ -623,7 +676,7 @@ export default async function AdminTournamentDetailPage({
                               <span className="neon-badge">
                                 {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
                               </span>
-                              {canManage ? (
+                              {canManage && !isFinished ? (
                                 <form action={deleteScoreTeam}>
                                   <input type="hidden" name="gameModeId" value={mode.id} />
                                   <input type="hidden" name="boardId" value={board.id} />
@@ -640,7 +693,26 @@ export default async function AdminTournamentDetailPage({
                             </div>
                           </div>
 
-                          {canManage ? (
+                          {isFinished ? (
+                            <div className="mt-3 grid gap-1.5">
+                              {team.members.length === 0 ? (
+                                <p className="neon-text-muted text-xs">Aucun joueur.</p>
+                              ) : (
+                                team.members.map((member) => (
+                                  <div
+                                    key={member.id}
+                                    className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-white/80"
+                                  >
+                                    <span className="truncate">{memberLabel(member)}</span>
+                                    <span className="neon-badge shrink-0 text-[10px]">
+                                      {sumEntries(member.entries)} pt
+                                      {Math.abs(sumEntries(member.entries)) > 1 ? "s" : ""}
+                                    </span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          ) : canManage ? (
                             <form action={saveScoreEntries} className="mt-3 grid gap-4">
                               <input type="hidden" name="gameModeId" value={mode.id} />
                               <input type="hidden" name="boardId" value={board.id} />
@@ -784,7 +856,7 @@ export default async function AdminTournamentDetailPage({
                             </form>
                           ) : null}
 
-                          {canManage ? (
+                          {canManage && !isFinished ? (
                             <form
                               action={addScoreTeamMember}
                               className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_1fr_auto]"
