@@ -894,6 +894,8 @@ enum ActivityAction {
   SCORE_BRACKET_TEAM_MEMBER_REMOVED
   SCORE_TOURNAMENT_INTEREST_JOINED
   SCORE_TOURNAMENT_INTEREST_LEFT
+  SCORE_BOARD_FINISHED
+  SCORE_BOARD_REOPENED
 }
 
 model ActivityLog {
@@ -984,12 +986,17 @@ model ScoreConditionTier {
 }
 
 model ScoreBoard {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   gameModeId   String
   title        String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   createdById  String?
   tournamentId String? // partie rattachée à un tournoi (facultatif)
+  // Une fois définie : scores/équipes verrouillés (lecture seule) — bouton
+  // "Modifier les scores" pour la remettre à null et déverrouiller. Sert
+  // aussi de porte pour la partie suivante du tournoi (créable une fois
+  // celle-ci terminée).
+  finishedAt   DateTime?
 
   gameMode   ScoreGameMode    @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
   createdBy  User?            @relation("ScoreBoardsCreated", fields: [createdById], references: [id], onDelete: SetNull)

@@ -43,13 +43,14 @@ export async function removeScoreTeamMember(formData: FormData) {
       select: {
         guestName: true,
         user: { select: { displayName: true } },
-        team: { select: { board: { select: { gameModeId: true, id: true } } } },
+        team: { select: { board: { select: { gameModeId: true, id: true, finishedAt: true } } } },
       },
     });
 
     if (!member || member.team.board.gameModeId !== gameModeId || member.team.board.id !== boardId) {
       redirect(`${backTo}?error=server`);
     }
+    if (member.team.board.finishedAt) redirect(`${backTo}?error=board_finished`);
 
     // onDelete: Cascade sur ScoreEntry => ses scores individuels disparaissent
     // avec lui (les conditions d'équipe restent inchangées).

@@ -17,50 +17,49 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-export async function deleteScoreTeam(formData: FormData) {
+/**
+ * Marque une partie comme terminée : verrouille sa saisie de scores et sa
+ * composition d'équipes (lecture seule, réversible via reopen-board.ts),
+ * et débloque la création de la partie suivante du tournoi (voir
+ * /admin/tournaments/[id] : chaque mode ne devient créable qu'une fois le
+ * mode précédent terminé).
+ */
+export async function finishBoard(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
 
-  const gameModeId = String(formData.get("gameModeId") ?? "").trim();
   const boardId = String(formData.get("boardId") ?? "").trim();
-  const teamId = String(formData.get("teamId") ?? "").trim();
   const tournamentId = String(formData.get("tournamentId") ?? "").trim();
-
-  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  if (!boardId || !tournamentId) redirect("/admin/tournaments?error=validation");
   const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
     redirect(`${backTo}?error=forbidden`);
   }
 
-  if (!gameModeId || !boardId || !teamId) {
-    redirect(`${backTo}?error=validation`);
-  }
-
   try {
-    const team = await db.scoreTeam.findUnique({
-      where: { id: teamId },
-      select: { name: true, board: { select: { gameModeId: true, id: true, finishedAt: true } } },
+    const board = await db.scoreBoard.findUnique({
+      where: { id: boardId },
+      select: {
+        tournamentId: true,
+        title: true,
+        gameMode: { select: { name: true } },
+      },
     });
 
-    if (!team || team.board.gameModeId !== gameModeId || team.board.id !== boardId) {
-      redirect(`${backTo}?error=server`);
-    }
-    if (team.board.finishedAt) redirect(`${backTo}?error=board_finished`);
+    if (!board || board.tournamentId !== tournamentId) redirect(`${backTo}?error=server`);
 
-    // onDelete: Cascade sur ScoreTeamMember/ScoreEntry => les scores de
-    // cette équipe disparaissent avec elle.
-    await db.scoreTeam.delete({ where: { id: teamId } });
+    await db.scoreBoard.update({ where: { id: boardId }, data: { finishedAt: new Date() } });
 
     await logActivity({
-      action: "SCORE_TEAM_DELETED",
+      action: "SCORE_BOARD_FINISHED",
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
-      targetLabel: team.name,
+      targetLabel: board.title ? `${board.gameMode.name} — ${board.title}` : board.gameMode.name,
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    await logServerError("DELETE_SCORE_TEAM_ERROR", error);
+    await logServerError("FINISH_BOARD_ERROR", error);
     redirect(`${backTo}?error=server`);
   }
 

@@ -64,7 +64,7 @@ export async function saveScoreEntries(formData: FormData) {
       where: { id: teamId },
       select: {
         id: true,
-        board: { select: { gameModeId: true } },
+        board: { select: { gameModeId: true, finishedAt: true } },
         members: { select: { id: true } },
       },
     });
@@ -72,6 +72,7 @@ export async function saveScoreEntries(formData: FormData) {
     if (!team || team.board.gameModeId !== gameModeId) {
       redirect(`${backTo}?error=server`);
     }
+    if (team.board.finishedAt) redirect(`${backTo}?error=board_finished`);
 
     const conditions = await db.scoreCondition.findMany({
       where: { gameModeId },

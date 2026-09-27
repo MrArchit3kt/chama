@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
-import { syncTeamRosterToOtherBoards } from "@/lib/tournament-team-sync";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -17,51 +17,46 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
-export async function addScoreTeam(formData: FormData) {
+/** "Modifier les scores" : déverrouille une partie déjà terminée pour
+ * corriger un score ou une composition d'équipe. */
+export async function reopenBoard(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
 
-  const gameModeId = String(formData.get("gameModeId") ?? "").trim();
   const boardId = String(formData.get("boardId") ?? "").trim();
   const tournamentId = String(formData.get("tournamentId") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
-
-  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  if (!boardId || !tournamentId) redirect("/admin/tournaments?error=validation");
   const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
     redirect(`${backTo}?error=forbidden`);
   }
 
-  if (!gameModeId || !boardId || !name) {
-    redirect(`${backTo}?error=validation`);
-  }
-
   try {
     const board = await db.scoreBoard.findUnique({
       where: { id: boardId },
-      select: { id: true, gameModeId: true, finishedAt: true },
+      select: {
+        tournamentId: true,
+        title: true,
+        gameMode: { select: { name: true } },
+      },
     });
 
-    if (!board || board.gameModeId !== gameModeId) {
-      redirect(`${backTo}?error=server`);
-    }
-    if (board.finishedAt) redirect(`${backTo}?error=board_finished`);
+    if (!board || board.tournamentId !== tournamentId) redirect(`${backTo}?error=server`);
 
-    await db.scoreTeam.create({
-      data: { boardId, name },
+    await db.scoreBoard.update({ where: { id: boardId }, data: { finishedAt: null } });
+
+    await logActivity({
+      action: "SCORE_BOARD_REOPENED",
+      actorId: admin.id,
+      actorLabel: `${admin.name} (@${admin.username})`,
+      targetLabel: board.title ? `${board.gameMode.name} — ${board.title}` : board.gameMode.name,
     });
-
-    // Propage cette équipe (encore vide) aux autres parties déjà créées du
-    // tournoi, pour que la composition reste identique partout, même si
-    // l'admin ajoute une équipe après coup plutôt qu'au moment de créer
-    // chaque partie.
-    await syncTeamRosterToOtherBoards(tournamentId, boardId);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    await logServerError("ADD_SCORE_TEAM_ERROR", error);
+    await logServerError("REOPEN_BOARD_ERROR", error);
     redirect(`${backTo}?error=server`);
   }
 
-  redirect(`${backTo}?team_added=1`);
+  redirect(`${backTo}?success=1`);
 }
