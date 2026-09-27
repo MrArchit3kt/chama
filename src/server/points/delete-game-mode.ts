@@ -18,12 +18,11 @@ function isNextRedirectError(error: unknown) {
 }
 
 /**
- * Supprime un mode de jeu — uniquement s'il n'a jamais été utilisé (aucune
- * partie jouée, aucun tournoi ne le référence). Un mode déjà utilisé ne
- * peut pas être supprimé : le supprimer effacerait en cascade toutes les
- * parties/scores déjà saisis avec lui, potentiellement sur plusieurs
- * tournois passés. « Désactiver » reste le bon outil pour arrêter de
- * l'utiliser sans perdre l'historique.
+ * Supprime un mode de jeu, avec tout ce qui en dépend en cascade (parties,
+ * scores, conditions/paliers). Comme pour la suppression d'un tournoi ou
+ * d'une partie ailleurs dans l'admin, on ne bloque pas sur "déjà utilisé" —
+ * l'admin est prévenu par l'intitulé du bouton et reste libre de préférer
+ * « Désactiver » pour arrêter d'utiliser un mode sans perdre l'historique.
  */
 export async function deleteGameMode(formData: FormData) {
   const admin = await requireAdmin("points");
@@ -47,13 +46,10 @@ export async function deleteGameMode(formData: FormData) {
 
     if (!gameMode) redirect("/admin/points?error=server");
 
-    if (gameMode._count.boards > 0 || gameMode._count.tournaments > 0) {
-      redirect("/admin/points?error=mode_in_use");
-    }
-
-    // onDelete: Cascade sur ScoreCondition (et donc ScoreConditionTier) —
-    // sans risque ici puisqu'un mode jamais utilisé n'a par définition
-    // aucune ScoreEntry liée à ses conditions.
+    // onDelete: Cascade sur ScoreCondition/ScoreBoard (et donc leurs
+    // ScoreConditionTier/ScoreTeam/ScoreEntry) — supprime tout l'historique
+    // de ce mode. Les tournois qui le référencent (relation m:n) sont
+    // simplement détachés, jamais supprimés.
     await db.scoreGameMode.delete({ where: { id } });
 
     await logActivity({

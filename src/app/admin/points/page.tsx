@@ -23,8 +23,6 @@ function getErrorMessage(error?: string) {
       return "Formulaire invalide. Vérifie les champs.";
     case "name_taken":
       return "Un mode de jeu porte déjà ce nom.";
-    case "mode_in_use":
-      return "Ce mode a déjà été utilisé (partie ou tournoi) — désactive-le plutôt pour ne plus l’utiliser sans perdre l’historique.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -205,24 +203,20 @@ export default async function AdminPointsPage({
                       </form>
                     ) : null}
                     {canConfig ? (
-                      gameMode._count.boards > 0 || gameMode._count.tournaments > 0 ? (
-                        <span
-                          className="neon-text-muted text-[11px]"
-                          title="Déjà utilisé (partie ou tournoi) — impossible à supprimer sans perdre l’historique, désactive-le plutôt."
+                      <form action={deleteGameMode}>
+                        <input type="hidden" name="id" value={gameMode.id} />
+                        <button
+                          type="submit"
+                          title={
+                            gameMode._count.boards > 0 || gameMode._count.tournaments > 0
+                              ? `Supprime aussi ${gameMode._count.boards} tableau${gameMode._count.boards > 1 ? "x" : ""} et tous ses scores. Détache le mode des tournois qui l’utilisent (sans les supprimer). Préfère « Désactiver » pour garder l’historique.`
+                              : "Supprimer ce mode de jeu et ses conditions."
+                          }
+                          className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
                         >
-                          Déjà utilisé
-                        </span>
-                      ) : (
-                        <form action={deleteGameMode}>
-                          <input type="hidden" name="id" value={gameMode.id} />
-                          <button
-                            type="submit"
-                            className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                          >
-                            Supprimer
-                          </button>
-                        </form>
-                      )
+                          Supprimer
+                        </button>
+                      </form>
                     ) : null}
                   </div>
                 </div>
