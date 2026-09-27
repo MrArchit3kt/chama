@@ -4,6 +4,21 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { closeContactRequest } from "@/server/contact/close-contact-request";
+import { distinctMonths, monthLabel, monthRange } from "@/lib/month-filter";
+import type { ContactRequestType } from "@/generated/prisma/enums";
+
+const TYPE_ORDER: ContactRequestType[] = [
+  "ADMIN_REQUEST",
+  "PLAYER_REPORT",
+  "BUG",
+  "IMPROVEMENT",
+  "RECRUITMENT",
+  "LEAVE_TEAM",
+];
+
+function isContactType(value: string): value is ContactRequestType {
+  return (TYPE_ORDER as string[]).includes(value);
+}
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -45,7 +60,7 @@ function getStatusLabel(status: string) {
 export default async function AdminContactPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; closed?: string }>;
+  searchParams: Promise<{ error?: string; closed?: string; month?: string; type?: string }>;
 }) {
   const admin = await requireAdmin("contact");
 
@@ -58,7 +73,20 @@ export default async function AdminContactPage({
   const isForbidden = sp.error === "forbidden";
   const isClosed = sp.closed === "1";
 
+  const monthFilter = (sp.month ?? "").trim();
+  const typeFilter = (sp.type ?? "").trim();
+  const range = monthRange(monthFilter);
+
+  // Léger : sert juste à peupler le sélecteur de mois avec ceux qui ont
+  // réellement des demandes, indépendamment du filtre en cours.
+  const allDates = await db.contactRequest.findMany({ select: { createdAt: true } });
+  const availableMonths = distinctMonths(allDates.map((d) => d.createdAt));
+
   const requests = await db.contactRequest.findMany({
+    where: {
+      ...(range ? { createdAt: { gte: range.start, lt: range.end } } : {}),
+      ...(isContactType(typeFilter) ? { type: typeFilter } : {}),
+    },
     orderBy: {
       createdAt: "desc",
     },
@@ -94,13 +122,48 @@ export default async function AdminContactPage({
               </p>
             </div>
 
-            <div className="neon-card-soft px-4 py-3 md:px-5 md:py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-pink-300/75 md:text-xs">
-                Ouvertes
-              </p>
-              <p className="mt-1 text-xl font-black text-white md:text-2xl">{openCount}</p>
+            <div className="flex gap-3">
+              <div className="neon-card-soft px-4 py-3 md:px-5 md:py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75 md:text-xs">
+                  Affichées
+                </p>
+                <p className="mt-1 text-xl font-black text-white md:text-2xl">{requests.length}</p>
+              </div>
+              <div className="neon-card-soft px-4 py-3 md:px-5 md:py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-pink-300/75 md:text-xs">
+                  Ouvertes
+                </p>
+                <p className="mt-1 text-xl font-black text-white md:text-2xl">{openCount}</p>
+              </div>
             </div>
           </div>
+
+          <form
+            method="GET"
+            className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto] md:mt-5 md:max-w-xl"
+          >
+            <select name="month" defaultValue={monthFilter} className="w-full px-3 py-2.5 text-sm">
+              <option value="">Tous les mois</option>
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
+
+            <select name="type" defaultValue={typeFilter} className="w-full px-3 py-2.5 text-sm">
+              <option value="">Tous les types</option>
+              {TYPE_ORDER.map((type) => (
+                <option key={type} value={type}>
+                  {getTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+
+            <button type="submit" className="neon-button px-4 py-2.5 text-sm">
+              Filtrer
+            </button>
+          </form>
         </div>
 
         {hasError ? (
@@ -130,7 +193,9 @@ export default async function AdminContactPage({
         {requests.length === 0 ? (
           <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
-              Aucune demande reçue pour le moment.
+              {monthFilter || typeFilter
+                ? "Aucune demande ne correspond à ce filtre."
+                : "Aucune demande reçue pour le moment."}
             </p>
           </div>
         ) : (
