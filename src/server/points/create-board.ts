@@ -17,6 +17,13 @@ function isNextRedirectError(error: unknown) {
   );
 }
 
+/** Cible de retour après création — whitelist un préfixe interne pour
+ * éviter tout risque d'open redirect via un champ de formulaire. */
+function safeReturnTo(raw: string | null, fallback: string): string {
+  if (raw && raw.startsWith("/admin/")) return raw;
+  return fallback;
+}
+
 export async function createBoard(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
@@ -30,6 +37,10 @@ export async function createBoard(formData: FormData) {
 
   const title = String(formData.get("title") ?? "").trim();
   const tournamentId = String(formData.get("tournamentId") ?? "").trim();
+  const returnTo = safeReturnTo(
+    formData.get("returnTo") ? String(formData.get("returnTo")) : null,
+    `/admin/points/${gameModeId}`,
+  );
 
   try {
     const gameMode = await db.scoreGameMode.findUnique({
@@ -43,9 +54,22 @@ export async function createBoard(formData: FormData) {
     if (tournamentId) {
       const tournament = await db.scoreTournament.findUnique({
         where: { id: tournamentId },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          gameModes: { select: { id: true } },
+          boards: { where: { gameModeId }, select: { id: true } },
+        },
       });
-      if (!tournament) redirect(`/admin/points/${gameModeId}?error=server`);
+
+      if (!tournament) redirect(`${returnTo}?error=server`);
+      if (!tournament.gameModes.some((m) => m.id === gameModeId)) {
+        redirect(`${returnTo}?error=mode_not_in_tournament`);
+      }
+      if (tournament.boards.length > 0) {
+        redirect(`${returnTo}?error=mode_already_used`);
+      }
+
       tournamentName = tournament.name;
     }
 
@@ -66,10 +90,13 @@ export async function createBoard(formData: FormData) {
       metadata: tournamentName ? { tournament: tournamentName } : undefined,
     });
 
+    if (returnTo.startsWith("/admin/tournaments/")) {
+      redirect(`${returnTo}?success=1`);
+    }
     redirect(`/admin/points/${gameModeId}?board=${board.id}&success=1`);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("CREATE_BOARD_ERROR", error);
-    redirect(`/admin/points/${gameModeId}?error=server`);
+    redirect(`${returnTo}?error=server`);
   }
 }

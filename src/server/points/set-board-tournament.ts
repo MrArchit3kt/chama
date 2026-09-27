@@ -51,10 +51,21 @@ export async function setBoardTournament(formData: FormData) {
     if (tournamentId) {
       const tournament = await db.scoreTournament.findUnique({
         where: { id: tournamentId },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          gameModes: { select: { id: true } },
+          boards: { where: { gameModeId, id: { not: boardId } }, select: { id: true } },
+        },
       });
 
       if (!tournament) redirect(`${backTo}&error=server`);
+      if (!tournament.gameModes.some((m) => m.id === gameModeId)) {
+        redirect(`${backTo}&error=mode_not_in_tournament`);
+      }
+      if (tournament.boards.length > 0) {
+        redirect(`${backTo}&error=mode_already_used`);
+      }
 
       await db.scoreBoard.update({ where: { id: boardId }, data: { tournamentId: tournament.id } });
 

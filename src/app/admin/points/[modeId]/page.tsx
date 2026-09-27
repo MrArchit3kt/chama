@@ -32,6 +32,10 @@ function getErrorMessage(error?: string) {
       return "Formulaire invalide. Vérifie les champs.";
     case "already_in_team":
       return "Ce joueur est déjà dans cette équipe.";
+    case "mode_not_in_tournament":
+      return "Ce mode de jeu ne fait pas partie de ce tournoi.";
+    case "mode_already_used":
+      return "Ce tournoi a déjà une partie pour ce mode de jeu.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -151,10 +155,22 @@ export default async function AdminPointsModePage({
     orderBy: { displayName: "asc" },
   });
 
-  const tournaments = await db.scoreTournament.findMany({
+  // Seuls les tournois qui incluent ce mode de jeu sont proposés — et parmi
+  // eux, seuls ceux qui n'ont pas déjà leur partie pour ce mode (une seule
+  // partie par mode et par tournoi). Le tableau actuellement affiché reste
+  // toutefois sélectionnable dans le formulaire de rattachement, même s'il
+  // est "déjà utilisé" par lui-même.
+  const tournamentsForMode = await db.scoreTournament.findMany({
+    where: { gameModes: { some: { id: modeId } } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      boards: { where: { gameModeId: modeId }, select: { id: true } },
+    },
   });
+
+  const tournamentsForNewBoard = tournamentsForMode.filter((t) => t.boards.length === 0);
 
   return (
     <SiteShell>
@@ -257,7 +273,7 @@ export default async function AdminPointsModePage({
                 />
                 <select name="tournamentId" defaultValue="" className="w-full px-3 py-2.5 text-sm">
                   <option value="">Partie indépendante (pas de tournoi)</option>
-                  {tournaments.map((t) => (
+                  {tournamentsForNewBoard.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
                     </option>
@@ -269,33 +285,46 @@ export default async function AdminPointsModePage({
               </form>
             </div>
 
-            {latestBoard && tournaments.length > 0 ? (
-              <form
-                action={setBoardTournament}
-                className="mt-3 flex flex-wrap items-center gap-2"
-              >
-                <input type="hidden" name="gameModeId" value={gameMode.id} />
-                <input type="hidden" name="boardId" value={latestBoard.id} />
-                <label className="text-[11px] text-white/50">
-                  Rattacher ce tableau à un tournoi :
-                </label>
-                <select
-                  name="tournamentId"
-                  defaultValue={latestBoard.tournament?.id ?? ""}
-                  className="px-2.5 py-1.5 text-xs"
-                >
-                  <option value="">Aucun</option>
-                  {tournaments.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <button type="submit" className="neon-button-secondary px-3 py-1.5 text-xs">
-                  Enregistrer
-                </button>
-              </form>
+            {tournamentsForNewBoard.length === 0 && tournamentsForMode.length > 0 ? (
+              <p className="neon-text-muted mt-2 text-[11px]">
+                Tous les tournois incluant ce mode ont déjà leur partie pour ce mode
+                (« Partie indépendante » reste possible).
+              </p>
             ) : null}
+
+            {(() => {
+              const reattachOptions = tournamentsForMode.filter(
+                (t) => t.boards.length === 0 || t.boards.some((b) => b.id === latestBoard?.id),
+              );
+
+              return latestBoard && reattachOptions.length > 0 ? (
+                <form
+                  action={setBoardTournament}
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                >
+                  <input type="hidden" name="gameModeId" value={gameMode.id} />
+                  <input type="hidden" name="boardId" value={latestBoard.id} />
+                  <label className="text-[11px] text-white/50">
+                    Rattacher ce tableau à un tournoi :
+                  </label>
+                  <select
+                    name="tournamentId"
+                    defaultValue={latestBoard.tournament?.id ?? ""}
+                    className="px-2.5 py-1.5 text-xs"
+                  >
+                    <option value="">Aucun</option>
+                    {reattachOptions.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" className="neon-button-secondary px-3 py-1.5 text-xs">
+                    Enregistrer
+                  </button>
+                </form>
+              ) : null;
+            })()}
 
             <BoardHistory
               boards={pastBoards}
