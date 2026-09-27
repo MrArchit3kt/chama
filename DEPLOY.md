@@ -269,7 +269,48 @@ sudo -u postgres createdb chama --owner=chama
 pg_restore -U chama -h localhost -d chama /var/backups/chama/chama_AAAA-MM-JJ_HH-MM-SS.dump
 ```
 
-## 12. Mises à jour ultérieures
+## 12. Notifications push (tournois / événements)
+
+Notifications navigateur/PWA envoyées à la publication d'un tournoi ou
+d'un événement, + rappel "le tournoi commence bientôt". Optionnel : sans
+config, le site fonctionne normalement, juste sans ces notifications (le
+bouton "Activer les notifications" du profil reste masqué).
+
+**Générer les clés VAPID** (une seule fois, à garder identiques tant que
+les abonnements existants doivent rester valides — les régénérer invalide
+tous les abonnements en cours) :
+```bash
+node -e "console.log(require('web-push').generateVAPIDKeys())"
+```
+
+Dans `.env` :
+```
+VAPID_PUBLIC_KEY="<publicKey>"
+VAPID_PRIVATE_KEY="<privateKey>"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="<la même valeur que VAPID_PUBLIC_KEY>"
+VAPID_SUBJECT="mailto:contact@chama-gaming.site"
+```
+⚠️ `NEXT_PUBLIC_VAPID_PUBLIC_KEY` est lue au **build** (`pnpm build`), pas
+seulement au démarrage — rebuild nécessaire après toute modification.
+
+**Rappel "le tournoi commence bientôt"** (optionnel) : nécessite un appel
+périodique à une route protégée par secret partagé, puisque le VPS ne
+tourne pas en environnement serverless avec cron intégré. Ajouter dans
+`.env` :
+```
+CRON_SECRET="<valeur aléatoire, ex: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">"
+```
+Puis programmer l'appel toutes les 5 minutes :
+```bash
+crontab -e
+```
+```cron
+*/5 * * * * curl -fsS -H "x-cron-secret: LA_VALEUR_DE_CRON_SECRET" https://chama-gaming.site/api/cron/tournament-reminders >> /var/log/chama-cron.log 2>&1
+```
+Sans `CRON_SECRET` configuré, la route répond `501` sans rien casser
+d'autre — ce rappel est purement additif.
+
+## 13. Mises à jour ultérieures
 
 ```bash
 cd /var/www/chama

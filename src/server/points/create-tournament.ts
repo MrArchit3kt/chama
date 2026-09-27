@@ -7,6 +7,8 @@ import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { sendPushToUsers } from "@/lib/push";
+import { tournamentPublishedPush } from "@/lib/push-messages";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -124,6 +126,33 @@ export async function createTournament(formData: FormData) {
       targetLabel: tournament.name,
       metadata: { format: parsed.data.format, modes: validModes.map((m) => m.name), teamMode: parsed.data.teamMode },
     });
+
+    const activeUsers = await db.user.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (activeUsers.length > 0) {
+      await db.notification.createMany({
+        data: activeUsers.map((user) => ({
+          userId: user.id,
+          type: "TOURNAMENT_PUBLISHED",
+          channel: "IN_APP",
+          status: "PENDING",
+          title: `Nouveau tournoi : ${tournament.name}`,
+          message: `Un nouveau tournoi a été créé${
+            parsed.data.scheduledAt
+              ? ` pour le ${parsed.data.scheduledAt.toLocaleString("fr-FR")}`
+              : ""
+          }.`,
+        })),
+      });
+
+      await sendPushToUsers(
+        activeUsers.map((user) => user.id),
+        { ...tournamentPublishedPush(tournament.name), url: `/points/${tournament.id}` },
+      );
+    }
 
     redirect(`/admin/tournaments/${tournament.id}?success=1`);
   } catch (error) {

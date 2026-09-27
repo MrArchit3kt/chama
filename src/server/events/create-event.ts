@@ -11,6 +11,8 @@ import {
   deleteLocalEventImage,
   resolveEventImageInput,
 } from "@/server/events/_event-image";
+import { sendPushToUsers } from "@/lib/push";
+import { eventPublishedPush } from "@/lib/push-messages";
 
 const createEventSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -129,6 +131,11 @@ export async function createEvent(formData: FormData) {
             message: `Un nouvel événement a été publié pour le ${event.eventDate.toLocaleString("fr-FR")}.`,
           })),
         });
+
+        await sendPushToUsers(
+          users.map((user) => user.id),
+          { ...eventPublishedPush(event.title), url: "/events" },
+        );
       }
     }
 

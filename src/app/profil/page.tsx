@@ -11,6 +11,7 @@ import { updatePassword } from "@/server/profil/update-password";
 import { disconnectDiscord } from "@/server/profil/disconnect-discord";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 import { isDiscordOAuthConfigured } from "@/lib/discord";
+import { PushOptIn } from "@/components/notifications/push-opt-in";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -443,6 +444,24 @@ export default async function ProfilePage({
               </button>
             </div>
           </form>
+        </div>
+
+        {/* ===================== */}
+        {/* NOTIFICATIONS PUSH */}
+        {/* ===================== */}
+        <div className="neon-card p-6 md:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
+            Notifications
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-white">Notifications push</h3>
+          <p className="neon-text-muted mt-2 text-sm leading-6">
+            En plus des alertes visibles dans l’appli (🔔), reçois une
+            notification directement sur ton appareil dès qu’un tournoi ou un
+            événement est publié.
+          </p>
+          <div className="mt-4">
+            <PushOptIn />
+          </div>
         </div>
 
         {/* ===================== */}
