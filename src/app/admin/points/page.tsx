@@ -12,6 +12,7 @@ import { deleteCondition } from "@/server/points/delete-condition";
 import { updateCondition } from "@/server/points/update-condition";
 import { createTier } from "@/server/points/create-tier";
 import { deleteTier } from "@/server/points/delete-tier";
+import { deleteGameMode } from "@/server/points/delete-game-mode";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 
 function getErrorMessage(error?: string) {
@@ -22,6 +23,8 @@ function getErrorMessage(error?: string) {
       return "Formulaire invalide. Vérifie les champs.";
     case "name_taken":
       return "Un mode de jeu porte déjà ce nom.";
+    case "mode_in_use":
+      return "Ce mode a déjà été utilisé (partie ou tournoi) — désactive-le plutôt pour ne plus l’utiliser sans perdre l’historique.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -66,7 +69,7 @@ export default async function AdminPointsPage({
         orderBy: { createdAt: "asc" },
         include: { tiers: { orderBy: { minValue: "asc" } } },
       },
-      _count: { select: { boards: true } },
+      _count: { select: { boards: true, tournaments: true } },
     },
   });
 
@@ -192,7 +195,7 @@ export default async function AdminPointsPage({
                     ) : null}
                   </div>
 
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     {canConfig ? (
                       <form action={toggleGameMode}>
                         <input type="hidden" name="id" value={gameMode.id} />
@@ -200,6 +203,26 @@ export default async function AdminPointsPage({
                           {gameMode.isActive ? "Désactiver" : "Activer"}
                         </button>
                       </form>
+                    ) : null}
+                    {canConfig ? (
+                      gameMode._count.boards > 0 || gameMode._count.tournaments > 0 ? (
+                        <span
+                          className="neon-text-muted text-[11px]"
+                          title="Déjà utilisé (partie ou tournoi) — impossible à supprimer sans perdre l’historique, désactive-le plutôt."
+                        >
+                          Déjà utilisé
+                        </span>
+                      ) : (
+                        <form action={deleteGameMode}>
+                          <input type="hidden" name="id" value={gameMode.id} />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-rose-400/20 px-3 py-1.5 text-xs font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                          >
+                            Supprimer
+                          </button>
+                        </form>
+                      )
                     ) : null}
                   </div>
                 </div>
