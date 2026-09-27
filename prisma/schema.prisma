@@ -401,10 +401,11 @@ model User {
   activityLogsAsTarget ActivityLog[] @relation("ActivityLogTarget")
 
   // ✅ Système de points
-  scoreBoardsCreated          ScoreBoard[]             @relation("ScoreBoardsCreated")
-  scoreTeamMemberships        ScoreTeamMember[]        @relation("ScoreTeamMemberships")
-  scoreTournamentsCreated     ScoreTournament[]        @relation("ScoreTournamentsCreated")
-  scoreBracketTeamMemberships ScoreBracketTeamMember[] @relation("ScoreBracketTeamMemberships")
+  scoreBoardsCreated          ScoreBoard[]              @relation("ScoreBoardsCreated")
+  scoreTeamMemberships        ScoreTeamMember[]         @relation("ScoreTeamMemberships")
+  scoreTournamentsCreated     ScoreTournament[]         @relation("ScoreTournamentsCreated")
+  scoreBracketTeamMemberships ScoreBracketTeamMember[]  @relation("ScoreBracketTeamMemberships")
+  scoreTournamentInterests    ScoreTournamentInterest[] @relation("ScoreTournamentInterests")
 
   @@index([registrationStatus])
   @@index([approvedById])
@@ -891,6 +892,8 @@ enum ActivityAction {
   SCORE_BRACKET_ROUND_ADVANCED
   SCORE_BRACKET_TEAM_MEMBER_ADDED
   SCORE_BRACKET_TEAM_MEMBER_REMOVED
+  SCORE_TOURNAMENT_INTEREST_JOINED
+  SCORE_TOURNAMENT_INTEREST_LEFT
 }
 
 model ActivityLog {
@@ -1028,6 +1031,9 @@ model ScoreTournament {
   createdAt   DateTime              @default(now())
   createdById String?
   format      ScoreTournamentFormat @default(CLASSIC)
+  // Date à laquelle le tournoi doit se dérouler (facultative, distincte de
+  // createdAt qui reflète juste le moment où l'admin l'a configuré dans le site).
+  scheduledAt DateTime?
 
   // Nombre d'équipes / taille max souhaités (optionnels : laissés vides,
   // tout reste manuel comme avant). Utilisés pour auto-créer les équipes
@@ -1043,18 +1049,39 @@ model ScoreTournament {
   // des équipes déclarées et la liste des équipes est verrouillée.
   startedAt         DateTime?
 
-  createdBy    User?              @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy    User?                     @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
   // Modes de jeu retenus pour ce tournoi (choisis à la création) : le
   // site sait ainsi d'avance combien de parties composent le tournoi et
   // pour quels modes, sans attendre que des tableaux soient créés.
   // Optionnel pour un tournoi BRACKET (informatif seulement, aucun
   // tableau n'est créé pour ce format).
-  gameModes    ScoreGameMode[]    @relation("ScoreTournamentGameModes")
+  gameModes    ScoreGameMode[]           @relation("ScoreTournamentGameModes")
   boards       ScoreBoard[]
   bracketTeams ScoreBracketTeam[]
   matches      ScoreMatch[]
+  interests    ScoreTournamentInterest[]
 
   @@index([createdAt])
+}
+
+/**
+ * Sondage de participation : un joueur indique vouloir participer à un
+ * tournoi avant même que les équipes existent — utilisé pour pré-remplir
+ * le pool du tirage au sort (comme la queue des mix Warzone/BO7/...),
+ * sans que l'admin ait à sélectionner manuellement tout le monde. Fermé
+ * dès que le tournoi a démarré.
+ */
+model ScoreTournamentInterest {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  tournament ScoreTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User            @relation("ScoreTournamentInterests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
 }
 
 /**

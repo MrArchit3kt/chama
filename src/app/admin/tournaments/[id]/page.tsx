@@ -198,6 +198,21 @@ export default async function AdminTournamentDetailPage({
     orderBy: { displayName: "asc" },
   });
 
+  // Sondage de participation (voir /points) : les joueurs intéressés sont
+  // remontés en tête de liste et pré-cochés dans le tirage au sort, pour
+  // que l'admin n'ait pas à tous les sélectionner à la main.
+  const interestedIds = new Set(
+    (
+      await db.scoreTournamentInterest.findMany({
+        where: { tournamentId },
+        select: { userId: true },
+      })
+    ).map((i) => i.userId),
+  );
+  const eligibleUsersForDraw = [...eligibleUsers].sort(
+    (a, b) => Number(interestedIds.has(b.id)) - Number(interestedIds.has(a.id)),
+  );
+
   const winnersRounds = groupRounds(tournament.matches, "WINNERS");
   const losersRounds = groupRounds(tournament.matches, "LOSERS");
   const grandFinal = tournament.matches.find((m) => m.bracketType === "GRAND_FINAL") ?? null;
@@ -449,14 +464,25 @@ export default async function AdminTournamentDetailPage({
                 <label className="mb-2 block text-sm font-semibold text-white">
                   Joueurs inscrits à inclure dans le tirage
                 </label>
-                {eligibleUsers.length === 0 ? (
+                <p className="neon-text-muted mb-2 text-xs">
+                  Les joueurs ayant répondu « Je participe » au sondage sur /points sont
+                  pré-cochés et remontés en tête de liste.
+                </p>
+                {eligibleUsersForDraw.length === 0 ? (
                   <p className="neon-text-muted text-sm">Aucun joueur éligible.</p>
                 ) : (
                   <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-2xl border border-white/8 bg-white/2 p-3 sm:grid-cols-2 md:grid-cols-3">
-                    {eligibleUsers.map((u) => (
+                    {eligibleUsersForDraw.map((u) => (
                       <label key={u.id} className="flex items-center gap-2 text-sm text-white/80">
-                        <input type="checkbox" name="userIds" value={u.id} className="h-4 w-4" />
+                        <input
+                          type="checkbox"
+                          name="userIds"
+                          value={u.id}
+                          defaultChecked={interestedIds.has(u.id)}
+                          className="h-4 w-4"
+                        />
                         {u.displayName} (@{u.username})
+                        {interestedIds.has(u.id) ? <span className="text-cyan-300">🙋</span> : null}
                       </label>
                     ))}
                   </div>

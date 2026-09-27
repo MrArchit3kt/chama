@@ -26,6 +26,7 @@ const createTournamentSchema = z.object({
   teamMode: z.enum(["MANUAL", "SELF_JOIN", "RANDOM"]),
   teamCount: z.coerce.number().int().min(2).max(20).optional(),
   maxMembersPerTeam: z.coerce.number().int().min(1).max(50).optional(),
+  scheduledAt: z.coerce.date().optional(),
 });
 
 /**
@@ -51,6 +52,7 @@ export async function createTournament(formData: FormData) {
   const rawDescription = String(formData.get("description") ?? "").trim();
   const rawTeamCount = String(formData.get("teamCount") ?? "").trim();
   const rawMaxMembers = String(formData.get("maxMembersPerTeam") ?? "").trim();
+  const rawScheduledAt = String(formData.get("scheduledAt") ?? "").trim();
 
   const parsed = createTournamentSchema.safeParse({
     name: String(formData.get("name") ?? ""),
@@ -60,6 +62,7 @@ export async function createTournament(formData: FormData) {
     teamMode: String(formData.get("teamMode") ?? "MANUAL"),
     teamCount: rawTeamCount || undefined,
     maxMembersPerTeam: rawMaxMembers || undefined,
+    scheduledAt: rawScheduledAt || undefined,
   });
 
   if (!parsed.success) {
@@ -100,6 +103,7 @@ export async function createTournament(formData: FormData) {
         teamMode: parsed.data.teamMode,
         teamCount: parsed.data.teamCount ?? null,
         maxMembersPerTeam: parsed.data.maxMembersPerTeam ?? null,
+        scheduledAt: parsed.data.scheduledAt ?? null,
         gameModes: { connect: validModes.map((m) => ({ id: m.id })) },
       },
     });

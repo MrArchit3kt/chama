@@ -58,6 +58,8 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_BRACKET_ROUND_ADVANCED: "Tour suivant généré (bracket)",
   SCORE_BRACKET_TEAM_MEMBER_ADDED: "Joueur ajouté à une équipe de bracket",
   SCORE_BRACKET_TEAM_MEMBER_REMOVED: "Joueur retiré d’une équipe de bracket",
+  SCORE_TOURNAMENT_INTEREST_JOINED: "Joueur intéressé par un tournoi (sondage)",
+  SCORE_TOURNAMENT_INTEREST_LEFT: "Joueur plus intéressé par un tournoi (sondage)",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);

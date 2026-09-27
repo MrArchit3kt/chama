@@ -31,6 +31,8 @@ export async function joinScoreTeam(formData: FormData) {
   const teamId = String(formData.get("teamId") ?? "").trim();
   if (!teamId) redirect("/points?error=validation");
 
+  let backTo = "/points";
+
   try {
     const team = await db.scoreTeam.findUnique({
       where: { id: teamId },
@@ -49,14 +51,15 @@ export async function joinScoreTeam(formData: FormData) {
     });
 
     if (!team || !team.board.tournamentId || !team.board.tournament) {
-      redirect("/points?error=server");
+      redirect(`${backTo}?error=server`);
     }
 
     const tournamentId = team.board.tournamentId;
     const tournament = team.board.tournament;
+    backTo = `/points/${tournamentId}`;
 
-    if (tournament.teamMode !== "SELF_JOIN") redirect("/points?error=forbidden");
-    if (tournament.startedAt) redirect("/points?error=locked");
+    if (tournament.teamMode !== "SELF_JOIN") redirect(`${backTo}?error=forbidden`);
+    if (tournament.startedAt) redirect(`${backTo}?error=locked`);
 
     // Permet de "changer" d'équipe en un clic : on retire d'abord toute
     // appartenance existante du joueur dans ce tournoi (tous tableaux).
@@ -67,7 +70,7 @@ export async function joinScoreTeam(formData: FormData) {
     if (tournament.maxMembersPerTeam) {
       const currentCount = await db.scoreTeamMember.count({ where: { teamId } });
       if (currentCount >= tournament.maxMembersPerTeam) {
-        redirect("/points?error=team_full");
+        redirect(`${backTo}?error=team_full`);
       }
     }
 
@@ -95,8 +98,8 @@ export async function joinScoreTeam(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("JOIN_SCORE_TEAM_ERROR", error);
-    redirect("/points?error=server");
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect("/points?joined=1");
+  redirect(`${backTo}?joined=1`);
 }
