@@ -63,6 +63,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_TOURNAMENT_INTEREST_LEFT: "Joueur plus intéressé par un tournoi (sondage)",
   SCORE_BOARD_FINISHED: "Partie de tournoi terminée (scores verrouillés)",
   SCORE_BOARD_REOPENED: "Partie de tournoi rouverte (scores modifiables)",
+  SCORE_TEAM_MEMBER_REPLACED: "Joueur remplacé dans une équipe (points)",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);

@@ -10,7 +10,6 @@ import { createBoard } from "@/server/points/create-board";
 import { deleteBoard } from "@/server/points/delete-board";
 import { addScoreTeam } from "@/server/points/add-score-team";
 import { deleteScoreTeam } from "@/server/points/delete-score-team";
-import { addScoreTeamMember } from "@/server/points/add-score-team-member";
 import { removeScoreTeamMember } from "@/server/points/remove-score-team-member";
 import { saveScoreEntries } from "@/server/points/save-score-entries";
 import { finishBoard } from "@/server/points/finish-board";
@@ -24,6 +23,8 @@ import { addBracketTeamMember } from "@/server/points/add-bracket-team-member";
 import { removeBracketTeamMember } from "@/server/points/remove-bracket-team-member";
 import { setMatchWinner } from "@/server/points/set-match-winner";
 import { advanceBracketRound } from "@/server/points/advance-bracket-round";
+import { TeamRosterManager } from "@/components/admin/team-roster-manager";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { groupRounds, getBracketState } from "@/lib/bracket";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
@@ -361,12 +362,13 @@ export default async function AdminTournamentDetailPage({
             {canManage ? (
               <form action={deleteTournament}>
                 <input type="hidden" name="id" value={tournament.id} />
-                <button
-                  type="submit"
+                <ConfirmDeleteButton
+                  confirmTitle={`Supprimer « ${tournament.name} » ?`}
+                  confirmDescription="Supprime aussi toutes ses parties, équipes et scores. Cette action est irréversible."
                   className="rounded-lg border border-rose-400/20 px-4 py-2 text-sm font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
                 >
                   Supprimer le tournoi
-                </button>
+                </ConfirmDeleteButton>
               </form>
             ) : null}
           </div>
@@ -406,7 +408,7 @@ export default async function AdminTournamentDetailPage({
 
         {isMemberAdded ? (
           <div className="neon-card p-5">
-            <p className="text-sm font-medium text-emerald-300">Joueur ajouté à l’équipe.</p>
+            <p className="text-sm font-medium text-emerald-300">Composition d’équipe mise à jour.</p>
           </div>
         ) : null}
 
@@ -635,271 +637,265 @@ export default async function AdminTournamentDetailPage({
                         <input type="hidden" name="gameModeId" value={mode.id} />
                         <input type="hidden" name="boardId" value={board.id} />
                         <input type="hidden" name="tournamentId" value={tournament.id} />
-                        <button
-                          type="submit"
+                        <ConfirmDeleteButton
+                          confirmTitle={`Supprimer la partie « ${mode.name} » ?`}
+                          confirmDescription="Supprime aussi toutes les équipes et tous les scores de cette partie."
                           className="rounded-lg border border-rose-400/20 px-2.5 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                          title="Supprimer cette partie et tous ses scores"
                         >
                           Supprimer cette partie
-                        </button>
+                        </ConfirmDeleteButton>
                       </form>
                     ) : null}
                   </div>
                 </div>
 
-                {canManage && !isFinished ? (
-                  <form
-                    action={addScoreTeam}
-                    className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_auto]"
-                  >
-                    <input type="hidden" name="gameModeId" value={mode.id} />
-                    <input type="hidden" name="boardId" value={board.id} />
-                    <input type="hidden" name="tournamentId" value={tournament.id} />
-                    <input
-                      name="name"
-                      type="text"
-                      required
-                      placeholder="Nom de l’équipe"
-                      className="w-full px-4 py-2.5 text-sm"
-                    />
-                    <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
-                      Ajouter une équipe
-                    </button>
-                  </form>
-                ) : null}
+                {isFinished ? (
+                  <div className="mt-4 grid gap-1.5">
+                    {board.teams.length === 0 ? (
+                      <p className="neon-text-muted text-sm">Aucune équipe sur cette partie.</p>
+                    ) : (
+                      board.teams.map((team) => {
+                        const teamTotal =
+                          sumEntries(team.entries) +
+                          team.members.reduce((sum, m) => sum + sumEntries(m.entries), 0);
 
-                {board.teams.length === 0 ? (
-                  <p className="neon-text-muted mt-3 text-sm">Aucune équipe sur cette partie pour le moment.</p>
+                        return (
+                          <div
+                            key={team.id}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/2 px-3.5 py-2"
+                          >
+                            <span className="truncate text-sm font-semibold text-white">{team.name}</span>
+                            <span className="neon-badge shrink-0 text-[11px]">
+                              {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 ) : (
-                  <div className="mt-4 grid gap-3">
-                    {board.teams.map((team) => {
-                      const teamTotal =
-                        sumEntries(team.entries) +
-                        team.members.reduce((sum, m) => sum + sumEntries(m.entries), 0);
+                  <>
+                    {canManage ? (
+                      <form
+                        action={addScoreTeam}
+                        className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_auto]"
+                      >
+                        <input type="hidden" name="gameModeId" value={mode.id} />
+                        <input type="hidden" name="boardId" value={board.id} />
+                        <input type="hidden" name="tournamentId" value={tournament.id} />
+                        <input
+                          name="name"
+                          type="text"
+                          required
+                          placeholder="Nom de l’équipe"
+                          className="w-full px-4 py-2.5 text-sm"
+                        />
+                        <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
+                          Ajouter une équipe
+                        </button>
+                      </form>
+                    ) : null}
 
-                      return (
-                        <div key={team.id} className="rounded-2xl border border-white/8 bg-white/2 p-4">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <h4 className="font-bold text-white">{team.name}</h4>
-                            <div className="flex items-center gap-2">
-                              <span className="neon-badge">
-                                {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
-                              </span>
-                              {canManage && !isFinished ? (
-                                <form action={deleteScoreTeam}>
+                    {canManage && board.teams.length > 0 ? (
+                      <div className="mt-4">
+                        <TeamRosterManager
+                          gameModeId={mode.id}
+                          boardId={board.id}
+                          tournamentId={tournament.id}
+                          teams={board.teams.map((t) => ({
+                            id: t.id,
+                            name: t.name,
+                            members: t.members.map((m) => ({ id: m.id, label: memberLabel(m) })),
+                          }))}
+                          eligibleUsers={eligibleUsers}
+                        />
+                      </div>
+                    ) : null}
+
+                    {board.teams.length === 0 ? (
+                      <p className="neon-text-muted mt-3 text-sm">Aucune équipe sur cette partie pour le moment.</p>
+                    ) : (
+                      <div className="mt-4 grid gap-3">
+                        {board.teams.map((team) => {
+                          const teamTotal =
+                            sumEntries(team.entries) +
+                            team.members.reduce((sum, m) => sum + sumEntries(m.entries), 0);
+
+                          return (
+                            <div key={team.id} className="rounded-2xl border border-white/8 bg-white/2 p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <h4 className="font-bold text-white">{team.name}</h4>
+                                <div className="flex items-center gap-2">
+                                  <span className="neon-badge">
+                                    {teamTotal} pt{Math.abs(teamTotal) > 1 ? "s" : ""}
+                                  </span>
+                                  {canManage ? (
+                                    <form action={deleteScoreTeam}>
+                                      <input type="hidden" name="gameModeId" value={mode.id} />
+                                      <input type="hidden" name="boardId" value={board.id} />
+                                      <input type="hidden" name="teamId" value={team.id} />
+                                      <input type="hidden" name="tournamentId" value={tournament.id} />
+                                      <ConfirmDeleteButton
+                                        confirmTitle={`Supprimer l’équipe « ${team.name} » ?`}
+                                        confirmDescription="Retire aussi tous ses joueurs et leurs scores sur cette partie."
+                                        className="rounded-lg border border-rose-400/20 px-2 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                      >
+                                        Supprimer l’équipe
+                                      </ConfirmDeleteButton>
+                                    </form>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              {canManage ? (
+                                <form action={saveScoreEntries} className="mt-3 grid gap-4">
                                   <input type="hidden" name="gameModeId" value={mode.id} />
                                   <input type="hidden" name="boardId" value={board.id} />
                                   <input type="hidden" name="teamId" value={team.id} />
                                   <input type="hidden" name="tournamentId" value={tournament.id} />
-                                  <button
-                                    type="submit"
-                                    className="rounded-lg border border-rose-400/20 px-2 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                                  >
-                                    Supprimer l’équipe
-                                  </button>
+
+                                  {teamConditions.length > 0 ? (
+                                    <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-3.5">
+                                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/75">
+                                        Conditions d’équipe
+                                      </p>
+                                      <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
+                                        {teamConditions.map((condition) => {
+                                          const existing = findEntry(team.entries, condition.id);
+                                          const fieldName = `team_condition_${condition.id}`;
+
+                                          return (
+                                            <label
+                                              key={condition.id}
+                                              className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-xs text-white/80"
+                                            >
+                                              <span>
+                                                {condition.label}{" "}
+                                                <span className="text-white/40">({conditionHint(condition)})</span>
+                                              </span>
+                                              {condition.mode === "ONE_TIME" ? (
+                                                <input
+                                                  type="checkbox"
+                                                  name={fieldName}
+                                                  defaultChecked={Boolean(existing)}
+                                                  className="h-4 w-4 shrink-0"
+                                                />
+                                              ) : (
+                                                <input
+                                                  type="number"
+                                                  name={fieldName}
+                                                  min={0}
+                                                  max={999}
+                                                  defaultValue={existing?.quantity ?? ""}
+                                                  placeholder="0"
+                                                  className="w-16 shrink-0 px-2 py-1 text-center text-xs"
+                                                />
+                                              )}
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : null}
+
+                                  {team.members.length > 0 ? (
+                                    <div className="grid gap-2.5 sm:grid-cols-2">
+                                      {team.members.map((member) => {
+                                        const memberTotal = sumEntries(member.entries);
+                                        const label = memberLabel(member);
+                                        const sub = member.user ? `@${member.user.username}` : "Invité";
+
+                                        return (
+                                          <div
+                                            key={member.id}
+                                            className="rounded-2xl border border-white/8 bg-black/20 p-3.5"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <div className="min-w-0">
+                                                <p className="truncate text-sm font-bold text-white">{label}</p>
+                                                <p className="neon-text-muted truncate text-[11px]">{sub}</p>
+                                              </div>
+                                              <div className="flex shrink-0 items-center gap-1.5">
+                                                <span className="neon-badge text-[10px]">
+                                                  {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
+                                                </span>
+                                                {canManage ? (
+                                                  // formAction : soumet ce même formulaire
+                                                  // (saveScoreEntries) vers une autre action pour ce
+                                                  // seul bouton — évite d'imbriquer un <form>.
+                                                  <button
+                                                    type="submit"
+                                                    formAction={removeScoreTeamMember}
+                                                    name="memberId"
+                                                    value={member.id}
+                                                    className="rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                                                    title="Retirer ce joueur de l’équipe"
+                                                  >
+                                                    ✕
+                                                  </button>
+                                                ) : null}
+                                              </div>
+                                            </div>
+
+                                            {playerConditions.length > 0 ? (
+                                              <div className="mt-2.5 grid gap-1.5">
+                                                {playerConditions.map((condition) => {
+                                                  const existing = findEntry(member.entries, condition.id);
+                                                  const fieldName = `member_condition_${member.id}_${condition.id}`;
+
+                                                  return (
+                                                    <label
+                                                      key={condition.id}
+                                                      className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-white/80"
+                                                    >
+                                                      <span>
+                                                        {condition.label}{" "}
+                                                        <span className="text-white/40">
+                                                          ({conditionHint(condition)})
+                                                        </span>
+                                                      </span>
+                                                      {condition.mode === "ONE_TIME" ? (
+                                                        <input
+                                                          type="checkbox"
+                                                          name={fieldName}
+                                                          defaultChecked={Boolean(existing)}
+                                                          className="h-4 w-4 shrink-0"
+                                                        />
+                                                      ) : (
+                                                        <input
+                                                          type="number"
+                                                          name={fieldName}
+                                                          min={0}
+                                                          max={999}
+                                                          defaultValue={existing?.quantity ?? ""}
+                                                          placeholder="0"
+                                                          className="w-16 shrink-0 px-2 py-1 text-center text-xs"
+                                                        />
+                                                      )}
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+
+                                  <div>
+                                    <button type="submit" className="neon-button px-5 py-2.5 text-sm">
+                                      Enregistrer les scores
+                                    </button>
+                                  </div>
                                 </form>
                               ) : null}
                             </div>
-                          </div>
-
-                          {isFinished ? (
-                            <div className="mt-3 grid gap-1.5">
-                              {team.members.length === 0 ? (
-                                <p className="neon-text-muted text-xs">Aucun joueur.</p>
-                              ) : (
-                                team.members.map((member) => (
-                                  <div
-                                    key={member.id}
-                                    className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-white/80"
-                                  >
-                                    <span className="truncate">{memberLabel(member)}</span>
-                                    <span className="neon-badge shrink-0 text-[10px]">
-                                      {sumEntries(member.entries)} pt
-                                      {Math.abs(sumEntries(member.entries)) > 1 ? "s" : ""}
-                                    </span>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          ) : canManage ? (
-                            <form action={saveScoreEntries} className="mt-3 grid gap-4">
-                              <input type="hidden" name="gameModeId" value={mode.id} />
-                              <input type="hidden" name="boardId" value={board.id} />
-                              <input type="hidden" name="teamId" value={team.id} />
-                              <input type="hidden" name="tournamentId" value={tournament.id} />
-
-                              {teamConditions.length > 0 ? (
-                                <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-3.5">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/75">
-                                    Conditions d’équipe
-                                  </p>
-                                  <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
-                                    {teamConditions.map((condition) => {
-                                      const existing = findEntry(team.entries, condition.id);
-                                      const fieldName = `team_condition_${condition.id}`;
-
-                                      return (
-                                        <label
-                                          key={condition.id}
-                                          className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-xs text-white/80"
-                                        >
-                                          <span>
-                                            {condition.label}{" "}
-                                            <span className="text-white/40">({conditionHint(condition)})</span>
-                                          </span>
-                                          {condition.mode === "ONE_TIME" ? (
-                                            <input
-                                              type="checkbox"
-                                              name={fieldName}
-                                              defaultChecked={Boolean(existing)}
-                                              className="h-4 w-4 shrink-0"
-                                            />
-                                          ) : (
-                                            <input
-                                              type="number"
-                                              name={fieldName}
-                                              min={0}
-                                              max={999}
-                                              defaultValue={existing?.quantity ?? ""}
-                                              placeholder="0"
-                                              className="w-16 shrink-0 px-2 py-1 text-center text-xs"
-                                            />
-                                          )}
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ) : null}
-
-                              {team.members.length > 0 ? (
-                                <div className="grid gap-2.5 sm:grid-cols-2">
-                                  {team.members.map((member) => {
-                                    const memberTotal = sumEntries(member.entries);
-                                    const label = memberLabel(member);
-                                    const sub = member.user ? `@${member.user.username}` : "Invité";
-
-                                    return (
-                                      <div
-                                        key={member.id}
-                                        className="rounded-2xl border border-white/8 bg-black/20 p-3.5"
-                                      >
-                                        <div className="flex items-center justify-between gap-2">
-                                          <div className="min-w-0">
-                                            <p className="truncate text-sm font-bold text-white">{label}</p>
-                                            <p className="neon-text-muted truncate text-[11px]">{sub}</p>
-                                          </div>
-                                          <div className="flex shrink-0 items-center gap-1.5">
-                                            <span className="neon-badge text-[10px]">
-                                              {memberTotal} pt{Math.abs(memberTotal) > 1 ? "s" : ""}
-                                            </span>
-                                            {canManage ? (
-                                              // formAction : soumet ce même formulaire
-                                              // (saveScoreEntries) vers une autre action pour ce
-                                              // seul bouton — évite d'imbriquer un <form>.
-                                              <button
-                                                type="submit"
-                                                formAction={removeScoreTeamMember}
-                                                name="memberId"
-                                                value={member.id}
-                                                className="rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                                                title="Retirer ce joueur de l’équipe"
-                                              >
-                                                ✕
-                                              </button>
-                                            ) : null}
-                                          </div>
-                                        </div>
-
-                                        {playerConditions.length > 0 ? (
-                                          <div className="mt-2.5 grid gap-1.5">
-                                            {playerConditions.map((condition) => {
-                                              const existing = findEntry(member.entries, condition.id);
-                                              const fieldName = `member_condition_${member.id}_${condition.id}`;
-
-                                              return (
-                                                <label
-                                                  key={condition.id}
-                                                  className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-white/80"
-                                                >
-                                                  <span>
-                                                    {condition.label}{" "}
-                                                    <span className="text-white/40">
-                                                      ({conditionHint(condition)})
-                                                    </span>
-                                                  </span>
-                                                  {condition.mode === "ONE_TIME" ? (
-                                                    <input
-                                                      type="checkbox"
-                                                      name={fieldName}
-                                                      defaultChecked={Boolean(existing)}
-                                                      className="h-4 w-4 shrink-0"
-                                                    />
-                                                  ) : (
-                                                    <input
-                                                      type="number"
-                                                      name={fieldName}
-                                                      min={0}
-                                                      max={999}
-                                                      defaultValue={existing?.quantity ?? ""}
-                                                      placeholder="0"
-                                                      className="w-16 shrink-0 px-2 py-1 text-center text-xs"
-                                                    />
-                                                  )}
-                                                </label>
-                                              );
-                                            })}
-                                          </div>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-
-                              <div>
-                                <button type="submit" className="neon-button px-5 py-2.5 text-sm">
-                                  Enregistrer les scores
-                                </button>
-                              </div>
-                            </form>
-                          ) : null}
-
-                          {canManage && !isFinished ? (
-                            <form
-                              action={addScoreTeamMember}
-                              className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_1fr_auto]"
-                            >
-                              <input type="hidden" name="gameModeId" value={mode.id} />
-                              <input type="hidden" name="boardId" value={board.id} />
-                              <input type="hidden" name="teamId" value={team.id} />
-                              <input type="hidden" name="tournamentId" value={tournament.id} />
-
-                              <select name="userId" defaultValue="" className="w-full px-3 py-2.5 text-sm">
-                                <option value="">Joueur inscrit (optionnel)</option>
-                                {eligibleUsers.map((u) => (
-                                  <option key={u.id} value={u.id}>
-                                    {u.displayName}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <input
-                                name="guestName"
-                                type="text"
-                                placeholder="Ou nom d’un joueur invité"
-                                className="w-full px-3 py-2.5 text-sm"
-                              />
-
-                              <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
-                                Ajouter à l’équipe
-                              </button>
-                            </form>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -1029,13 +1025,13 @@ export default async function AdminTournamentDetailPage({
                               <form action={removeBracketTeam}>
                                 <input type="hidden" name="id" value={team.id} />
                                 <input type="hidden" name="tournamentId" value={tournament.id} />
-                                <button
-                                  type="submit"
+                                <ConfirmDeleteButton
+                                  confirmTitle={`Supprimer l’équipe « ${team.name} » ?`}
+                                  confirmDescription="Retire aussi tous ses joueurs du bracket."
                                   className="shrink-0 rounded-lg border border-rose-400/20 px-1.5 py-1 text-[10px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                                  title="Supprimer cette équipe"
                                 >
                                   Supprimer l’équipe
-                                </button>
+                                </ConfirmDeleteButton>
                               </form>
                             ) : null}
                           </div>

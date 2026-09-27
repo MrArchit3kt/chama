@@ -18,6 +18,7 @@ import { revokeBadge } from "@/server/admin/revoke-badge";
 import { AdminPlayersRealtime } from "@/components/admin/admin-players-realtime";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 
 function formatDate(value: Date | null) {
   if (!value) return "Jamais";
@@ -869,12 +870,13 @@ export default async function AdminPlayersPage({
 
                           <form action={deletePlayer} className="mt-1.5 md:mt-2">
                             <input type="hidden" name="userId" value={player.id} />
-                            <button
-                              type="submit"
+                            <ConfirmDeleteButton
+                              confirmTitle={`Supprimer le compte de ${player.displayName} ?`}
+                              confirmDescription="Suppression définitive et irréversible. Toutes ses données liées sont effacées."
                               className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
                             >
                               Supprimer le compte
-                            </button>
+                            </ConfirmDeleteButton>
                           </form>
                         </>
                       )}
