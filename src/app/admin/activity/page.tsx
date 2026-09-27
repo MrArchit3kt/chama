@@ -5,6 +5,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { requireSuperAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import type { ActivityAction } from "@/generated/prisma/enums";
+import { distinctMonths, monthLabel, monthRange } from "@/lib/month-filter";
 
 const ACTIVITY_LABELS: Record<string, string> = {
   REGISTRATION_CREATED: "Nouvelle inscription",
@@ -39,6 +40,11 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_CONDITION_DELETED: "Condition de points supprimée",
   SCORE_BOARD_CREATED: "Tableau de points créé",
   SCORE_ENTRY_UPDATED: "Scores saisis",
+  SCORE_TIER_CREATED: "Palier de points créé",
+  SCORE_TIER_DELETED: "Palier de points supprimé",
+  SCORE_TOURNAMENT_CREATED: "Tournoi créé",
+  SCORE_TOURNAMENT_DELETED: "Tournoi supprimé",
+  SCORE_BOARD_TOURNAMENT_SET: "Tableau rattaché à un tournoi",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);
@@ -72,7 +78,7 @@ function formatMetadata(metadata: unknown) {
 export default async function AdminActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ action?: string }>;
+  searchParams: Promise<{ action?: string; month?: string }>;
 }) {
   const superAdmin = await requireSuperAdmin();
 
@@ -82,11 +88,23 @@ export default async function AdminActivityPage({
 
   const sp = (await searchParams) ?? {};
   const actionFilter = (sp.action ?? "").trim();
+  const monthFilter = (sp.month ?? "").trim();
+  const range = monthRange(monthFilter);
 
+  // Léger : sert juste à peupler le sélecteur de mois avec ceux qui ont
+  // réellement des entrées, indépendamment du filtre en cours.
+  const allDates = await db.activityLog.findMany({ select: { createdAt: true } });
+  const availableMonths = distinctMonths(allDates.map((d) => d.createdAt));
+
+  // Un mois choisi borne déjà le volume : pas besoin du plafond de 100
+  // (utile seulement en vue "tout confondu" pour éviter de tout charger).
   const logs = await db.activityLog.findMany({
-    where: isActivityAction(actionFilter) ? { action: actionFilter } : undefined,
+    where: {
+      ...(isActivityAction(actionFilter) ? { action: actionFilter } : {}),
+      ...(range ? { createdAt: { gte: range.start, lt: range.end } } : {}),
+    },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    ...(range ? {} : { take: 100 }),
   });
 
   return (
@@ -101,11 +119,22 @@ export default async function AdminActivityPage({
           </h1>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Tout ce qui se passe sur le site : inscriptions, passages admin,
-            statuts CHAMA/AURA, mix générés, bannissements, badges... Les
-            100 dernières actions, filtrables par type.
+            statuts CHAMA/AURA, mix générés, bannissements, badges... Filtrable
+            par mois et par type d’action ({!range ? "les 100 dernières entrées si aucun mois n’est choisi" : "toutes les entrées du mois choisi"}).
           </p>
 
-          <form method="GET" className="mt-5 grid gap-2 sm:grid-cols-[1fr_auto] sm:max-w-md">
+          <form
+            method="GET"
+            className="mt-5 grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:max-w-xl"
+          >
+            <select name="month" defaultValue={monthFilter} className="w-full px-4 py-2.5 text-sm">
+              <option value="">Tous les mois</option>
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
             <select
               name="action"
               defaultValue={actionFilter}
@@ -128,13 +157,16 @@ export default async function AdminActivityPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
               {actionFilter ? getActivityLabel(actionFilter) : "Toutes les actions"}
+              {monthFilter ? ` · ${monthLabel(monthFilter)}` : ""}
             </p>
             <span className="neon-badge">{logs.length} entrée{logs.length > 1 ? "s" : ""}</span>
           </div>
 
           {logs.length === 0 ? (
             <p className="neon-text-muted mt-4 text-sm">
-              Aucune activité enregistrée pour le moment.
+              {actionFilter || monthFilter
+                ? "Aucune activité ne correspond à ce filtre."
+                : "Aucune activité enregistrée pour le moment."}
             </p>
           ) : (
             <div className="mt-4 grid gap-2.5">
