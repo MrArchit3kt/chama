@@ -6,7 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
-import { generateFirstRound } from "@/lib/bracket";
+import { pairTeams } from "@/lib/bracket";
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -57,13 +57,17 @@ export async function startTournament(formData: FormData) {
         redirect(`${backTo}?error=not_enough_teams`);
       }
 
-      const firstRound = generateFirstRound(tournament.bracketTeams.map((t) => t.name));
+      const firstRound = pairTeams(
+        tournament.bracketTeams.map((t) => t.name),
+        true,
+      );
 
       await db.scoreMatch.createMany({
-        data: firstRound.map((m) => ({
+        data: firstRound.map((m, position) => ({
           tournamentId,
-          round: m.round,
-          position: m.position,
+          bracketType: "WINNERS",
+          round: 1,
+          position,
           teamAName: m.teamAName,
           teamBName: m.teamBName,
           winnerName: m.winnerName,

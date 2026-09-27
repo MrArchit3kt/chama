@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, Skull } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
@@ -20,6 +20,7 @@ import { addBracketTeam } from "@/server/points/add-bracket-team";
 import { removeBracketTeam } from "@/server/points/remove-bracket-team";
 import { setMatchWinner } from "@/server/points/set-match-winner";
 import { advanceBracketRound } from "@/server/points/advance-bracket-round";
+import { groupRounds, getBracketState } from "@/lib/bracket";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
 import {
@@ -51,6 +52,8 @@ function getErrorMessage(error?: string) {
       return "Le tournoi a démarré, la composition des équipes est verrouillée.";
     case "not_enough_teams":
       return "Il faut au moins 2 équipes pour démarrer un bracket.";
+    case "already_final":
+      return "Le tournoi est déjà terminé, il n’y a rien à générer de plus.";
     case "server":
       return "Erreur serveur pendant l’action demandée.";
     default:
@@ -175,6 +178,7 @@ export default async function AdminTournamentDetailPage({
   });
 
   if (!tournament) redirect("/admin/tournaments?error=server");
+  const tournamentId = tournament.id;
 
   const standings = computeTournamentStandings(tournament.boards);
   const duplicateWarnings = findLikelyDuplicateTeamNames(standings);
@@ -185,13 +189,89 @@ export default async function AdminTournamentDetailPage({
     orderBy: { displayName: "asc" },
   });
 
-  const rounds = [...new Set(tournament.matches.map((m) => m.round))].sort((a, b) => a - b);
-  const latestRound = rounds[rounds.length - 1];
-  const latestRoundMatches = tournament.matches.filter((m) => m.round === latestRound);
-  const isChampionDecided = latestRoundMatches.length === 1 && Boolean(latestRoundMatches[0]?.winnerName);
-  const champion = isChampionDecided ? latestRoundMatches[0].winnerName : null;
-  const canAdvanceRound =
-    latestRoundMatches.length > 1 && latestRoundMatches.every((m) => Boolean(m.winnerName));
+  const winnersRounds = groupRounds(tournament.matches, "WINNERS");
+  const losersRounds = groupRounds(tournament.matches, "LOSERS");
+  const grandFinal = tournament.matches.find((m) => m.bracketType === "GRAND_FINAL") ?? null;
+  const { champion, canAdvance, latestWBRound, latestLBRound } = getBracketState(tournament.matches);
+
+  type MatchForRender = {
+    id: string;
+    teamAName: string | null;
+    teamBName: string | null;
+    winnerName: string | null;
+  };
+
+  const accentClasses = {
+    emerald: "border-emerald-400/20 text-emerald-300 hover:border-emerald-400/40 hover:bg-emerald-400/10",
+    rose: "border-rose-400/20 text-rose-300 hover:border-rose-400/40 hover:bg-rose-400/10",
+    amber: "border-amber-400/20 text-amber-300 hover:border-amber-400/40 hover:bg-amber-400/10",
+  } as const;
+  const winnerBgClasses = {
+    emerald: "bg-emerald-400/10 text-emerald-300",
+    rose: "bg-rose-400/10 text-rose-300",
+    amber: "bg-amber-400/10 text-amber-300",
+  } as const;
+
+  function renderMatchCard(
+    match: MatchForRender,
+    canDeclareHere: boolean,
+    accent: "emerald" | "rose" | "amber",
+  ) {
+    return (
+      <div className="rounded-2xl border border-white/8 bg-white/2 p-3">
+        {[match.teamAName, match.teamBName].map((teamName, i) =>
+          teamName ? (
+            <div
+              key={i}
+              className={
+                match.winnerName === teamName
+                  ? `flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm font-bold ${winnerBgClasses[accent]}`
+                  : "flex items-center justify-between gap-2 px-2 py-1.5 text-sm text-white/80"
+              }
+            >
+              <span className="truncate">{teamName}</span>
+              {canDeclareHere && canManage && !match.winnerName && match.teamAName && match.teamBName ? (
+                <form action={setMatchWinner}>
+                  <input type="hidden" name="matchId" value={match.id} />
+                  <input type="hidden" name="tournamentId" value={tournamentId} />
+                  <input type="hidden" name="winnerName" value={teamName} />
+                  <button
+                    type="submit"
+                    className={`shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold transition ${accentClasses[accent]}`}
+                  >
+                    Gagne
+                  </button>
+                </form>
+              ) : null}
+            </div>
+          ) : (
+            <div key={i} className="px-2 py-1.5 text-sm italic text-white/30">
+              (bye)
+            </div>
+          ),
+        )}
+      </div>
+    );
+  }
+
+  function renderRoundColumn(opts: {
+    key: string;
+    label: string;
+    matches: MatchForRender[];
+    isLatestRound: boolean;
+    accent: "emerald" | "rose";
+  }) {
+    return (
+      <div key={opts.key} className="grid content-center gap-2.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
+          {opts.label}
+        </p>
+        {opts.matches.map((match) => (
+          <div key={match.id}>{renderMatchCard(match, opts.isLatestRound, opts.accent)}</div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <SiteShell>
@@ -837,80 +917,79 @@ export default async function AdminTournamentDetailPage({
                 )}
               </div>
             ) : (
-              <div className="neon-card p-5 md:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-bold text-white md:text-2xl">Bracket</h2>
-                  {champion ? (
-                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-sm font-black uppercase tracking-widest text-amber-300">
-                      🏆 Champion : {champion}
-                    </span>
-                  ) : null}
+              <div className="grid gap-4 md:gap-5">
+                <div className="neon-card p-5 md:p-8">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-bold text-white md:text-2xl">Bracket</h2>
+                    {champion ? (
+                      <span className="flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-amber-300">
+                        <Trophy className="h-4 w-4" /> Champion : {champion}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="neon-text-muted mt-2 text-xs">
+                    Double élimination : une défaite dans le bracket Gagnants fait descendre
+                    l’équipe dans le bracket Perdants pour une seconde chance ; une défaite dans
+                    le bracket Perdants élimine définitivement.
+                  </p>
                 </div>
 
-                <div className="mt-4 grid gap-5 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(220px,1fr)]">
-                  {rounds.map((round) => {
-                    const roundMatches = tournament.matches.filter((m) => m.round === round);
-                    const isLatest = round === latestRound;
-
-                    return (
-                      <div key={round} className="grid gap-2.5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                          {roundMatches.length === 1 ? "Finale" : `Tour ${round}`}
-                        </p>
-
-                        {roundMatches.map((match) => {
-                          const isBye = !match.teamAName || !match.teamBName;
-                          const canDeclare = canManage && isLatest && !isBye && !match.winnerName;
-
-                          return (
-                            <div
-                              key={match.id}
-                              className="rounded-2xl border border-white/8 bg-white/2 p-3"
-                            >
-                              {[match.teamAName, match.teamBName].map((teamName, i) =>
-                                teamName ? (
-                                  <div
-                                    key={i}
-                                    className={
-                                      match.winnerName === teamName
-                                        ? "flex items-center justify-between gap-2 rounded-lg bg-emerald-400/10 px-2 py-1.5 text-sm font-bold text-emerald-300"
-                                        : "flex items-center justify-between gap-2 px-2 py-1.5 text-sm text-white/80"
-                                    }
-                                  >
-                                    <span className="truncate">{teamName}</span>
-                                    {canDeclare ? (
-                                      <form action={setMatchWinner}>
-                                        <input type="hidden" name="matchId" value={match.id} />
-                                        <input type="hidden" name="tournamentId" value={tournament.id} />
-                                        <input type="hidden" name="winnerName" value={teamName} />
-                                        <button
-                                          type="submit"
-                                          className="shrink-0 rounded-lg border border-emerald-400/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300/80 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
-                                        >
-                                          Gagne
-                                        </button>
-                                      </form>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <div key={i} className="px-2 py-1.5 text-sm text-white/30 italic">
-                                    (bye)
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
+                <div className="neon-card overflow-hidden p-5 md:p-8">
+                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+                    <Trophy className="h-3.5 w-3.5" /> Bracket Gagnants
+                  </p>
+                  <div className="mt-4 grid gap-6 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(210px,1fr)]">
+                    {winnersRounds.map(({ round, matches }) =>
+                      renderRoundColumn({
+                        key: `wb-${round}`,
+                        label: matches.length === 1 ? "Finale Gagnants" : `Tour ${round}`,
+                        matches,
+                        isLatestRound: round === latestWBRound,
+                        accent: "emerald",
+                      }),
+                    )}
+                  </div>
                 </div>
 
-                {canManage && canAdvanceRound ? (
-                  <form action={advanceBracketRound} className="mt-5">
-                    <input type="hidden" name="tournamentId" value={tournament.id} />
+                {losersRounds.length > 0 ? (
+                  <div className="neon-card overflow-hidden p-5 md:p-8">
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-300">
+                      <Skull className="h-3.5 w-3.5" /> Bracket Perdants
+                    </p>
+                    <div className="mt-4 grid gap-6 overflow-x-auto pb-2 md:grid-flow-col md:auto-cols-[minmax(210px,1fr)]">
+                      {losersRounds.map(({ round, matches }) =>
+                        renderRoundColumn({
+                          key: `lb-${round}`,
+                          label: matches.length === 1 ? "Finale Perdants" : `Tour ${round}`,
+                          matches,
+                          isLatestRound: round === latestLBRound,
+                          accent: "rose",
+                        }),
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {grandFinal ? (
+                  <div className="neon-card border-amber-400/25 p-5 md:p-8">
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-300">
+                      <Trophy className="h-3.5 w-3.5" /> Grande finale
+                    </p>
+                    <div className="mx-auto mt-4 max-w-sm">
+                      {renderMatchCard(grandFinal, true, "amber")}
+                    </div>
+                  </div>
+                ) : null}
+
+                {canManage && canAdvance ? (
+                  <form action={advanceBracketRound}>
+                    <input type="hidden" name="tournamentId" value={tournamentId} />
                     <button type="submit" className="neon-button px-5 py-2.5 text-sm">
-                      Générer le tour suivant
+                      {!grandFinal &&
+                      winnersRounds.at(-1)?.matches.length === 1 &&
+                      losersRounds.at(-1)?.matches.length === 1
+                        ? "Générer la grande finale"
+                        : "Générer le tour suivant"}
                     </button>
                   </form>
                 ) : null}
