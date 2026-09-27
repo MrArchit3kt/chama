@@ -21,8 +21,15 @@ function isNextRedirectError(error: unknown) {
 const createTournamentSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(500).optional(),
+  gameModeIds: z.array(z.string().min(1)).min(1, "Au moins un mode de jeu est requis"),
 });
 
+/**
+ * Un tournoi déclare dès sa création les modes de jeu qu'il regroupe (ex :
+ * Warzone + BO7 + Rocket League) — le site sait ainsi d'avance combien de
+ * parties le composent, et une seule partie par mode pourra y être créée
+ * (contrainte @@unique([tournamentId, gameModeId]) sur ScoreBoard).
+ */
 export async function createTournament(formData: FormData) {
   const admin = await requireAdmin("points");
   if (!admin) redirect("/dashboard");
@@ -36,6 +43,7 @@ export async function createTournament(formData: FormData) {
   const parsed = createTournamentSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     description: rawDescription || undefined,
+    gameModeIds: formData.getAll("gameModeIds").map((v) => String(v)),
   });
 
   if (!parsed.success) {
@@ -43,11 +51,19 @@ export async function createTournament(formData: FormData) {
   }
 
   try {
+    const validModes = await db.scoreGameMode.findMany({
+      where: { id: { in: parsed.data.gameModeIds } },
+      select: { id: true, name: true },
+    });
+
+    if (validModes.length === 0) redirect("/admin/tournaments?error=validation");
+
     const tournament = await db.scoreTournament.create({
       data: {
         name: parsed.data.name,
         description: parsed.data.description ?? null,
         createdById: admin.id,
+        gameModes: { connect: validModes.map((m) => ({ id: m.id })) },
       },
     });
 
@@ -56,6 +72,7 @@ export async function createTournament(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: tournament.name,
+      metadata: { modes: validModes.map((m) => m.name) },
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

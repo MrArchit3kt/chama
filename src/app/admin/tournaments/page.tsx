@@ -56,9 +56,16 @@ export default async function AdminTournamentsPage({
   const isSuccess = sp.success === "1";
   const isDeleted = sp.deleted === "1";
 
+  const activeGameModes = await db.scoreGameMode.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true },
+  });
+
   const tournaments = await db.scoreTournament.findMany({
     orderBy: { createdAt: "desc" },
     include: {
+      gameModes: { select: { id: true, name: true } },
       boards: {
         orderBy: { createdAt: "asc" },
         include: {
@@ -87,13 +94,13 @@ export default async function AdminTournamentsPage({
             Tournois multi-parties
           </h1>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
-            Regroupe plusieurs tableaux (même mode de jeu ou modes
-            différents, ex : 3 parties dans une soirée) pour cumuler les
-            points par équipe et désigner un vainqueur final. Rattache un
-            tableau à un tournoi depuis la page « Nouveau tableau » d’un
-            mode de jeu, en choisissant le tournoi dans la liste déroulante
-            — les équipes sont reconnues d’une partie à l’autre par leur
-            nom, donc garde le même nom d’équipe sur chaque tableau.
+            Choisis les modes de jeu qui composent le tournoi (ex : Warzone +
+            BO7 + Rocket League) — le site sait alors d’avance combien de
+            parties il y a et pour quels modes, une seule partie par mode.
+            Une fois créé, ouvre le tournoi pour lancer chaque partie et
+            suivre le classement combiné. Les équipes sont reconnues d’une
+            partie à l’autre par leur nom, donc garde le même nom d’équipe
+            sur chaque partie.
           </p>
         </div>
 
@@ -144,6 +151,29 @@ export default async function AdminTournamentsPage({
               </div>
 
               <div>
+                <label className="mb-2 block text-sm font-semibold text-white">
+                  Modes de jeu du tournoi (une partie sera créée pour chacun)
+                </label>
+                {activeGameModes.length === 0 ? (
+                  <p className="neon-text-muted text-sm">
+                    Aucun mode de jeu actif — crée-en un d’abord ci-dessous.
+                  </p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                    {activeGameModes.map((mode) => (
+                      <label
+                        key={mode.id}
+                        className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-sm text-white/80"
+                      >
+                        <input type="checkbox" name="gameModeIds" value={mode.id} className="h-4 w-4" />
+                        {mode.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
                 <button type="submit" className="neon-button px-5 py-2.5">
                   Créer le tournoi
                 </button>
@@ -175,6 +205,12 @@ export default async function AdminTournamentsPage({
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/tournaments/${tournament.id}`}
+                        className="neon-button px-3 py-1.5 text-xs"
+                      >
+                        Gérer les parties
+                      </Link>
                       {tournament.boards.length > 0 ? (
                         <a
                           href={`/admin/tournaments/export?id=${tournament.id}`}
@@ -216,28 +252,32 @@ export default async function AdminTournamentsPage({
 
                   <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.02] p-4 md:p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                      Parties liées ({tournament.boards.length})
+                      Parties ({tournament.boards.length}/{tournament.gameModes.length} modes joués)
                     </p>
 
-                    {tournament.boards.length === 0 ? (
-                      <p className="neon-text-muted mt-2 text-sm">
-                        Aucune partie liée. Depuis la page d’un mode de jeu, crée un tableau et
-                        sélectionne ce tournoi.
-                      </p>
-                    ) : (
-                      <div className="mt-2.5 flex flex-wrap gap-2">
-                        {tournament.boards.map((board) => (
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {tournament.gameModes.map((mode) => {
+                        const board = tournament.boards.find((b) => b.gameModeId === mode.id);
+
+                        return board ? (
                           <Link
-                            key={board.id}
-                            href={`/admin/points/${board.gameMode.id}?board=${board.id}`}
+                            key={mode.id}
+                            href={`/admin/points/${mode.id}?board=${board.id}`}
                             className="neon-badge text-[11px] hover:border-cyan-400/40"
                           >
-                            {board.gameMode.name}
+                            {mode.name}
                             {board.title ? ` — ${board.title}` : ` (${formatDate(board.createdAt)})`}
                           </Link>
-                        ))}
-                      </div>
-                    )}
+                        ) : (
+                          <span
+                            key={mode.id}
+                            className="rounded-full border border-dashed border-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white/40"
+                          >
+                            {mode.name} — pas encore jouée
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {standings.length > 0 ? (

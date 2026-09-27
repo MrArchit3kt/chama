@@ -922,8 +922,9 @@ model ScoreGameMode {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  conditions ScoreCondition[]
-  boards     ScoreBoard[]
+  conditions  ScoreCondition[]
+  boards      ScoreBoard[]
+  tournaments ScoreTournament[] @relation("ScoreTournamentGameModes")
 
   @@index([isActive])
 }
@@ -972,6 +973,10 @@ model ScoreBoard {
   tournament ScoreTournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   teams      ScoreTeam[]
 
+  // Une seule partie par mode dans un même tournoi (les tableaux hors
+  // tournoi, tournamentId = NULL, ne sont pas concernés par la contrainte :
+  // Postgres traite chaque NULL comme distinct).
+  @@unique([tournamentId, gameModeId])
   @@index([gameModeId, createdAt])
   @@index([tournamentId])
 }
@@ -992,8 +997,12 @@ model ScoreTournament {
   createdAt   DateTime @default(now())
   createdById String?
 
-  createdBy User?        @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  boards    ScoreBoard[]
+  createdBy User?            @relation("ScoreTournamentsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  // Modes de jeu retenus pour ce tournoi (choisis à la création) : le
+  // site sait ainsi d'avance combien de parties composent le tournoi et
+  // pour quels modes, sans attendre que des tableaux soient créés.
+  gameModes   ScoreGameMode[] @relation("ScoreTournamentGameModes")
+  boards      ScoreBoard[]
 
   @@index([createdAt])
 }
