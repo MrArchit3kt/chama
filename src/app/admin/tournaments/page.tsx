@@ -15,6 +15,10 @@ function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(value);
 }
 
+function formatDateTime(value: Date) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(value);
+}
+
 function getErrorMessage(error?: string) {
   switch (error) {
     case "forbidden":
@@ -96,6 +100,7 @@ export default async function AdminTournamentsPage({
       },
       bracketTeams: { select: { id: true } },
       matches: { orderBy: { round: "desc" }, select: { round: true, winnerName: true } },
+      _count: { select: { interests: true } },
     },
   });
 
@@ -165,6 +170,16 @@ export default async function AdminTournamentsPage({
                   placeholder="Ex : 3 manches — Warzone, BO7, Rocket League."
                   className="w-full px-4 py-3"
                 />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-white">
+                  Date prévue (optionnel)
+                </label>
+                <input name="scheduledAt" type="datetime-local" className="w-full px-4 py-3" />
+                <p className="neon-text-muted mt-1.5 text-xs">
+                  Affichée aux joueurs sur /points — utile pour le sondage de participation.
+                </p>
               </div>
 
               <div>
@@ -321,6 +336,17 @@ export default async function AdminTournamentsPage({
                         {tournament.startedAt ? (
                           <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-300">
                             Démarré
+                          </span>
+                        ) : null}
+                        {tournament.scheduledAt ? (
+                          <span className="neon-badge text-[10px]">
+                            Prévu le {formatDateTime(tournament.scheduledAt)}
+                          </span>
+                        ) : null}
+                        {tournament._count.interests > 0 ? (
+                          <span className="neon-badge text-[10px]">
+                            🙋 {tournament._count.interests} intéressé
+                            {tournament._count.interests > 1 ? "s" : ""}
                           </span>
                         ) : null}
                       </div>

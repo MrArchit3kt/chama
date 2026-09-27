@@ -24,6 +24,7 @@ export async function leaveScoreTeam(formData: FormData) {
 
   const tournamentId = String(formData.get("tournamentId") ?? "").trim();
   if (!tournamentId) redirect("/points?error=validation");
+  const backTo = `/points/${tournamentId}`;
 
   try {
     const tournament = await db.scoreTournament.findUnique({
@@ -32,9 +33,9 @@ export async function leaveScoreTeam(formData: FormData) {
     });
 
     if (!tournament || tournament.teamMode !== "SELF_JOIN") {
-      redirect("/points?error=forbidden");
+      redirect(`${backTo}?error=forbidden`);
     }
-    if (tournament.startedAt) redirect("/points?error=locked");
+    if (tournament.startedAt) redirect(`${backTo}?error=locked`);
 
     await db.scoreTeamMember.deleteMany({
       where: { userId: user.id, team: { board: { tournamentId } } },
@@ -49,8 +50,8 @@ export async function leaveScoreTeam(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("LEAVE_SCORE_TEAM_ERROR", error);
-    redirect("/points?error=server");
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect("/points?left=1");
+  redirect(`${backTo}?left=1`);
 }
