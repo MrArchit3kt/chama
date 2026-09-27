@@ -10,21 +10,22 @@ const conditionForScoringSelect = {
   tiers: { select: { minValue: true, maxValue: true, points: true } },
 } as const;
 
-export async function GET(request: Request, { params }: { params: Promise<{ modeId: string }> }) {
+/** Export CSV du détail d'une partie (tableau) — utilisé depuis
+ * /admin/tournaments/[id], qui gère désormais toute la saisie des scores. */
+export async function GET(request: Request) {
   const admin = await requireAdmin("points");
   if (!admin) return new Response("Forbidden", { status: 403 });
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const { modeId } = await params;
   const boardId = new URL(request.url).searchParams.get("board");
   if (!boardId) return new Response("Missing board", { status: 400 });
 
   const board = await db.scoreBoard.findUnique({
     where: { id: boardId },
     include: {
-      gameMode: { select: { id: true, name: true } },
+      gameMode: { select: { name: true } },
       teams: {
         include: {
           entries: { include: { condition: { select: conditionForScoringSelect } } },
@@ -39,9 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ mode
     },
   });
 
-  if (!board || board.gameModeId !== modeId) {
-    return new Response("Not found", { status: 404 });
-  }
+  if (!board) return new Response("Not found", { status: 404 });
 
   const rows: (string | number)[][] = [["Équipe", "Joueur", "Points individuels", "Points d’équipe", "Total"]];
 

@@ -86,11 +86,11 @@ export default async function AdminPointsPage({
             </Link>
           </div>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
-            Crée un mode de jeu, définis ses conditions (qui rapportent des
-            points à l’équipe ou à un joueur précis), puis va sur sa page
-            pour créer des tableaux et saisir les scores. Pour cumuler
-            plusieurs parties (même sur des modes différents) et désigner
-            une équipe gagnante finale, utilise la section « Tournois ».
+            Crée un mode de jeu et définis ses conditions (qui rapportent des
+            points à l’équipe ou à un joueur précis). Cette page ne sert qu’à
+            ça — pour lancer une partie, créer des équipes et saisir les
+            scores (même pour une session ponctuelle sur un seul mode), va
+            dans « Gérer les tournois ».
           </p>
         </div>
 
@@ -188,13 +188,6 @@ export default async function AdminPointsPage({
                   </div>
 
                   <div className="flex flex-wrap gap-2.5">
-                    <Link
-                      href={`/admin/points/${gameMode.id}`}
-                      className="neon-button px-4 py-2.5 text-sm"
-                    >
-                      Gérer les tableaux
-                    </Link>
-
                     {canConfig ? (
                       <form action={toggleGameMode}>
                         <input type="hidden" name="id" value={gameMode.id} />

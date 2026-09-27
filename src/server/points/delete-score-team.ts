@@ -24,15 +24,17 @@ export async function deleteScoreTeam(formData: FormData) {
   const gameModeId = String(formData.get("gameModeId") ?? "").trim();
   const boardId = String(formData.get("boardId") ?? "").trim();
   const teamId = String(formData.get("teamId") ?? "").trim();
+  const tournamentId = String(formData.get("tournamentId") ?? "").trim();
 
-  const backTo = `/admin/points/${gameModeId}?board=${boardId}`;
+  if (!tournamentId) redirect("/admin/tournaments?error=validation");
+  const backTo = `/admin/tournaments/${tournamentId}`;
 
   if (!hasAdminPermission(admin.role, admin.adminPermissions, "points.board")) {
-    redirect(`${backTo}&error=forbidden`);
+    redirect(`${backTo}?error=forbidden`);
   }
 
   if (!gameModeId || !boardId || !teamId) {
-    redirect(`${backTo}&error=validation`);
+    redirect(`${backTo}?error=validation`);
   }
 
   try {
@@ -42,7 +44,7 @@ export async function deleteScoreTeam(formData: FormData) {
     });
 
     if (!team || team.board.gameModeId !== gameModeId || team.board.id !== boardId) {
-      redirect(`${backTo}&error=server`);
+      redirect(`${backTo}?error=server`);
     }
 
     // onDelete: Cascade sur ScoreTeamMember/ScoreEntry => les scores de
@@ -58,8 +60,8 @@ export async function deleteScoreTeam(formData: FormData) {
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     await logServerError("DELETE_SCORE_TEAM_ERROR", error);
-    redirect(`${backTo}&error=server`);
+    redirect(`${backTo}?error=server`);
   }
 
-  redirect(`${backTo}&success=1`);
+  redirect(`${backTo}?success=1`);
 }

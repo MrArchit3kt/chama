@@ -102,11 +102,12 @@ export default async function AdminTournamentsPage({
             Tournois multi-parties
           </h1>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
-            Choisis les modes de jeu qui composent le tournoi (ex : Warzone +
-            BO7 + Rocket League) — le site sait alors d’avance combien de
-            parties il y a et pour quels modes, une seule partie par mode.
-            Une fois créé, ouvre le tournoi pour lancer chaque partie et
-            suivre le classement combiné. Les équipes sont reconnues d’une
+            C’est ici que tout se passe pour lancer une session de jeu —
+            même une seule partie ponctuelle sur un seul mode. Choisis le ou
+            les modes de jeu concernés (ex : Warzone + BO7 + Rocket League),
+            comment les équipes se composent, puis ouvre le tournoi pour
+            créer chaque partie, gérer les équipes et saisir les scores.
+            Une seule partie par mode ; les équipes sont reconnues d’une
             partie à l’autre par leur nom, donc garde le même nom d’équipe
             sur chaque partie.
           </p>
@@ -343,7 +344,7 @@ export default async function AdminTournamentsPage({
                         return board ? (
                           <Link
                             key={mode.id}
-                            href={`/admin/points/${mode.id}?board=${board.id}`}
+                            href={`/admin/tournaments/${tournament.id}`}
                             className="neon-badge text-[11px] hover:border-cyan-400/40"
                           >
                             {mode.name}
