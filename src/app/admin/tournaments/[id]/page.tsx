@@ -16,7 +16,6 @@ import { finishBoard } from "@/server/points/finish-board";
 import { reopenBoard } from "@/server/points/reopen-board";
 import { deleteTournament } from "@/server/points/delete-tournament";
 import { startTournament } from "@/server/points/start-tournament";
-import { generateRandomTeams } from "@/server/points/generate-random-teams";
 import { addBracketTeam } from "@/server/points/add-bracket-team";
 import { removeBracketTeam } from "@/server/points/remove-bracket-team";
 import { addBracketTeamMember } from "@/server/points/add-bracket-team-member";
@@ -24,6 +23,7 @@ import { removeBracketTeamMember } from "@/server/points/remove-bracket-team-mem
 import { setMatchWinner } from "@/server/points/set-match-winner";
 import { advanceBracketRound } from "@/server/points/advance-bracket-round";
 import { TeamRosterManager } from "@/components/admin/team-roster-manager";
+import { RandomDrawForm } from "@/components/admin/random-draw-form";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
 import { groupRounds, getBracketState } from "@/lib/bracket";
 import { hasAdminPermission } from "@/lib/admin-permissions";
@@ -442,86 +442,16 @@ export default async function AdminTournamentDetailPage({
               reprise automatiquement sur les autres parties déjà créées.
             </p>
 
-            <form action={generateRandomTeams} className="mt-4 grid gap-4">
-              <input type="hidden" name="tournamentId" value={tournament.id} />
-
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-white/70">
-                    Nombre d’équipes
-                  </label>
-                  <input
-                    name="teamCount"
-                    type="number"
-                    min={2}
-                    max={20}
-                    required
-                    defaultValue={tournament.teamCount ?? undefined}
-                    className="w-full px-3 py-2.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-white/70">
-                    Joueurs max par équipe (optionnel)
-                  </label>
-                  <input
-                    name="maxMembersPerTeam"
-                    type="number"
-                    min={1}
-                    max={50}
-                    defaultValue={tournament.maxMembersPerTeam ?? undefined}
-                    className="w-full px-3 py-2.5 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
-                  Joueurs inscrits à inclure dans le tirage
-                </label>
-                <p className="neon-text-muted mb-2 text-xs">
-                  Les joueurs ayant répondu « Je participe » au sondage sur /points sont
-                  pré-cochés et remontés en tête de liste.
-                </p>
-                {eligibleUsersForDraw.length === 0 ? (
-                  <p className="neon-text-muted text-sm">Aucun joueur éligible.</p>
-                ) : (
-                  <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-2xl border border-white/8 bg-white/2 p-3 sm:grid-cols-2 md:grid-cols-3">
-                    {eligibleUsersForDraw.map((u) => (
-                      <label key={u.id} className="flex items-center gap-2 text-sm text-white/80">
-                        <input
-                          type="checkbox"
-                          name="userIds"
-                          value={u.id}
-                          defaultChecked={interestedIds.has(u.id)}
-                          className="h-4 w-4"
-                        />
-                        {u.displayName}
-                        {interestedIds.has(u.id) ? <span className="text-cyan-300">🙋</span> : null}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
-                  Joueurs invités à inclure (optionnel, un nom par ligne)
-                </label>
-                <textarea
-                  name="guestNames"
-                  rows={3}
-                  placeholder={"Kevin\nSarah\n..."}
-                  className="w-full px-4 py-3"
-                />
-              </div>
-
-              <div>
-                <button type="submit" className="neon-button px-5 py-2.5">
-                  Générer les équipes
-                </button>
-              </div>
-            </form>
+            <RandomDrawForm
+              tournamentId={tournament.id}
+              initialTeamCount={tournament.teamCount ?? 2}
+              initialMaxMembersPerTeam={tournament.maxMembersPerTeam}
+              users={eligibleUsersForDraw.map((u) => ({
+                id: u.id,
+                displayName: u.displayName,
+                interested: interestedIds.has(u.id),
+              }))}
+            />
           </div>
         ) : null}
 
