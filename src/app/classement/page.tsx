@@ -4,9 +4,7 @@ import { redirect } from "next/navigation";
 import { Trophy, Medal, Crosshair } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
-import { db } from "@/lib/prisma";
-
-const MIN_GAMES = 3;
+import { computeRanking, CLASSEMENT_MIN_GAMES } from "@/lib/classement";
 
 function medalColor(rank: number) {
   if (rank === 0) return "text-amber-300";
@@ -15,85 +13,19 @@ function medalColor(rank: number) {
   return "text-white/30";
 }
 
+function monthLabel(date: Date) {
+  const label = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export default async function ClassementPage() {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
 
-  const [wins, losses, kdStats] = await Promise.all([
-    db.teamMember.groupBy({
-      by: ["userId"],
-      where: { userId: { not: null }, team: { result: "WIN" } },
-      _count: { _all: true },
-    }),
-    db.teamMember.groupBy({
-      by: ["userId"],
-      where: { userId: { not: null }, team: { result: "LOSS" } },
-      _count: { _all: true },
-    }),
-    db.teamMember.groupBy({
-      by: ["userId"],
-      where: {
-        userId: { not: null },
-        OR: [{ kills: { not: null } }, { deaths: { not: null } }],
-      },
-      _sum: { kills: true, deaths: true },
-      _count: { _all: true },
-    }),
-  ]);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const byUser = new Map<string, { wins: number; losses: number }>();
-
-  for (const row of wins) {
-    if (!row.userId) continue;
-    byUser.set(row.userId, { wins: row._count._all, losses: 0 });
-  }
-  for (const row of losses) {
-    if (!row.userId) continue;
-    const current = byUser.get(row.userId) ?? { wins: 0, losses: 0 };
-    current.losses = row._count._all;
-    byUser.set(row.userId, current);
-  }
-
-  const userIds = [...byUser.keys()];
-  const kdUserIds = kdStats.filter((r) => r.userId).map((r) => r.userId!);
-
-  const allUserIds = [...new Set([...userIds, ...kdUserIds])];
-
-  const users = allUserIds.length
-    ? await db.user.findMany({
-        where: { id: { in: allUserIds } },
-        select: { id: true, displayName: true, username: true },
-      })
-    : [];
-
-  const userById = new Map(users.map((u) => [u.id, u]));
-
-  const ranking = userIds
-    .map((id) => {
-      const stats = byUser.get(id)!;
-      const games = stats.wins + stats.losses;
-      const rate = games > 0 ? Math.round((stats.wins / games) * 100) : 0;
-      return { user: userById.get(id), ...stats, games, rate };
-    })
-    .filter((row) => row.user && row.games >= MIN_GAMES)
-    .sort((a, b) => b.rate - a.rate || b.games - a.games);
-
-  const kdRanking = kdStats
-    .filter((row) => row.userId && row._count._all >= MIN_GAMES)
-    .map((row) => {
-      const kills = row._sum.kills ?? 0;
-      const deaths = row._sum.deaths ?? 0;
-      const ratio = deaths > 0 ? kills / deaths : kills;
-      return {
-        user: userById.get(row.userId!),
-        kills,
-        deaths,
-        games: row._count._all,
-        ratio: Math.round(ratio * 100) / 100,
-      };
-    })
-    .filter((row) => row.user)
-    .sort((a, b) => b.ratio - a.ratio || b.kills - a.kills);
+  const { winRateRanking: ranking, kdRanking } = await computeRanking({ gte: monthStart });
 
   return (
     <SiteShell>
@@ -102,7 +34,7 @@ export default async function ClassementPage() {
           <div className="flex items-center gap-2">
             <Trophy className="h-4 w-4 text-amber-300" />
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/75">
-              Classement
+              Classement · {monthLabel(now)}
             </p>
           </div>
           <h1 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
@@ -111,8 +43,13 @@ export default async function ClassementPage() {
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Basé sur les résultats et les stats que les joueurs renseignent
             eux-mêmes après chaque partie, tous jeux confondus. Il faut au
-            moins {MIN_GAMES} matchs renseignés pour apparaître dans un
-            classement.
+            moins {CLASSEMENT_MIN_GAMES} matchs renseignés pour apparaître
+            dans un classement.
+          </p>
+          <p className="neon-text-muted mt-2 max-w-3xl text-xs leading-5">
+            🔄 Remis à zéro le 1er de chaque mois — le classement final du
+            mois précédent reste consultable par les admins dans le journal
+            d’activité.
           </p>
         </div>
 
@@ -124,8 +61,8 @@ export default async function ClassementPage() {
         {ranking.length === 0 ? (
           <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
-              Pas encore assez de résultats renseignés pour établir un
-              classement.
+              Pas encore assez de résultats renseignés ce mois-ci pour établir
+              un classement.
             </p>
           </div>
         ) : (
@@ -144,10 +81,10 @@ export default async function ClassementPage() {
                 </thead>
                 <tbody>
                   {ranking.map((row, idx) => {
-                    const isSelf = row.user!.id === sessionUser.id;
+                    const isSelf = row.userId === sessionUser.id;
                     return (
                       <tr
-                        key={row.user!.id}
+                        key={row.userId}
                         className={
                           isSelf
                             ? "border-b border-white/5 bg-cyan-400/6"
@@ -164,12 +101,12 @@ export default async function ClassementPage() {
                         </td>
                         <td className="px-4 py-3">
                           <p className="truncate font-semibold text-white">
-                            {row.user!.displayName}
+                            {row.displayName}
                             {isSelf ? (
                               <span className="ml-1.5 neon-badge text-[9px]">TOI</span>
                             ) : null}
                           </p>
-                          <p className="neon-text-muted truncate text-xs">@{row.user!.username}</p>
+                          <p className="neon-text-muted truncate text-xs">@{row.username}</p>
                         </td>
                         <td className="px-4 py-3 text-center font-semibold text-emerald-300">
                           {row.wins}
@@ -198,7 +135,7 @@ export default async function ClassementPage() {
         {kdRanking.length === 0 ? (
           <div className="neon-card p-5 md:p-8">
             <p className="neon-text-muted text-sm">
-              Pas encore assez de stats renseignées pour établir un
+              Pas encore assez de stats renseignées ce mois-ci pour établir un
               classement K/D.
             </p>
           </div>
@@ -218,10 +155,10 @@ export default async function ClassementPage() {
                 </thead>
                 <tbody>
                   {kdRanking.map((row, idx) => {
-                    const isSelf = row.user!.id === sessionUser.id;
+                    const isSelf = row.userId === sessionUser.id;
                     return (
                       <tr
-                        key={row.user!.id}
+                        key={row.userId}
                         className={
                           isSelf
                             ? "border-b border-white/5 bg-cyan-400/6"
@@ -238,12 +175,12 @@ export default async function ClassementPage() {
                         </td>
                         <td className="px-4 py-3">
                           <p className="truncate font-semibold text-white">
-                            {row.user!.displayName}
+                            {row.displayName}
                             {isSelf ? (
                               <span className="ml-1.5 neon-badge text-[9px]">TOI</span>
                             ) : null}
                           </p>
-                          <p className="neon-text-muted truncate text-xs">@{row.user!.username}</p>
+                          <p className="neon-text-muted truncate text-xs">@{row.username}</p>
                         </td>
                         <td className="px-4 py-3 text-center font-semibold text-emerald-300">
                           {row.kills}
