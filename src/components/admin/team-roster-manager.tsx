@@ -34,8 +34,16 @@ export function TeamRosterManager({
   eligibleUsers,
 }: TeamRosterManagerProps) {
   const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  const [memberId, setMemberId] = useState("");
 
   const selectedTeam = useMemo(() => teams.find((t) => t.id === teamId), [teams, teamId]);
+
+  function handleTeamChange(nextTeamId: string) {
+    setTeamId(nextTeamId);
+    // Le joueur à remplacer sélectionné n'existe plus forcément dans la
+    // nouvelle équipe choisie — repart sur "Ajouter" par défaut.
+    setMemberId("");
+  }
 
   if (teams.length === 0) return null;
 
@@ -51,7 +59,7 @@ export function TeamRosterManager({
       <select
         name="teamId"
         value={teamId}
-        onChange={(e) => setTeamId(e.target.value)}
+        onChange={(e) => handleTeamChange(e.target.value)}
         className="w-full px-3 py-2.5 text-sm"
       >
         {teams.map((t) => (
@@ -61,7 +69,12 @@ export function TeamRosterManager({
         ))}
       </select>
 
-      <select key={teamId} name="memberId" defaultValue="" className="w-full px-3 py-2.5 text-sm">
+      <select
+        name="memberId"
+        value={memberId}
+        onChange={(e) => setMemberId(e.target.value)}
+        className="w-full px-3 py-2.5 text-sm"
+      >
         <option value="">+ Ajouter un nouveau joueur</option>
         {selectedTeam?.members.map((m) => (
           <option key={m.id} value={m.id}>
@@ -87,7 +100,7 @@ export function TeamRosterManager({
       />
 
       <button type="submit" className="neon-button-secondary col-span-2 px-4 py-2.5 text-sm sm:col-span-1">
-        Enregistrer
+        {memberId ? "Remplacer" : "Ajouter"}
       </button>
     </form>
   );
