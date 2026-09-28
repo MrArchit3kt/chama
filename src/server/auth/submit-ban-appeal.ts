@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { getSessionUser } from "@/server/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { logServerError } from "@/lib/log-error";
+import { sendPushToUsers } from "@/lib/push";
 
 const BAN_APPEAL_SUBJECT = "Contestation de bannissement";
 
@@ -64,6 +65,8 @@ export async function submitBanAppeal(formData: FormData) {
     });
 
     if (admins.length > 0) {
+      const message = `${user.name} conteste son bannissement, va voir sa demande dans Contact.`;
+
       await db.notification.createMany({
         data: admins.map((admin) => ({
           userId: admin.id,
@@ -71,9 +74,14 @@ export async function submitBanAppeal(formData: FormData) {
           channel: "IN_APP",
           status: "PENDING",
           title: "Contestation de bannissement",
-          message: `${user.name} conteste son bannissement, va voir sa demande dans Contact.`,
+          message,
         })),
       });
+
+      await sendPushToUsers(
+        admins.map((admin) => admin.id),
+        { title: "Contestation de bannissement", body: message, url: "/admin/contact" },
+      );
     }
   } catch (error) {
     if (isNextRedirectError(error)) throw error;

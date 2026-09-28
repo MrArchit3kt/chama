@@ -6,6 +6,7 @@ import { requireAuth } from "@/server/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { ContactRequestType } from "@/generated/prisma/enums";
 import { logServerError } from "@/lib/log-error";
+import { sendPushToUsers } from "@/lib/push";
 
 const CONTACT_REQUEST_TYPES = new Set<string>(Object.values(ContactRequestType));
 
@@ -51,6 +52,8 @@ export async function createContactRequest(formData: FormData) {
     });
 
     if (admins.length > 0) {
+      const message = `${user.name ?? "Un utilisateur"} a envoyé une demande : ${subject}`;
+
       await db.notification.createMany({
         data: admins.map((admin) => ({
           userId: admin.id,
@@ -58,9 +61,14 @@ export async function createContactRequest(formData: FormData) {
           channel: "IN_APP",
           status: "PENDING",
           title: "Nouvelle demande de contact",
-          message: `${user.name ?? "Un utilisateur"} a envoyé une demande : ${subject}`,
+          message,
         })),
       });
+
+      await sendPushToUsers(
+        admins.map((admin) => admin.id),
+        { title: "Nouvelle demande de contact", body: message, url: "/admin/contact" },
+      );
     }
   } catch (error) {
     await logServerError("CREATE_CONTACT_REQUEST_ERROR", error);
