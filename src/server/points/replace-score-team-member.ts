@@ -52,20 +52,47 @@ export async function replaceScoreTeamMember(formData: FormData) {
       where: { id: teamId },
       select: {
         id: true,
-        board: { select: { gameModeId: true, finishedAt: true } },
-        members: { select: { id: true, userId: true } },
+        board: {
+          select: {
+            gameModeId: true,
+            finishedAt: true,
+            teams: { select: { id: true, members: { select: { id: true, userId: true } } } },
+          },
+        },
       },
     });
 
     if (!team || team.board.gameModeId !== gameModeId) redirect(`${backTo}?error=server`);
     if (team.board.finishedAt) redirect(`${backTo}?error=board_finished`);
 
-    if (memberId && !team.members.some((m) => m.id === memberId)) {
+    const targetTeamMembers = team.board.teams.find((t) => t.id === teamId)?.members ?? [];
+
+    if (memberId && !targetTeamMembers.some((m) => m.id === memberId)) {
       redirect(`${backTo}?error=server`);
     }
 
-    if (userId && team.members.some((m) => m.userId === userId && m.id !== memberId)) {
-      redirect(`${backTo}?error=already_in_team`);
+    // Un joueur ne peut être que dans une seule équipe à la fois sur une
+    // même partie — vérifié sur TOUTES les équipes du tableau, pas
+    // seulement celle ciblée (sinon rien n'empêchait de l'ajouter deux
+    // fois ailleurs).
+    if (userId) {
+      const alreadyElsewhere = team.board.teams.some((t) =>
+        t.members.some((m) => m.userId === userId && m.id !== memberId),
+      );
+      if (alreadyElsewhere) redirect(`${backTo}?error=already_in_team`);
+    }
+
+    // Capacité max par équipe : ne s'applique qu'à un vrai ajout (le
+    // nombre de membres ne change pas lors d'un remplacement memberId).
+    if (!memberId) {
+      const tournament = await db.scoreTournament.findUnique({
+        where: { id: tournamentId },
+        select: { maxMembersPerTeam: true },
+      });
+
+      if (tournament?.maxMembersPerTeam && targetTeamMembers.length >= tournament.maxMembersPerTeam) {
+        redirect(`${backTo}?error=team_full`);
+      }
     }
 
     let newPlayerLabel = guestName;

@@ -25,6 +25,7 @@ import { advanceBracketRound } from "@/server/points/advance-bracket-round";
 import { TeamRosterManager } from "@/components/admin/team-roster-manager";
 import { RandomDrawForm } from "@/components/admin/random-draw-form";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
+import { MoreActions } from "@/components/ui/more-actions";
 import { groupRounds, getBracketState } from "@/lib/bracket";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 import { computeEntryPoints, type ConditionForScoring } from "@/lib/scoring";
@@ -44,7 +45,7 @@ function getErrorMessage(error?: string) {
     case "validation":
       return "Formulaire invalide. Vérifie les champs.";
     case "already_in_team":
-      return "Ce joueur est déjà dans cette équipe.";
+      return "Ce joueur est déjà dans une équipe de cette partie — retire-le d’abord de l’autre équipe.";
     case "mode_not_in_tournament":
       return "Ce mode de jeu ne fait pas partie de ce tournoi.";
     case "mode_already_used":
@@ -350,16 +351,19 @@ export default async function AdminTournamentDetailPage({
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {canManage && !tournament.startedAt ? (
+          {canManage && !tournament.startedAt ? (
+            <div className="mt-4 flex flex-wrap gap-2">
               <form action={startTournament}>
                 <input type="hidden" name="tournamentId" value={tournament.id} />
                 <button type="submit" className="neon-button px-4 py-2 text-sm">
                   Démarrer le tournoi
                 </button>
               </form>
-            ) : null}
-            {canManage ? (
+            </div>
+          ) : null}
+
+          {canManage ? (
+            <MoreActions>
               <form action={deleteTournament}>
                 <input type="hidden" name="id" value={tournament.id} />
                 <ConfirmDeleteButton
@@ -370,8 +374,8 @@ export default async function AdminTournamentDetailPage({
                   Supprimer le tournoi
                 </ConfirmDeleteButton>
               </form>
-            ) : null}
-          </div>
+            </MoreActions>
+          ) : null}
 
           {canManage && !tournament.startedAt && tournament.format === "CLASSIC" && tournament.teamMode !== "MANUAL" ? (
             <p className="neon-text-muted mt-3 text-xs">
@@ -490,7 +494,7 @@ export default async function AdminTournamentDetailPage({
                       pour débloquer celle-ci.
                     </p>
                   ) : canManage ? (
-                    <form action={createBoard} className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <form action={createBoard} className="mt-4 grid grid-cols-[1fr_auto] gap-2">
                       <input type="hidden" name="gameModeId" value={mode.id} />
                       <input type="hidden" name="tournamentId" value={tournament.id} />
                       <input
@@ -533,13 +537,7 @@ export default async function AdminTournamentDetailPage({
                       {board.title || `Partie du ${formatDate(board.createdAt)}`}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={`/admin/tournaments/board-export?board=${board.id}`}
-                      className="neon-badge text-[11px] hover:border-cyan-400/40"
-                    >
-                      Exporter CSV
-                    </a>
+                  <div className="flex flex-wrap items-center gap-2">
                     {canManage && !isFinished ? (
                       <form action={finishBoard}>
                         <input type="hidden" name="boardId" value={board.id} />
@@ -562,22 +560,31 @@ export default async function AdminTournamentDetailPage({
                         </button>
                       </form>
                     ) : null}
-                    {canManage ? (
-                      <form action={deleteBoard}>
-                        <input type="hidden" name="gameModeId" value={mode.id} />
-                        <input type="hidden" name="boardId" value={board.id} />
-                        <input type="hidden" name="tournamentId" value={tournament.id} />
-                        <ConfirmDeleteButton
-                          confirmTitle={`Supprimer la partie « ${mode.name} » ?`}
-                          confirmDescription="Supprime aussi toutes les équipes et tous les scores de cette partie."
-                          className="rounded-lg border border-rose-400/20 px-2.5 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
-                        >
-                          Supprimer cette partie
-                        </ConfirmDeleteButton>
-                      </form>
-                    ) : null}
                   </div>
                 </div>
+
+                <MoreActions>
+                  <a
+                    href={`/admin/tournaments/board-export?board=${board.id}`}
+                    className="neon-badge text-[11px] hover:border-cyan-400/40"
+                  >
+                    Exporter CSV
+                  </a>
+                  {canManage ? (
+                    <form action={deleteBoard}>
+                      <input type="hidden" name="gameModeId" value={mode.id} />
+                      <input type="hidden" name="boardId" value={board.id} />
+                      <input type="hidden" name="tournamentId" value={tournament.id} />
+                      <ConfirmDeleteButton
+                        confirmTitle={`Supprimer la partie « ${mode.name} » ?`}
+                        confirmDescription="Supprime aussi toutes les équipes et tous les scores de cette partie."
+                        className="rounded-lg border border-rose-400/20 px-2.5 py-1 text-[11px] font-semibold text-rose-300/80 transition hover:border-rose-400/40 hover:bg-rose-400/10"
+                      >
+                        Supprimer cette partie
+                      </ConfirmDeleteButton>
+                    </form>
+                  ) : null}
+                </MoreActions>
 
                 {isFinished ? (
                   <div className="mt-4 grid gap-1.5">
@@ -608,7 +615,7 @@ export default async function AdminTournamentDetailPage({
                     {canManage ? (
                       <form
                         action={addScoreTeam}
-                        className="mt-4 grid gap-2.5 border-t border-white/8 pt-4 sm:grid-cols-[1fr_auto]"
+                        className="mt-4 grid grid-cols-[1fr_auto] gap-2.5 border-t border-white/8 pt-4"
                       >
                         <input type="hidden" name="gameModeId" value={mode.id} />
                         <input type="hidden" name="boardId" value={board.id} />
@@ -997,7 +1004,7 @@ export default async function AdminTournamentDetailPage({
                           {canManage && !isFull ? (
                             <form
                               action={addBracketTeamMember}
-                              className="mt-2.5 grid gap-1.5 border-t border-white/8 pt-2.5 sm:grid-cols-[1fr_1fr_auto]"
+                              className="mt-2.5 grid grid-cols-[1fr_1fr_auto] gap-1.5 border-t border-white/8 pt-2.5"
                             >
                               <input type="hidden" name="bracketTeamId" value={team.id} />
                               <input type="hidden" name="tournamentId" value={tournament.id} />

@@ -45,7 +45,13 @@ export async function addBracketTeamMember(formData: FormData) {
         id: true,
         name: true,
         tournamentId: true,
-        tournament: { select: { startedAt: true, maxMembersPerTeam: true } },
+        tournament: {
+          select: {
+            startedAt: true,
+            maxMembersPerTeam: true,
+            bracketTeams: { select: { id: true, members: { select: { userId: true } } } },
+          },
+        },
         members: { select: { userId: true } },
       },
     });
@@ -61,7 +67,13 @@ export async function addBracketTeamMember(formData: FormData) {
     }
 
     if (userId) {
-      if (team.members.some((m) => m.userId === userId)) {
+      // Un joueur ne peut être que dans une seule équipe du bracket —
+      // vérifié sur TOUTES les équipes du tournoi, pas seulement celle
+      // ciblée (sinon rien n'empêchait de l'ajouter deux fois ailleurs).
+      const alreadyElsewhere = team.tournament.bracketTeams.some((t) =>
+        t.members.some((m) => m.userId === userId),
+      );
+      if (alreadyElsewhere) {
         redirect(`${backTo}?error=already_in_team`);
       }
 

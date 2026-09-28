@@ -56,7 +56,7 @@ export function RandomDrawForm({
     <form action={generateRandomTeams} className="mt-4 grid gap-4">
       <input type="hidden" name="tournamentId" value={tournamentId} />
 
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2.5">
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-white/70">
             Nombre d’équipes
@@ -109,7 +109,7 @@ export function RandomDrawForm({
         {users.length === 0 ? (
           <p className="neon-text-muted text-sm">Aucun joueur éligible.</p>
         ) : (
-          <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-2xl border border-white/8 bg-white/2 p-3 sm:grid-cols-2 md:grid-cols-3">
+          <div className="grid max-h-64 grid-cols-2 gap-1.5 overflow-y-auto rounded-2xl border border-white/8 bg-white/2 p-3 md:grid-cols-3">
             {users.map((u) => (
               <label key={u.id} className="flex items-center gap-2 text-sm text-white/80">
                 <input
