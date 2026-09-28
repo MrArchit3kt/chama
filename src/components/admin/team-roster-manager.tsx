@@ -42,7 +42,7 @@ export function TeamRosterManager({
   return (
     <form
       action={replaceScoreTeamMember}
-      className="grid gap-2.5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+      className="grid grid-cols-2 gap-2.5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
     >
       <input type="hidden" name="gameModeId" value={gameModeId} />
       <input type="hidden" name="boardId" value={boardId} />
@@ -86,7 +86,7 @@ export function TeamRosterManager({
         className="w-full px-3 py-2.5 text-sm"
       />
 
-      <button type="submit" className="neon-button-secondary px-4 py-2.5 text-sm">
+      <button type="submit" className="neon-button-secondary col-span-2 px-4 py-2.5 text-sm sm:col-span-1">
         Enregistrer
       </button>
     </form>
