@@ -19,4 +19,16 @@ export async function register() {
   setInterval(() => {
     void runTournamentReminderCheck();
   }, 5 * 60_000);
+
+  // Archivage du classement mensuel (/classement, glissant sur le mois en
+  // cours) — pas besoin d'une granularité fine, une vérification par heure
+  // suffit largement pour ne pas rater le passage au mois suivant.
+  const { archiveMonthlyRankingIfNeeded } = await import("@/lib/monthly-ranking-archive");
+  void archiveMonthlyRankingIfNeeded();
+  setInterval(
+    () => {
+      void archiveMonthlyRankingIfNeeded();
+    },
+    60 * 60_000,
+  );
 }

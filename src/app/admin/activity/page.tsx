@@ -64,6 +64,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   SCORE_BOARD_FINISHED: "Partie de tournoi terminée (scores verrouillés)",
   SCORE_BOARD_REOPENED: "Partie de tournoi rouverte (scores modifiables)",
   SCORE_TEAM_MEMBER_REPLACED: "Joueur remplacé dans une équipe (points)",
+  MONTHLY_RANKING_ARCHIVED: "Classement mensuel archivé (/classement)",
 };
 
 const ACTIVITY_ORDER = Object.keys(ACTIVITY_LABELS);
