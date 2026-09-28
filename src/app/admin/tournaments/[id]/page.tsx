@@ -645,6 +645,7 @@ export default async function AdminTournamentDetailPage({
                             members: t.members.map((m) => ({ id: m.id, label: memberLabel(m) })),
                           }))}
                           eligibleUsers={eligibleUsers}
+                          maxMembersPerTeam={tournament.maxMembersPerTeam}
                         />
                       </div>
                     ) : null}
