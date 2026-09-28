@@ -6,6 +6,7 @@ import { requireAuth } from "@/server/auth/session";
 import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/discord";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
+import { notifyMixTeamsGenerated } from "@/lib/mix-notifications";
 import {
   shuffle,
   getTeamSizesFourThree,
@@ -214,6 +215,7 @@ async function runFourThreeMix(
   }
 
   await moveTeamsToDiscordVoice(game, teamsUserIds);
+  await notifyMixTeamsGenerated(game, teamsUserIds);
 
   await logActivity({
     action: "MIX_GENERATED",
@@ -384,6 +386,7 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
+      await notifyMixTeamsGenerated(game, teamsUserIds);
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -493,6 +496,7 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
+      await notifyMixTeamsGenerated(game, teamsUserIds);
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -616,6 +620,7 @@ export async function generateMix(formData: FormData) {
     }
 
     await moveTeamsToDiscordVoice(game, teamsUserIds);
+    await notifyMixTeamsGenerated(game, teamsUserIds);
 
     await logActivity({
       action: "MIX_GENERATED",

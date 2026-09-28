@@ -7,6 +7,7 @@ import { db } from "@/lib/prisma";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
+import { sendPushToUsers } from "@/lib/push";
 
 const registerSchema = z
   .object({
@@ -133,6 +134,10 @@ export async function registerUser(formData: FormData) {
     });
 
     if (admins.length > 0) {
+      const message = invitedByName
+        ? `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription. Invité par : ${invitedByName}.`
+        : `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription.`;
+
       await db.notification.createMany({
         data: admins.map((admin) => ({
           userId: admin.id,
@@ -140,11 +145,14 @@ export async function registerUser(formData: FormData) {
           channel: "IN_APP",
           status: "PENDING",
           title: "Nouvelle inscription à valider",
-          message: invitedByName
-            ? `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription. Invité par : ${invitedByName}.`
-            : `${newUser.displayName} (@${newUser.username}) attend une validation d’inscription.`,
+          message,
         })),
       });
+
+      await sendPushToUsers(
+        admins.map((admin) => admin.id),
+        { title: "Nouvelle inscription à valider", body: message, url: "/admin/registrations" },
+      );
     }
 
     await logActivity({

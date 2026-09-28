@@ -293,22 +293,18 @@ VAPID_SUBJECT="mailto:contact@chama-gaming.site"
 ⚠️ `NEXT_PUBLIC_VAPID_PUBLIC_KEY` est lue au **build** (`pnpm build`), pas
 seulement au démarrage — rebuild nécessaire après toute modification.
 
-**Rappel "le tournoi commence bientôt"** (optionnel) : nécessite un appel
-périodique à une route protégée par secret partagé, puisque le VPS ne
-tourne pas en environnement serverless avec cron intégré. Ajouter dans
-`.env` :
+**Rappel "le tournoi commence bientôt"** : automatique, rien à configurer.
+`src/instrumentation.ts` lance une vérification toutes les 5 minutes
+directement dans le process du site (PM2 le garde en vie en continu) —
+pas besoin de crontab. Une route `GET /api/cron/tournament-reminders`
+existe en plus pour déclencher une vérification manuelle/externe si
+besoin un jour, protégée par un secret partagé optionnel :
 ```
 CRON_SECRET="<valeur aléatoire, ex: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">"
 ```
-Puis programmer l'appel toutes les 5 minutes :
-```bash
-crontab -e
-```
-```cron
-*/5 * * * * curl -fsS -H "x-cron-secret: LA_VALEUR_DE_CRON_SECRET" https://chama-gaming.site/api/cron/tournament-reminders >> /var/log/chama-cron.log 2>&1
-```
-Sans `CRON_SECRET` configuré, la route répond `501` sans rien casser
-d'autre — ce rappel est purement additif.
+Sans `CRON_SECRET` configuré, cette route répond `501` sans rien casser
+d'autre — le rappel automatique via instrumentation.ts fonctionne quand
+même, `CRON_SECRET` ne sert qu'à cette route optionnelle en plus.
 
 ## 13. Mises à jour ultérieures
 
