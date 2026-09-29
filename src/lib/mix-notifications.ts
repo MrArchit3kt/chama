@@ -21,39 +21,62 @@ const GAME_URLS: Record<string, string> = {
 
 /**
  * Notifie (push + in-app) chaque joueur inscrit placé dans une équipe par
- * un mix généré, avec la liste de ses coéquipiers — seulement les comptes
- * inscrits (`userIds`), les invités temporaires n'ont pas de compte pour
- * recevoir quoi que ce soit. Best-effort total : ne doit jamais faire
- * échouer la génération d'un mix si l'envoi rate.
+ * un mix généré, avec la liste de ses coéquipiers — joueurs inscrits ET
+ * invités (`teamsTempIds`, même indexation que `teamsUserIds` : l'équipe à
+ * l'index N de l'un correspond à celle à l'index N de l'autre). Seuls les
+ * comptes inscrits reçoivent la notification (un invité n'a pas de compte
+ * pour ça), mais son pseudo apparaît dans le message des autres. Best-effort
+ * total : ne doit jamais faire échouer la génération d'un mix si l'envoi rate.
  */
-export async function notifyMixTeamsGenerated(game: string, teamsUserIds: string[][]) {
+export async function notifyMixTeamsGenerated(
+  game: string,
+  teamsUserIds: string[][],
+  teamsTempIds: string[][] = [],
+) {
   try {
     const allUserIds = [...new Set(teamsUserIds.flat())];
     if (allUserIds.length === 0) return;
 
-    const users = await db.user.findMany({
-      where: { id: { in: allUserIds } },
-      select: { id: true, displayName: true },
-    });
+    const allTempIds = [...new Set(teamsTempIds.flat())];
+
+    const [users, tempPlayers] = await Promise.all([
+      db.user.findMany({
+        where: { id: { in: allUserIds } },
+        select: { id: true, displayName: true },
+      }),
+      allTempIds.length > 0
+        ? db.tempPlayer.findMany({
+            where: { id: { in: allTempIds } },
+            select: { id: true, nickname: true },
+          })
+        : Promise.resolve([]),
+    ]);
     const nameById = new Map(users.map((u) => [u.id, u.displayName]));
+    const nicknameById = new Map(tempPlayers.map((t) => [t.id, t.nickname]));
 
     const gameLabel = GAME_LABELS[game] ?? game;
     const url = GAME_URLS[game] ?? "/dashboard";
 
     const notifications: { userId: string; message: string }[] = [];
 
-    for (const userIds of teamsUserIds) {
+    for (let i = 0; i < teamsUserIds.length; i += 1) {
+      const userIds = teamsUserIds[i];
       if (userIds.length === 0) continue;
 
+      const guestNames = (teamsTempIds[i] ?? [])
+        .map((id) => nicknameById.get(id))
+        .filter((n): n is string => Boolean(n));
+
       for (const userId of userIds) {
-        const teammates = userIds
+        const teammateNames = userIds
           .filter((id) => id !== userId)
           .map((id) => nameById.get(id))
-          .filter((n): n is string => Boolean(n));
+          .filter((n): n is string => Boolean(n))
+          .concat(guestNames);
 
         const message =
-          teammates.length > 0
-            ? `Tu es avec ${teammates.join(", ")} sur ${gameLabel}.`
+          teammateNames.length > 0
+            ? `Tu es avec ${teammateNames.join(", ")} sur ${gameLabel}.`
             : `Ton équipe ${gameLabel} est prête.`;
 
         notifications.push({ userId, message });
