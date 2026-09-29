@@ -169,6 +169,7 @@ async function runFourThreeMix(
 
   let cursor = 0;
   const teamsUserIds: string[][] = [];
+  const teamsTempIds: string[][] = [];
 
   for (let idx = 0; idx < sizes.length; idx += 1) {
     const size = sizes[idx];
@@ -193,6 +194,7 @@ async function runFourThreeMix(
       const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
       const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
       teamsUserIds.push(userIds);
+      teamsTempIds.push(tempIds);
 
       if (userIds.length > 0) {
         await db.mixSessionPlayer.updateMany({
@@ -209,13 +211,14 @@ async function runFourThreeMix(
       }
     } else {
       teamsUserIds.push([]);
+      teamsTempIds.push([]);
     }
 
     cursor += size;
   }
 
   await moveTeamsToDiscordVoice(game, teamsUserIds);
-  await notifyMixTeamsGenerated(game, teamsUserIds);
+  await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
 
   await logActivity({
     action: "MIX_GENERATED",
@@ -346,6 +349,7 @@ export async function generateMix(formData: FormData) {
 
       let cursor = 0;
       const teamsUserIds: string[][] = [];
+      const teamsTempIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
         const chunk = shuffled.slice(cursor, cursor + 3);
@@ -368,6 +372,7 @@ export async function generateMix(formData: FormData) {
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
         teamsUserIds.push(userIds);
+        teamsTempIds.push(tempIds);
 
         if (userIds.length > 0) {
           await db.mixSessionPlayer.updateMany({
@@ -386,7 +391,7 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
-      await notifyMixTeamsGenerated(game, teamsUserIds);
+      await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -456,6 +461,7 @@ export async function generateMix(formData: FormData) {
 
       let cursor = 0;
       const teamsUserIds: string[][] = [];
+      const teamsTempIds: string[][] = [];
 
       for (let idx = 0; idx < sizes.length; idx += 1) {
         const chunk = shuffled.slice(cursor, cursor + versusTeamSize);
@@ -478,6 +484,7 @@ export async function generateMix(formData: FormData) {
         const userIds = chunk.filter((p) => p.kind === "USER").map((p) => p.id);
         const tempIds = chunk.filter((p) => p.kind === "TEMP").map((p) => p.id);
         teamsUserIds.push(userIds);
+        teamsTempIds.push(tempIds);
 
         if (userIds.length > 0) {
           await db.mixSessionPlayer.updateMany({
@@ -496,7 +503,7 @@ export async function generateMix(formData: FormData) {
       }
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
-      await notifyMixTeamsGenerated(game, teamsUserIds);
+      await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -579,6 +586,7 @@ export async function generateMix(formData: FormData) {
     });
 
     const teamsUserIds: string[][] = [];
+    const teamsTempIds: string[][] = [];
 
     for (let idx = 0; idx < teams.length; idx += 1) {
       const team = await db.team.create({
@@ -604,6 +612,7 @@ export async function generateMix(formData: FormData) {
       const userIds = members.filter((m) => m.kind === "USER").map((m) => m.id);
       const tempIds = members.filter((m) => m.kind === "TEMP").map((m) => m.id);
       teamsUserIds.push(userIds);
+      teamsTempIds.push(tempIds);
 
       if (userIds.length > 0) {
         await db.mixSessionPlayer.updateMany({
@@ -620,7 +629,7 @@ export async function generateMix(formData: FormData) {
     }
 
     await moveTeamsToDiscordVoice(game, teamsUserIds);
-    await notifyMixTeamsGenerated(game, teamsUserIds);
+    await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
 
     await logActivity({
       action: "MIX_GENERATED",
