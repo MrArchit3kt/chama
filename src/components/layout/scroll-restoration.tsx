@@ -25,7 +25,16 @@ export function ScrollRestoration() {
     const onSubmit = (event: Event) => {
       const form = event.target;
       if (!(form instanceof HTMLFormElement)) return;
-      if (form.method.toLowerCase() !== "post") return;
+      // ⚠️ `form.method` vaut "get" par défaut dès que l'attribut `method`
+      // n'est pas écrit dans le JSX — ce qui est le cas de la quasi-totalité
+      // des <form action={serverAction}> de l'app (React n'a pas besoin de
+      // l'attribut HTML pour intercepter la soumission). Filtrer sur
+      // `form.method !== "post"` ratait donc presque tous les formulaires
+      // (ex: "Passer admin", "Passer CHAMA"...), jamais sauvegardés → le
+      // scroll-to-top par défaut de Next s'appliquait sans être corrigé.
+      // On ne saute que les formulaires *explicitement* en GET (recherche
+      // /filtre), où remonter en haut au clic est le comportement voulu.
+      if (form.hasAttribute("method") && form.method.toLowerCase() === "get") return;
 
       try {
         sessionStorage.setItem(
