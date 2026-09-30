@@ -8,6 +8,7 @@ import { addWarning } from "@/server/admin/add-warning";
 import { revokeWarning } from "@/server/admin/revoke-warning";
 import { liftBan } from "@/server/admin/lift-ban";
 import { resetPlayerPassword } from "@/server/admin/reset-player-password";
+import { updatePlayerIdentity } from "@/server/admin/update-player-identity";
 import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleAuraMember } from "@/server/admin/toggle-aura-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
@@ -46,6 +47,10 @@ function getErrorMessage(error?: string) {
       return "Requête invalide.";
     case "password_validation":
       return "Le nouveau mot de passe est invalide (minimum 8 caractères).";
+    case "identity_validation":
+      return "Pseudo ou @ invalide (le @ n’accepte que lettres minuscules, chiffres et _, entre 3 et 24 caractères).";
+    case "username_taken":
+      return "Ce @ est déjà pris par un autre compte.";
     case "player_not_found":
       return "Joueur introuvable.";
     case "forbidden":
@@ -140,6 +145,7 @@ export default async function AdminPlayersPage({
     revoked?: string;
     unbanned?: string;
     password_reset?: string;
+    identity_updated?: string;
     chama?: string;
     aura?: string;
     role_updated?: string;
@@ -165,6 +171,7 @@ export default async function AdminPlayersPage({
   const isRevoked = sp.revoked === "1";
   const isUnbanned = sp.unbanned === "1";
   const isPasswordReset = sp.password_reset === "1";
+  const isIdentityUpdated = sp.identity_updated === "1";
   const isChamaEnabled = sp.chama === "1";
   const isChamaDisabled = sp.chama === "0";
   const isAuraEnabled = sp.aura === "1";
@@ -465,6 +472,14 @@ export default async function AdminPlayersPage({
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-cyan-300">
               Mot de passe du joueur mis à jour avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        {isIdentityUpdated ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-cyan-300">
+              Pseudo et/ou @ du joueur mis à jour avec succès.
             </p>
           </div>
         ) : null}
@@ -798,6 +813,56 @@ export default async function AdminPlayersPage({
                             className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
                           >
                             Modifier le mot de passe
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-2.5 md:p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+                        Pseudo et @
+                      </p>
+
+                      <p className="neon-text-muted mt-1 md:mt-1.5 text-sm leading-6">
+                        Corrige le nom affiché ou l’identifiant @ du joueur.
+                      </p>
+
+                      {hasAdminPermission(admin.role, admin.adminPermissions, "players.identity.edit") ? (
+                        <form
+                          action={updatePlayerIdentity}
+                          className="mt-1.5 grid grid-cols-2 gap-1.5 md:mt-2 md:gap-2"
+                        >
+                          <input type="hidden" name="userId" value={player.id} />
+
+                          <input
+                            name="displayName"
+                            type="text"
+                            minLength={2}
+                            maxLength={40}
+                            required
+                            defaultValue={player.displayName}
+                            placeholder="Pseudo"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+
+                          <input
+                            name="username"
+                            type="text"
+                            minLength={3}
+                            maxLength={24}
+                            pattern="[a-z0-9_]{3,24}"
+                            title="Minuscules, chiffres et _ uniquement, 3 à 24 caractères"
+                            required
+                            defaultValue={player.username}
+                            placeholder="@identifiant"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+
+                          <button
+                            type="submit"
+                            className="neon-button-secondary col-span-2 w-full px-5 py-2 md:py-2.5"
+                          >
+                            Enregistrer
                           </button>
                         </form>
                       ) : null}
