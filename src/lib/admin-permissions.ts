@@ -36,6 +36,7 @@ export const ADMIN_PERMISSIONS = {
   "players.unban": { section: "players", label: "Débannir un joueur" },
   "players.warning.manage": { section: "players", label: "Ajouter/retirer un avertissement" },
   "players.password.reset": { section: "players", label: "Réinitialiser un mot de passe" },
+  "players.identity.edit": { section: "players", label: "Modifier le pseudo/@ d'un joueur" },
   "players.chama.toggle": { section: "players", label: "Statut membre CHAMA" },
   "players.aura.toggle": { section: "players", label: "Statut membre AURA" },
   "players.badge.manage": { section: "players", label: "Attribuer/retirer un badge" },

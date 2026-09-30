@@ -19,6 +19,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   PLAYER_UNBANNED: "Déban",
   PLAYER_DELETED: "Suppression de compte",
   PASSWORD_RESET: "Mot de passe réinitialisé",
+  PLAYER_IDENTITY_UPDATED: "Pseudo/@ d'un joueur modifié",
   WARNING_ADDED: "Avertissement ajouté",
   WARNING_REVOKED: "Avertissement révoqué",
   BADGE_CREATED: "Badge créé",
