@@ -44,7 +44,7 @@ export function SessionHistory({ sessions, basePath, currentSessionId }: Session
         className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:border-white/20 focus:border-cyan-400/40 focus:outline-none"
       >
         {sessions.map((s) => (
-          <option key={s.id} value={s.id} className="bg-[#0b0f1e] text-white">
+          <option key={s.id} value={s.id} className="bg-[#070604] text-white">
             {formatDate(s.createdAt)}
           </option>
         ))}

@@ -7,11 +7,15 @@
   --text: #f4f7ff;
   --text-muted: #a5b2d1;
 
-  --neon-blue: #1ea7ff;
-  --neon-cyan: #39f0ff;
-  --neon-green: #42ffb0;
-  --neon-pink: #ff4fd8;
-  --neon-purple: #8b5dff;
+  /* ✅ Thème "Or CHAMA" — repris du logo (fond noir, dégradé or/bronze/cuivre).
+     Les noms --neon-* sont gardés tels quels (pas référencés ailleurs via
+     var(), mais autant ne pas casser une future utilisation) même si la
+     palette n'est plus "neon" au sens propre. */
+  --neon-blue: #d4af37; /* or */
+  --neon-cyan: #f4c430; /* or clair */
+  --neon-green: #cd7f32; /* bronze */
+  --neon-pink: #b8860b; /* or foncé */
+  --neon-purple: #b87333; /* cuivre */
 
   --bg-pan-duration: 18s;
 
@@ -40,12 +44,12 @@ body {
 
   /* ✅ Fond statique (comme avant) */
   background:
-    radial-gradient(circle at 10% 18%, rgba(30, 167, 255, 0.22), transparent 24%),
-    radial-gradient(circle at 82% 16%, rgba(255, 79, 216, 0.18), transparent 22%),
-    radial-gradient(circle at 18% 82%, rgba(66, 255, 176, 0.14), transparent 24%),
-    radial-gradient(circle at 86% 78%, rgba(139, 93, 255, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 50%, rgba(57, 240, 255, 0.03), transparent 45%),
-    linear-gradient(180deg, #020308 0%, #040711 35%, #060b15 65%, #020308 100%);
+    radial-gradient(circle at 10% 18%, rgba(212, 175, 55, 0.20), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(244, 196, 48, 0.16), transparent 22%),
+    radial-gradient(circle at 18% 82%, rgba(205, 127, 50, 0.14), transparent 24%),
+    radial-gradient(circle at 86% 78%, rgba(184, 134, 11, 0.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.03), transparent 45%),
+    linear-gradient(180deg, #020308 0%, #070604 35%, #0a0804 65%, #020308 100%);
 
   font-family:
     Inter,
@@ -97,7 +101,7 @@ a {
 }
 
 ::selection {
-  background: rgba(57, 240, 255, 0.2);
+  background: rgba(212, 175, 55, 0.25);
   color: white;
 }
 
@@ -112,8 +116,8 @@ input,
 textarea,
 select {
   color: var(--text);
-  background: rgba(8, 12, 24, 0.84);
-  border: 1px solid rgba(90, 110, 220, 0.18);
+  background: rgba(14, 12, 6, 0.84);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 14px;
   outline: none;
   transition:
@@ -130,11 +134,11 @@ textarea::placeholder {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(57, 240, 255, 0.45);
+  border-color: rgba(244, 196, 48, 0.5);
   box-shadow:
-    0 0 0 1px rgba(57, 240, 255, 0.16),
-    0 0 18px rgba(57, 240, 255, 0.12);
-  background: rgba(10, 15, 30, 0.94);
+    0 0 0 1px rgba(244, 196, 48, 0.18),
+    0 0 18px rgba(212, 175, 55, 0.14);
+  background: rgba(16, 13, 6, 0.94);
 }
 
 button {
@@ -153,10 +157,10 @@ button {
   inset: -10%;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 20%, rgba(30, 167, 255, 0.16), transparent 18%),
-    radial-gradient(circle at 86% 18%, rgba(255, 79, 216, 0.14), transparent 18%),
-    radial-gradient(circle at 14% 84%, rgba(66, 255, 176, 0.12), transparent 18%),
-    radial-gradient(circle at 88% 82%, rgba(139, 93, 255, 0.14), transparent 18%);
+    radial-gradient(circle at 12% 20%, rgba(212, 175, 55, 0.15), transparent 18%),
+    radial-gradient(circle at 86% 18%, rgba(244, 196, 48, 0.13), transparent 18%),
+    radial-gradient(circle at 14% 84%, rgba(205, 127, 50, 0.12), transparent 18%),
+    radial-gradient(circle at 88% 82%, rgba(184, 134, 11, 0.13), transparent 18%);
   filter: blur(34px);
   z-index: 0;
   animation: bg-pan var(--bg-pan-duration) ease-in-out infinite;
@@ -174,8 +178,8 @@ button {
   inset: -120px;
   pointer-events: none;
   background:
-    linear-gradient(rgba(57, 240, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(57, 240, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
   background-size: 42px 42px;
   opacity: 0.35;
   z-index: 0;
@@ -196,18 +200,18 @@ button {
   color: white;
   letter-spacing: -0.02em;
   text-shadow:
-    0 0 10px rgba(30, 167, 255, 0.08),
-    0 0 14px rgba(255, 79, 216, 0.05);
+    0 0 10px rgba(212, 175, 55, 0.1),
+    0 0 14px rgba(184, 134, 11, 0.06);
 }
 
 .neon-gradient-text {
   background: linear-gradient(
     90deg,
-    #1ea7ff 0%,
-    #39f0ff 28%,
-    #42ffb0 52%,
-    #ff4fd8 78%,
-    #8b5dff 100%
+    #d4af37 0%,
+    #f4c430 28%,
+    #cd7f32 52%,
+    #b8860b 78%,
+    #b87333 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -217,10 +221,10 @@ button {
 .neon-gradient-text-soft {
   background: linear-gradient(
     90deg,
-    rgba(30, 167, 255, 0.95) 0%,
-    rgba(57, 240, 255, 0.95) 35%,
-    rgba(255, 79, 216, 0.95) 70%,
-    rgba(139, 93, 255, 0.95) 100%
+    rgba(212, 175, 55, 0.95) 0%,
+    rgba(244, 196, 48, 0.95) 35%,
+    rgba(184, 134, 11, 0.95) 70%,
+    rgba(184, 115, 51, 0.95) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -243,16 +247,16 @@ button {
   border-radius: var(--rgb-border-radius);
 
   /* ✅ fond statique */
-  background: linear-gradient(180deg, rgba(11, 15, 30, 0.84), rgba(7, 10, 20, 0.9));
+  background: linear-gradient(180deg, rgba(20, 16, 8, 0.84), rgba(10, 8, 5, 0.9));
   backdrop-filter: blur(14px);
 
   /* ✅ bordure statique fallback */
-  border: 1px solid rgba(100, 125, 255, 0.16);
+  border: 1px solid rgba(212, 175, 55, 0.18);
 
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 12px 38px rgba(0, 0, 0, 0.34),
-    0 0 22px rgba(30, 167, 255, 0.06);
+    0 0 22px rgba(212, 175, 55, 0.07);
 }
 
 /* ✅ l’animation est sur un pseudo-element qui NE DESSINE QUE LE CONTOUR */
@@ -266,12 +270,12 @@ button {
   /* gradient long => pas d’artefacts diagonaux */
   background: linear-gradient(
     90deg,
-    rgba(30, 167, 255, 0.80),
-    rgba(57, 240, 255, 0.55),
-    rgba(66, 255, 176, 0.60),
-    rgba(255, 79, 216, 0.75),
-    rgba(139, 93, 255, 0.65),
-    rgba(30, 167, 255, 0.80)
+    rgba(212, 175, 55, 0.80),
+    rgba(244, 196, 48, 0.55),
+    rgba(205, 127, 50, 0.60),
+    rgba(184, 134, 11, 0.75),
+    rgba(184, 115, 51, 0.65),
+    rgba(212, 175, 55, 0.80)
   );
   background-size: 300% 300%;
   animation: rgb-border-shift var(--rgb-border-duration) linear infinite;
@@ -286,8 +290,8 @@ button {
 
   /* ✅ petit halo externe (optionnel, safe) */
   filter:
-    drop-shadow(0 0 10px rgba(57, 240, 255, 0.08))
-    drop-shadow(0 0 12px rgba(255, 79, 216, 0.06));
+    drop-shadow(0 0 10px rgba(212, 175, 55, 0.09))
+    drop-shadow(0 0 12px rgba(184, 134, 11, 0.07));
   opacity: 1;
 }
 
@@ -300,8 +304,8 @@ button {
 /* Soft cards (pas rgb) */
 .neon-card-soft {
   border-radius: 20px;
-  border: 1px solid rgba(100, 125, 255, 0.14);
-  background: rgba(10, 14, 28, 0.68);
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  background: rgba(14, 12, 6, 0.68);
   backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.02),
@@ -310,20 +314,20 @@ button {
 
 /* Buttons */
 .neon-button {
-  border: 1px solid rgba(57, 240, 255, 0.28);
+  border: 1px solid rgba(244, 196, 48, 0.32);
   border-radius: 16px;
   background: linear-gradient(
     135deg,
-    rgba(30, 167, 255, 0.18),
-    rgba(57, 240, 255, 0.12),
-    rgba(255, 79, 216, 0.14)
+    rgba(212, 175, 55, 0.2),
+    rgba(244, 196, 48, 0.14),
+    rgba(184, 134, 11, 0.16)
   );
   color: white;
   font-weight: 700;
   box-shadow:
-    0 0 0 1px rgba(57, 240, 255, 0.04),
-    0 0 18px rgba(30, 167, 255, 0.12),
-    0 0 20px rgba(255, 79, 216, 0.08);
+    0 0 0 1px rgba(244, 196, 48, 0.05),
+    0 0 18px rgba(212, 175, 55, 0.13),
+    0 0 20px rgba(184, 134, 11, 0.09);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -332,18 +336,18 @@ button {
 
 .neon-button:hover {
   transform: translateY(-1px);
-  border-color: rgba(57, 240, 255, 0.45);
+  border-color: rgba(244, 196, 48, 0.5);
   box-shadow:
-    0 0 0 1px rgba(57, 240, 255, 0.08),
-    0 0 24px rgba(30, 167, 255, 0.16),
-    0 0 28px rgba(255, 79, 216, 0.12);
+    0 0 0 1px rgba(244, 196, 48, 0.09),
+    0 0 24px rgba(212, 175, 55, 0.18),
+    0 0 28px rgba(184, 134, 11, 0.13);
 }
 
 .neon-button-secondary {
-  border: 1px solid rgba(120, 135, 255, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 16px;
-  background: rgba(12, 17, 32, 0.78);
-  color: #eef4ff;
+  background: rgba(18, 15, 8, 0.78);
+  color: #fff6e0;
   font-weight: 600;
   transition:
     transform 0.2s ease,
@@ -353,10 +357,10 @@ button {
 
 .neon-button-secondary:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 79, 216, 0.28);
+  border-color: rgba(184, 134, 11, 0.32);
   box-shadow:
-    0 0 18px rgba(255, 79, 216, 0.08),
-    0 0 12px rgba(30, 167, 255, 0.06);
+    0 0 18px rgba(184, 134, 11, 0.09),
+    0 0 12px rgba(212, 175, 55, 0.07);
 }
 
 .neon-badge {
@@ -364,17 +368,17 @@ button {
   align-items: center;
   gap: 0.45rem;
   border-radius: 999px;
-  border: 1px solid rgba(57, 240, 255, 0.22);
-  background: rgba(8, 12, 24, 0.76);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: rgba(14, 12, 6, 0.76);
   padding: 0.35rem 0.8rem;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #e6fbff;
+  color: #fff6e0;
   box-shadow:
-    0 0 12px rgba(57, 240, 255, 0.08),
-    inset 0 0 12px rgba(57, 240, 255, 0.03);
+    0 0 12px rgba(212, 175, 55, 0.09),
+    inset 0 0 12px rgba(212, 175, 55, 0.03);
 }
 
 /* ✅ Harmonisation mobile : badges plus compacts sur petits écrans */
@@ -390,7 +394,7 @@ button {
 /* Scrollbar */
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(57, 240, 255, 0.3) rgba(8, 12, 24, 0.5);
+  scrollbar-color: rgba(212, 175, 55, 0.35) rgba(14, 12, 6, 0.5);
 }
 
 .thin-scrollbar::-webkit-scrollbar {
@@ -399,29 +403,37 @@ button {
 }
 
 .thin-scrollbar::-webkit-scrollbar-track {
-  background: rgba(8, 12, 24, 0.45);
+  background: rgba(14, 12, 6, 0.45);
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(30, 167, 255, 0.45),
-    rgba(57, 240, 255, 0.45),
-    rgba(255, 79, 216, 0.45)
+    rgba(212, 175, 55, 0.5),
+    rgba(244, 196, 48, 0.5),
+    rgba(184, 134, 11, 0.5)
   );
   border-radius: 999px;
 }
 
-/* Mobile */
+/* ✅ Mobile : coupe les animations en continu + le backdrop-blur (coûteux
+   en GPU/batterie, surtout répété sur chaque carte d'une longue page admin)
+   — le fond/les bordures restent visibles, juste figés sur une image fixe
+   au lieu d'être recalculés à chaque frame. */
 @media (max-width: 640px) {
-  :root {
-    --bg-pan-duration: 14s;
-    --rgb-border-duration: 5.5s;
-    --rgb-border-size: 1px;
+  .page-wrap::before,
+  .page-wrap::after,
+  .neon-card::after {
+    animation: none !important;
   }
 
   .page-wrap::after {
     opacity: 0.28;
+  }
+
+  .neon-card,
+  .neon-card-soft {
+    backdrop-filter: none;
   }
 }
 
@@ -434,84 +446,13 @@ button {
   }
 }
 
-/* ===========================
-   Logo 3D (360° visible)
-   =========================== */
-
-   @keyframes logo-rotate-y {
-    0%   { transform: perspective(900px) rotateY(0deg); }
-    100% { transform: perspective(900px) rotateY(360deg); }
-  }
-  
-  /* petite oscillation X pour “lire” la 3D (très légère) */
-  @keyframes logo-tilt-x {
-    0%,100% { transform: rotateX(0deg); }
-    50%     { transform: rotateX(8deg); }
-  }
-  
-  /* micro flottement */
-  @keyframes logo-float {
-    0%, 100% { translate: 0 0; }
-    50%      { translate: 0 -2px; }
-  }
-  
-  .logo-3d {
-    display: inline-flex;
-    transform-style: preserve-3d;
-    will-change: transform;
-    backface-visibility: hidden;
-    transform-origin: center;
-  }
-  
-  /* ✅ rotation 360° claire */
-  .logo-3d--auto {
-    animation: logo-rotate-y 3.8s linear infinite;
-  }
-  
-  /* ✅ accentue au hover */
-  .logo-3d--auto:hover {
-    animation-duration: 2.2s;
-  }
-  
-  /* ✅ le conteneur intérieur “tilt + float” sans casser la rotation Y */
-  .logo-3d > .logo-3d__inner {
-    transform-style: preserve-3d;
-    will-change: transform;
-    animation: logo-tilt-x 2.6s ease-in-out infinite, logo-float 2.8s ease-in-out infinite;
-  }
-  
-  /* ✅ donne un “relief” au retournement (sans toucher l’image) */
-  .logo-3d > .logo-3d__inner::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(
-        90deg,
-        rgba(0,0,0,0.0) 0%,
-        rgba(0,0,0,0.18) 48%,
-        rgba(0,0,0,0.0) 100%
-      );
-    opacity: 0.45;
-    mix-blend-mode: multiply;
-    transform: translateZ(1px);
-  }
-  
-  /* ✅ glow */
-  .logo-3d--glow {
-    filter:
-      drop-shadow(0 0 10px rgba(57, 240, 255, 0.18))
-      drop-shadow(0 0 16px rgba(255, 79, 216, 0.12));
-  }
-  
-  @media (prefers-reduced-motion: reduce) {
-    .logo-3d--auto,
-    .logo-3d > .logo-3d__inner {
-      animation: none !important;
-    }
-  }
+/* ✅ Logo CHAMA : fixe, pas d'effet 3D/rotation (retiré — coûteux sur
+   mobile pour un gain purement décoratif). Juste un léger liseré doré,
+   voir .logo-static ci-dessous. */
+.logo-static {
+  display: inline-flex;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.18));
+}
 
 /* ✅ Pop-up de bienvenue "membre CHAMA" : explosion d'ouverture */
 @keyframes chama-confetti-burst {
