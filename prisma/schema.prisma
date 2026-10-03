@@ -229,6 +229,7 @@ enum SiteTheme {
   DEFAULT
   HALLOWEEN
   CHRISTMAS
+  PINK_OCTOBER
 }
 
 model SiteConfig {

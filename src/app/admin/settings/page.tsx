@@ -147,13 +147,13 @@ export default async function AdminSettingsPage({
                 étoile filante, sapin...). Visible par tous les joueurs
                 immédiatement après enregistrement.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-cyan-400/40 has-checked:bg-cyan-400/6">
                   <input
                     type="radio"
                     name="theme"
                     value="DEFAULT"
-                    defaultChecked={config?.theme !== "CHRISTMAS"}
+                    defaultChecked={!config?.theme || config.theme === "DEFAULT"}
                     className="h-4 w-4"
                   />
                   <span className="text-sm text-white">Aucun</span>
@@ -168,6 +168,17 @@ export default async function AdminSettingsPage({
                     className="h-4 w-4"
                   />
                   <span className="text-sm text-white">🎄 Noël</span>
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-pink-400/40 has-checked:bg-pink-400/6">
+                  <input
+                    type="radio"
+                    name="theme"
+                    value="PINK_OCTOBER"
+                    defaultChecked={config?.theme === "PINK_OCTOBER"}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">🎗️ Octobre Rose</span>
                 </label>
               </div>
             </div>
