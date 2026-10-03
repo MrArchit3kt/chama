@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getSessionUser } from "@/server/auth/session";
-import { mainLinks, adminLinks, adminMixLinks, superAdminLinks } from "@/lib/nav-links";
-import { getMixVisibility, MIX_PATH_VISIBILITY_KEY } from "@/lib/mix-visibility";
+import { mainLinks, adminLinks, adminMixLinks, superAdminLinks, MIX_PATH_VISIBILITY_KEY } from "@/lib/nav-links";
+import { getMixVisibility } from "@/lib/mix-visibility";
 
 export async function SiteSidebar() {
   const [user, mixVisibility] = await Promise.all([getSessionUser(), getMixVisibility()]);

@@ -1,13 +1,8 @@
 import "server-only";
 import { db } from "@/lib/prisma";
+import type { MixVisibility } from "@/lib/nav-links";
 
-export type MixVisibility = {
-  WARZONE: boolean;
-  WARZONE_RANKED: boolean;
-  BO7: boolean;
-  ROCKET_LEAGUE: boolean;
-  VERSUS: boolean;
-};
+export type { MixVisibility };
 
 /**
  * Visibilité par jeu des onglets mix côté joueur (SiteConfig), indépendante
@@ -15,6 +10,10 @@ export type MixVisibility = {
  * qu'un admin ne veut pas proposer pour l'instant (nav + accès direct à la
  * page). Les pages admin/mix/* restent toujours accessibles, désactivé ou
  * non : un admin doit pouvoir préparer un jeu avant de le réactiver.
+ *
+ * ⚠️ Ce module est "server-only" (accès DB) — la map de routes
+ * MIX_PATH_VISIBILITY_KEY vit dans nav-links.ts (pas de restriction) pour
+ * rester importable depuis MobileNav, qui est un composant client.
  */
 export async function getMixVisibility(): Promise<MixVisibility> {
   const config = await db.siteConfig.findUnique({
@@ -36,12 +35,3 @@ export async function getMixVisibility(): Promise<MixVisibility> {
     VERSUS: config?.versusMixEnabled ?? true,
   };
 }
-
-/** Associe chaque route joueur à sa clé de visibilité, pour filtrer la nav. */
-export const MIX_PATH_VISIBILITY_KEY: Record<string, keyof MixVisibility> = {
-  "/warzone": "WARZONE",
-  "/ranked": "WARZONE_RANKED",
-  "/bo7": "BO7",
-  "/rocket-league": "ROCKET_LEAGUE",
-  "/versus": "VERSUS",
-};
