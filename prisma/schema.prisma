@@ -226,10 +226,19 @@ enum BadgeCategory {
  * ✅ Thème événementiel affiché sur tout le site (réglable dans /admin/settings).
  */
 enum SiteTheme {
-  DEFAULT
+  DEFAULT // "Chama" (or/bronze/cuivre, repris du logo) dans l'UI admin
   HALLOWEEN
   CHRISTMAS
   PINK_OCTOBER
+  OCEAN
+  EMERALD
+  AMETHYST
+  CRIMSON
+  ICE
+  SUNSET
+  INDIGO
+  SILVER
+  NEON
 }
 
 model SiteConfig {

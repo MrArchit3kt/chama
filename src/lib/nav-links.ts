@@ -51,7 +51,7 @@ export const MIX_PATH_VISIBILITY_KEY: Record<string, keyof MixVisibility> = {
 export const mainLinks: NavLink[] = [
   { href: "/acceuil", label: "Accueil", icon: Home },
   { href: "/profil", label: "Profil", icon: UserCircle2 },
-  { href: "/warzone", label: "Warzone", icon: Crosshair },
+  { href: "/warzone", label: "Décontracté", icon: Crosshair },
   { href: "/ranked", label: "Ranked", icon: Trophy },
   { href: "/versus", label: "Versus", icon: Handshake },
   { href: "/bo7", label: "BO7", icon: Swords },

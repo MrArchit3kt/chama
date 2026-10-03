@@ -5,6 +5,26 @@ import { requireAdmin } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
 import { saveSiteConfig } from "@/server/admin/save-site-config";
 
+// ⚠️ Classes Tailwind écrites en toutes lettres (pas d'interpolation) : le
+// scan statique de Tailwind ne détecte que du texte littéral dans le code
+// source, une classe construite dynamiquement (`has-checked:border-${c}`)
+// ne serait jamais générée.
+const THEME_OPTIONS: { value: string; label: string; accentClass: string }[] = [
+  { value: "DEFAULT", label: "🪙 Chama", accentClass: "has-checked:border-amber-400/40 has-checked:bg-amber-400/6" },
+  { value: "HALLOWEEN", label: "🎃 Halloween", accentClass: "has-checked:border-orange-400/40 has-checked:bg-orange-400/6" },
+  { value: "CHRISTMAS", label: "🎄 Noël", accentClass: "has-checked:border-emerald-400/40 has-checked:bg-emerald-400/6" },
+  { value: "PINK_OCTOBER", label: "🎗️ Octobre Rose", accentClass: "has-checked:border-pink-400/40 has-checked:bg-pink-400/6" },
+  { value: "OCEAN", label: "🌊 Océan", accentClass: "has-checked:border-sky-400/40 has-checked:bg-sky-400/6" },
+  { value: "EMERALD", label: "💚 Émeraude", accentClass: "has-checked:border-green-400/40 has-checked:bg-green-400/6" },
+  { value: "AMETHYST", label: "💜 Améthyste", accentClass: "has-checked:border-purple-400/40 has-checked:bg-purple-400/6" },
+  { value: "CRIMSON", label: "❤️ Carmin", accentClass: "has-checked:border-red-400/40 has-checked:bg-red-400/6" },
+  { value: "ICE", label: "🧊 Glace", accentClass: "has-checked:border-cyan-400/40 has-checked:bg-cyan-400/6" },
+  { value: "SUNSET", label: "🌅 Coucher de soleil", accentClass: "has-checked:border-orange-400/40 has-checked:bg-orange-400/6" },
+  { value: "INDIGO", label: "🔮 Indigo", accentClass: "has-checked:border-indigo-400/40 has-checked:bg-indigo-400/6" },
+  { value: "SILVER", label: "⚪ Argent", accentClass: "has-checked:border-slate-400/40 has-checked:bg-slate-400/6" },
+  { value: "NEON", label: "🌈 Néon (ancien thème)", accentClass: "has-checked:border-fuchsia-400/40 has-checked:bg-fuchsia-400/6" },
+];
+
 function getErrorMessage(error?: string) {
   switch (error) {
     case "forbidden":
@@ -140,46 +160,34 @@ export default async function AdminSettingsPage({
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-white">
-                Thème événementiel du site
+                Thème du site
               </label>
               <p className="neon-text-muted mb-3 text-xs">
-                Affiche une décoration animée sur toutes les pages (neige,
-                étoile filante, sapin...). Visible par tous les joueurs
-                immédiatement après enregistrement.
+                Recolore cartes/boutons/badges/fond sur tout le site (visible
+                par tous les joueurs immédiatement après enregistrement).
+                Noël/Halloween/Octobre Rose ajoutent en plus un décor animé
+                dédié ; les autres thèmes sont une couleur pure.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-cyan-400/40 has-checked:bg-cyan-400/6">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value="DEFAULT"
-                    defaultChecked={!config?.theme || config.theme === "DEFAULT"}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm text-white">Aucun</span>
-                </label>
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-emerald-400/40 has-checked:bg-emerald-400/6">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value="CHRISTMAS"
-                    defaultChecked={config?.theme === "CHRISTMAS"}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm text-white">🎄 Noël</span>
-                </label>
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition has-checked:border-pink-400/40 has-checked:bg-pink-400/6">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value="PINK_OCTOBER"
-                    defaultChecked={config?.theme === "PINK_OCTOBER"}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm text-white">🎗️ Octobre Rose</span>
-                </label>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {THEME_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/2 p-4 transition ${opt.accentClass}`}
+                  >
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={opt.value}
+                      defaultChecked={
+                        opt.value === "DEFAULT"
+                          ? !config?.theme || config.theme === "DEFAULT"
+                          : config?.theme === opt.value
+                      }
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm text-white">{opt.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
 

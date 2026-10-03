@@ -7,7 +7,21 @@ import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { hasAdminPermission } from "@/lib/admin-permissions";
 
-const SITE_THEMES = ["DEFAULT", "HALLOWEEN", "CHRISTMAS", "PINK_OCTOBER"] as const;
+const SITE_THEMES = [
+  "DEFAULT",
+  "HALLOWEEN",
+  "CHRISTMAS",
+  "PINK_OCTOBER",
+  "OCEAN",
+  "EMERALD",
+  "AMETHYST",
+  "CRIMSON",
+  "ICE",
+  "SUNSET",
+  "INDIGO",
+  "SILVER",
+  "NEON",
+] as const;
 
 export async function saveSiteConfig(formData: FormData) {
   const admin = await requireAdmin("settings");
