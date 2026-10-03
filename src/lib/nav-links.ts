@@ -24,6 +24,25 @@ export type NavLink = {
   icon: LucideIcon;
 };
 
+export type MixVisibility = {
+  WARZONE: boolean;
+  WARZONE_RANKED: boolean;
+  BO7: boolean;
+  ROCKET_LEAGUE: boolean;
+  VERSUS: boolean;
+};
+
+/** Associe chaque route joueur à sa clé de visibilité (voir mix-visibility.ts
+ * pour la lecture en base) — ici volontairement dans un module sans
+ * "server-only" : MobileNav (composant client) doit pouvoir l'importer. */
+export const MIX_PATH_VISIBILITY_KEY: Record<string, keyof MixVisibility> = {
+  "/warzone": "WARZONE",
+  "/ranked": "WARZONE_RANKED",
+  "/bo7": "BO7",
+  "/rocket-league": "ROCKET_LEAGUE",
+  "/versus": "VERSUS",
+};
+
 /**
  * Source unique pour la navigation principale et admin, utilisée à la fois
  * par la sidebar desktop et le menu mobile — évite qu'un lien ajouté d'un

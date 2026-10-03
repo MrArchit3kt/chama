@@ -4,19 +4,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { adminLinks, adminMixLinks, superAdminLinks, type NavLink } from "@/lib/nav-links";
+import {
+  mainLinks as allMainLinks,
+  adminLinks,
+  adminMixLinks,
+  superAdminLinks,
+  MIX_PATH_VISIBILITY_KEY,
+  type MixVisibility,
+} from "@/lib/nav-links";
 
 type MobileNavProps = {
   canSeeAdmin: boolean;
   isSuperAdmin?: boolean;
-  /** Liens principaux déjà filtrés par visibilité (mix désactivés) côté
-   * serveur (voir SiteShell) — MobileNav est un composant client, il ne
-   * peut pas aller lire SiteConfig lui-même. */
-  mainLinks: NavLink[];
+  /** Simple objet de booléens (sérialisable) venu de SiteShell — jamais le
+   * tableau de liens lui-même : il contient des icônes Lucide (des
+   * fonctions), que React interdit de passer d'un composant serveur à un
+   * composant client. MobileNav importe mainLinks lui-même et filtre ici. */
+  mixVisibility: MixVisibility;
 };
 
-export function MobileNav({ canSeeAdmin, isSuperAdmin = false, mainLinks }: MobileNavProps) {
+export function MobileNav({ canSeeAdmin, isSuperAdmin = false, mixVisibility }: MobileNavProps) {
   const [open, setOpen] = useState(false);
+  const mainLinks = allMainLinks.filter((item) => {
+    const key = MIX_PATH_VISIBILITY_KEY[item.href];
+    return !key || mixVisibility[key];
+  });
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
