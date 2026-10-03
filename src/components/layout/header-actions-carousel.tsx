@@ -112,7 +112,7 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
     <div className="relative">
       {canScrollLeft ? (
         <>
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-linear-to-r from-[#0b0f1e] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-linear-to-r from-[#070604] to-transparent" />
           <button
             type="button"
             aria-label="Précédent"
@@ -137,7 +137,7 @@ export function HeaderActionsCarousel({ children }: HeaderActionsCarouselProps) 
 
       {canScrollRight ? (
         <>
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-linear-to-l from-[#0b0f1e] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-linear-to-l from-[#070604] to-transparent" />
           <button
             type="button"
             aria-label="Suivant"

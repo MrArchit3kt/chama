@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Gestion de team Warzone, mix automatique, événements et communauté CHAMA.",
     start_url: "/acceuil",
     display: "standalone",
-    background_color: "#0b0f1e",
-    theme_color: "#0b0f1e",
+    background_color: "#070604",
+    theme_color: "#070604",
     lang: "fr",
     icons: [
       {

@@ -33,9 +33,9 @@ export function MobileNav({ canSeeAdmin, isSuperAdmin = false, mainLinks }: Mobi
           className="flex items-center gap-3 transition hover:opacity-80"
           title="Retour à l’accueil"
         >
-          {/* ✅ Logo 3D */}
-          <div className="logo-3d logo-3d--auto logo-3d--glow">
-            <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
+          {/* ✅ Logo fixe (pas d'animation 3D) */}
+          <div className="logo-static">
+            <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-amber-400/25 bg-black/30">
               <Image
                 src="/images/CHAMA-logo.jpg"
                 alt="Logo CHAMA"
@@ -85,9 +85,9 @@ export function MobileNav({ canSeeAdmin, isSuperAdmin = false, mainLinks }: Mobi
                   className="flex items-center gap-3 transition hover:opacity-80"
                   title="Retour à l’accueil"
                 >
-                  {/* ✅ Logo 3D */}
-                  <div className="logo-3d logo-3d--auto logo-3d--glow">
-                    <div className="logo-3d__inner relative h-14 w-14 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black/30">
+                  {/* ✅ Logo fixe (pas d'animation 3D) */}
+                  <div className="logo-static">
+                    <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-amber-400/25 bg-black/30">
                       <Image
                         src="/images/CHAMA-logo.jpg"
                         alt="Logo CHAMA"
