@@ -20,7 +20,7 @@ import { getMixVisibility } from "@/lib/mix-visibility";
 function getErrorMessage(error?: string) {
   switch (error) {
     case "forbidden":
-      return "Rejoins d’abord la file Warzone pour pouvoir générer.";
+      return "Rejoins d’abord la file Décontracté pour pouvoir générer.";
     case "pool_forbidden":
       return "Un admin gère actuellement la file : tu ne peux pas retirer de joueur.";
     case "invalid_count":
@@ -146,10 +146,10 @@ export default async function WarzonePage({
       <div className="grid gap-4 md:gap-6">
         <div className="neon-card p-5 md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pink-300/75">
-            Warzone
+            Décontracté
           </p>
           <h2 className="neon-title neon-gradient-text mt-3 text-2xl font-black md:text-3xl">
-            Mix Warzone
+            Mix Décontracté
           </h2>
           <p className="neon-text-muted mt-3 max-w-3xl text-sm leading-6 md:mt-4 md:text-base md:leading-7">
             Rejoins la file pour être pris en compte dans le prochain mix, puis
@@ -164,7 +164,7 @@ export default async function WarzonePage({
                   : "inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/70"
               }
             >
-              {isInQueue ? "Prêt (Warzone)" : "En attente"}
+              {isInQueue ? "Prêt (Décontracté)" : "En attente"}
             </span>
 
             <span className="neon-badge">
@@ -270,7 +270,7 @@ export default async function WarzonePage({
 
           {teams.length === 0 ? (
             <p className="neon-text-muted mt-4 text-sm">
-              Aucune équipe Warzone pour le moment.
+              Aucune équipe Décontracté pour le moment.
             </p>
           ) : (
             <TeamPager>

@@ -60,6 +60,83 @@
   --theme-5-rgb: 249, 168, 212; /* rose clair */
 }
 
+/* --- Thèmes "couleur pure", sans décor animé dédié (SiteThemeOverlay
+   renvoie null pour ceux-ci) — juste une autre teinte pour cartes/boutons/
+   badges/fond, voir /admin/settings. --- */
+
+[data-theme="ocean"] {
+  --theme-1-rgb: 30, 144, 255; /* bleu */
+  --theme-2-rgb: 125, 211, 252; /* bleu ciel pâle */
+  --theme-3-rgb: 14, 165, 233; /* bleu cyan */
+  --theme-4-rgb: 29, 78, 216; /* bleu foncé */
+  --theme-5-rgb: 56, 189, 248; /* bleu clair */
+}
+
+[data-theme="emerald"] {
+  --theme-1-rgb: 16, 185, 129; /* émeraude */
+  --theme-2-rgb: 110, 231, 183; /* vert pâle */
+  --theme-3-rgb: 52, 211, 153; /* vert clair */
+  --theme-4-rgb: 4, 120, 87; /* vert foncé */
+  --theme-5-rgb: 5, 150, 105; /* vert */
+}
+
+[data-theme="amethyst"] {
+  --theme-1-rgb: 168, 85, 247; /* violet */
+  --theme-2-rgb: 216, 180, 254; /* violet pâle */
+  --theme-3-rgb: 192, 132, 252; /* violet clair */
+  --theme-4-rgb: 109, 40, 217; /* violet foncé */
+  --theme-5-rgb: 147, 51, 234; /* violet vif */
+}
+
+[data-theme="crimson"] {
+  --theme-1-rgb: 220, 38, 38; /* rouge */
+  --theme-2-rgb: 252, 165, 165; /* rouge pâle */
+  --theme-3-rgb: 248, 113, 113; /* rouge clair */
+  --theme-4-rgb: 153, 27, 27; /* rouge foncé */
+  --theme-5-rgb: 185, 28, 28; /* rouge vif */
+}
+
+[data-theme="ice"] {
+  --theme-1-rgb: 103, 232, 249; /* cyan glace */
+  --theme-2-rgb: 224, 242, 254; /* cyan très pâle */
+  --theme-3-rgb: 165, 243, 252; /* cyan pâle */
+  --theme-4-rgb: 34, 211, 238; /* cyan */
+  --theme-5-rgb: 207, 250, 254; /* cyan quasi blanc */
+}
+
+[data-theme="sunset"] {
+  --theme-1-rgb: 251, 146, 60; /* orange */
+  --theme-2-rgb: 253, 186, 116; /* orange pâle */
+  --theme-3-rgb: 244, 63, 94; /* rose-rouge */
+  --theme-4-rgb: 234, 88, 12; /* orange foncé */
+  --theme-5-rgb: 251, 113, 133; /* rose */
+}
+
+[data-theme="indigo"] {
+  --theme-1-rgb: 99, 102, 241; /* indigo */
+  --theme-2-rgb: 165, 180, 252; /* indigo pâle */
+  --theme-3-rgb: 129, 140, 248; /* indigo clair */
+  --theme-4-rgb: 67, 56, 202; /* indigo foncé */
+  --theme-5-rgb: 79, 70, 229; /* indigo vif */
+}
+
+[data-theme="silver"] {
+  --theme-1-rgb: 203, 213, 225; /* argent */
+  --theme-2-rgb: 241, 245, 249; /* argent pâle */
+  --theme-3-rgb: 226, 232, 240; /* argent clair */
+  --theme-4-rgb: 100, 116, 139; /* ardoise foncée */
+  --theme-5-rgb: 148, 163, 184; /* ardoise */
+}
+
+[data-theme="neon"] {
+  /* Thème d'origine du site, conservé en option plutôt que supprimé. */
+  --theme-1-rgb: 30, 167, 255; /* bleu néon */
+  --theme-2-rgb: 57, 240, 255; /* cyan néon */
+  --theme-3-rgb: 66, 255, 176; /* vert néon */
+  --theme-4-rgb: 255, 79, 216; /* rose néon */
+  --theme-5-rgb: 139, 93, 255; /* violet néon */
+}
+
 * {
   box-sizing: border-box;
 }
