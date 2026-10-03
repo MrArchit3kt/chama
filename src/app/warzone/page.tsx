@@ -15,6 +15,7 @@ import { canSelfServeMix, getMixManagingAdminName } from "@/server/mix/mix-acces
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
 import { setTeamResult } from "@/server/mix/set-team-result";
 import { setPlayerStats } from "@/server/mix/set-player-stats";
+import { getMixVisibility } from "@/lib/mix-visibility";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -48,6 +49,9 @@ export default async function WarzonePage({
 }) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
+
+  const mixVisibility = await getMixVisibility();
+  if (!mixVisibility.WARZONE) redirect("/dashboard");
 
   const user = await db.user.findUnique({
     where: { id: sessionUser.id },

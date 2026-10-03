@@ -49,6 +49,11 @@ export async function saveSiteConfig(formData: FormData) {
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",
         registrationsEnabled: formData.get("registrationsEnabled") === "on",
+        warzoneMixEnabled: formData.get("warzoneMixEnabled") === "on",
+        warzoneRankedMixEnabled: formData.get("warzoneRankedMixEnabled") === "on",
+        bo7MixEnabled: formData.get("bo7MixEnabled") === "on",
+        rocketLeagueMixEnabled: formData.get("rocketLeagueMixEnabled") === "on",
+        versusMixEnabled: formData.get("versusMixEnabled") === "on",
         theme,
       },
       create: {
@@ -63,6 +68,11 @@ export async function saveSiteConfig(formData: FormData) {
         eventsEnabled: formData.get("eventsEnabled") === "on",
         contactEnabled: formData.get("contactEnabled") === "on",
         registrationsEnabled: formData.get("registrationsEnabled") === "on",
+        warzoneMixEnabled: formData.get("warzoneMixEnabled") === "on",
+        warzoneRankedMixEnabled: formData.get("warzoneRankedMixEnabled") === "on",
+        bo7MixEnabled: formData.get("bo7MixEnabled") === "on",
+        rocketLeagueMixEnabled: formData.get("rocketLeagueMixEnabled") === "on",
+        versusMixEnabled: formData.get("versusMixEnabled") === "on",
         theme,
       },
     });

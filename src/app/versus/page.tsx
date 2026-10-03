@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
 import { requireAuth } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
+import { getMixVisibility } from "@/lib/mix-visibility";
 import { toggleGameQueue } from "@/server/mix/toggle-game-queue";
 import { generateMix } from "@/server/mix/generate-mix";
 import { getTeamDisplayName } from "@/lib/team-names";
@@ -51,6 +52,9 @@ export default async function VersusPage({
 }) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
+
+  const mixVisibility = await getMixVisibility();
+  if (!mixVisibility.VERSUS) redirect("/dashboard");
 
   const user = await db.user.findUnique({
     where: { id: sessionUser.id },

@@ -4,14 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { mainLinks, adminLinks, adminMixLinks, superAdminLinks } from "@/lib/nav-links";
+import { adminLinks, adminMixLinks, superAdminLinks, type NavLink } from "@/lib/nav-links";
 
 type MobileNavProps = {
   canSeeAdmin: boolean;
   isSuperAdmin?: boolean;
+  /** Liens principaux déjà filtrés par visibilité (mix désactivés) côté
+   * serveur (voir SiteShell) — MobileNav est un composant client, il ne
+   * peut pas aller lire SiteConfig lui-même. */
+  mainLinks: NavLink[];
 };
 
-export function MobileNav({ canSeeAdmin, isSuperAdmin = false }: MobileNavProps) {
+export function MobileNav({ canSeeAdmin, isSuperAdmin = false, mainLinks }: MobileNavProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
