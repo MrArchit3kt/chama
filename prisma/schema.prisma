@@ -246,6 +246,15 @@ model SiteConfig {
   contactEnabled       Boolean @default(true)
   registrationsEnabled Boolean @default(true)
 
+  // ✅ Visibilité par jeu des onglets mix côté joueur (nav + page) —
+  // indépendant de la file d'attente elle-même, juste pour masquer un jeu
+  // qu'on ne veut pas proposer pour l'instant. Toujours vrai par défaut.
+  warzoneMixEnabled       Boolean @default(true)
+  warzoneRankedMixEnabled Boolean @default(true)
+  bo7MixEnabled           Boolean @default(true)
+  rocketLeagueMixEnabled  Boolean @default(true)
+  versusMixEnabled        Boolean @default(true)
+
   // ✅ Thème événementiel (Halloween, Noël...) affiché sur tout le site.
   theme SiteTheme @default(DEFAULT)
 

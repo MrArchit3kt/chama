@@ -2,11 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { getSessionUser } from "@/server/auth/session";
 import { mainLinks, adminLinks, adminMixLinks, superAdminLinks } from "@/lib/nav-links";
+import { getMixVisibility, MIX_PATH_VISIBILITY_KEY } from "@/lib/mix-visibility";
 
 export async function SiteSidebar() {
-  const user = await getSessionUser();
+  const [user, mixVisibility] = await Promise.all([getSessionUser(), getMixVisibility()]);
   const canSeeAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const visibleMainLinks = mainLinks.filter((item) => {
+    const key = MIX_PATH_VISIBILITY_KEY[item.href];
+    return !key || mixVisibility[key];
+  });
 
   return (
     <aside className="hidden w-72 shrink-0 lg:block">
@@ -48,7 +53,7 @@ export async function SiteSidebar() {
               Navigation
             </p>
 
-            {mainLinks.map((item) => {
+            {visibleMainLinks.map((item) => {
               const Icon = item.icon;
 
               return (

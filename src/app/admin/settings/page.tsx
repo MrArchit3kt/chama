@@ -214,6 +214,69 @@ export default async function AdminSettingsPage({
               </label>
             </div>
 
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white">
+                Onglets mix visibles par les joueurs
+              </label>
+              <p className="neon-text-muted mb-3 text-xs leading-5">
+                Désactiver un jeu le masque entièrement côté joueur (menu +
+                page directe) sans toucher à la configuration — les pages
+                d’administration du mix restent accessibles pour le
+                préparer avant de le réactiver.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <input
+                    name="warzoneMixEnabled"
+                    type="checkbox"
+                    defaultChecked={config?.warzoneMixEnabled ?? true}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">Warzone</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <input
+                    name="warzoneRankedMixEnabled"
+                    type="checkbox"
+                    defaultChecked={config?.warzoneRankedMixEnabled ?? true}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">Ranked</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <input
+                    name="bo7MixEnabled"
+                    type="checkbox"
+                    defaultChecked={config?.bo7MixEnabled ?? true}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">BO7</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <input
+                    name="rocketLeagueMixEnabled"
+                    type="checkbox"
+                    defaultChecked={config?.rocketLeagueMixEnabled ?? true}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">Rocket League</span>
+                </label>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <input
+                    name="versusMixEnabled"
+                    type="checkbox"
+                    defaultChecked={config?.versusMixEnabled ?? true}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-white">Versus</span>
+                </label>
+              </div>
+            </div>
+
             {errorMessage ? (
               <p className="text-sm font-medium text-rose-400">{errorMessage}</p>
             ) : null}

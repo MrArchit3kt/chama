@@ -11,13 +11,15 @@ import { PushOptInPrompt } from "@/components/notifications/push-opt-in-prompt";
 import { SiteThemeOverlay } from "@/components/theme/site-theme-overlay";
 import { getSessionUser, getChamaWelcomeState, getApprovalWelcomeState } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
+import { mainLinks } from "@/lib/nav-links";
+import { getMixVisibility, MIX_PATH_VISIBILITY_KEY } from "@/lib/mix-visibility";
 
 type SiteShellProps = {
   children: ReactNode;
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
-  const [user, showApprovalWelcome, showChamaWelcome, config] = await Promise.all([
+  const [user, showApprovalWelcome, showChamaWelcome, config, mixVisibility] = await Promise.all([
     getSessionUser(),
     getApprovalWelcomeState(),
     getChamaWelcomeState(),
@@ -25,10 +27,15 @@ export async function SiteShell({ children }: SiteShellProps) {
       where: { id: "main" },
       select: { theme: true, discordInviteUrl: true },
     }),
+    getMixVisibility(),
   ]);
   const canSeeAdmin =
     user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const visibleMainLinks = mainLinks.filter((item) => {
+    const key = MIX_PATH_VISIBILITY_KEY[item.href];
+    return !key || mixVisibility[key];
+  });
 
   return (
     <div className="min-h-screen px-4 py-6 md:px-6">
@@ -47,7 +54,7 @@ export async function SiteShell({ children }: SiteShellProps) {
       {user ? <PushOptInPrompt /> : null}
 
       <div className="mx-auto max-w-7xl">
-        <MobileNav canSeeAdmin={canSeeAdmin} isSuperAdmin={isSuperAdmin} />
+        <MobileNav canSeeAdmin={canSeeAdmin} isSuperAdmin={isSuperAdmin} mainLinks={visibleMainLinks} />
 
         <div className="flex gap-6">
           <SiteSidebar />
