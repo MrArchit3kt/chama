@@ -7,15 +7,18 @@
   --text: #f4f7ff;
   --text-muted: #a5b2d1;
 
-  /* ✅ Thème "Or CHAMA" — repris du logo (fond noir, dégradé or/bronze/cuivre).
-     Les noms --neon-* sont gardés tels quels (pas référencés ailleurs via
-     var(), mais autant ne pas casser une future utilisation) même si la
-     palette n'est plus "neon" au sens propre. */
-  --neon-blue: #d4af37; /* or */
-  --neon-cyan: #f4c430; /* or clair */
-  --neon-green: #cd7f32; /* bronze */
-  --neon-pink: #b8860b; /* or foncé */
-  --neon-purple: #b87333; /* cuivre */
+  /* ✅ Thème du site — 5 teintes utilisées partout (cartes, boutons, badges,
+     titres en dégradé, fond...) via rgba(var(--theme-N-rgb), alpha). Changer
+     ces 5 valeurs recolore tout le design system d'un coup. Triplets "r, g, b"
+     (pas de rgb()/hex) pour pouvoir composer l'alpha avec rgba() ailleurs.
+     Thème par défaut : "Or CHAMA", repris du logo. Les thèmes événementiels
+     (/admin/settings) redéfinissent ces mêmes variables sous [data-theme=...]
+     plus bas dans ce fichier — voir la section "THÈMES ÉVÉNEMENTIELS". */
+  --theme-1-rgb: 212, 175, 55; /* or */
+  --theme-2-rgb: 244, 196, 48; /* or clair */
+  --theme-3-rgb: 205, 127, 50; /* bronze */
+  --theme-4-rgb: 184, 134, 11; /* or foncé */
+  --theme-5-rgb: 184, 115, 51; /* cuivre */
 
   --bg-pan-duration: 18s;
 
@@ -23,6 +26,38 @@
   --rgb-border-size: 1px;
   --rgb-border-radius: 24px;
   --rgb-border-duration: 6s;
+}
+
+/* ===========================
+   ✅ THÈMES ÉVÉNEMENTIELS — couleurs (voir /admin/settings)
+   Redéfinit les 5 teintes partagées : recolore cartes/boutons/badges/
+   titres en dégradé/fond, en plus des décors animés (neige, rubans...)
+   gérés séparément dans SiteThemeOverlay. data-theme posé par SiteShell
+   sur son div racine, d'après SiteConfig.theme.
+   =========================== */
+
+[data-theme="christmas"] {
+  --theme-1-rgb: 226, 73, 58; /* rouge */
+  --theme-2-rgb: 255, 107, 91; /* rouge clair */
+  --theme-3-rgb: 31, 122, 69; /* vert sapin */
+  --theme-4-rgb: 192, 57, 43; /* rouge foncé */
+  --theme-5-rgb: 38, 144, 79; /* vert clair */
+}
+
+[data-theme="halloween"] {
+  --theme-1-rgb: 255, 117, 24; /* orange citrouille */
+  --theme-2-rgb: 255, 169, 77; /* orange clair */
+  --theme-3-rgb: 139, 92, 246; /* violet */
+  --theme-4-rgb: 194, 65, 12; /* orange foncé */
+  --theme-5-rgb: 109, 40, 217; /* violet foncé */
+}
+
+[data-theme="pink-october"] {
+  --theme-1-rgb: 244, 114, 182; /* rose */
+  --theme-2-rgb: 251, 207, 232; /* rose pâle */
+  --theme-3-rgb: 236, 72, 153; /* rose vif */
+  --theme-4-rgb: 219, 39, 119; /* rose foncé */
+  --theme-5-rgb: 249, 168, 212; /* rose clair */
 }
 
 * {
@@ -44,11 +79,11 @@ body {
 
   /* ✅ Fond statique (comme avant) */
   background:
-    radial-gradient(circle at 10% 18%, rgba(212, 175, 55, 0.20), transparent 24%),
-    radial-gradient(circle at 82% 16%, rgba(244, 196, 48, 0.16), transparent 22%),
-    radial-gradient(circle at 18% 82%, rgba(205, 127, 50, 0.14), transparent 24%),
-    radial-gradient(circle at 86% 78%, rgba(184, 134, 11, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.03), transparent 45%),
+    radial-gradient(circle at 10% 18%, rgba(var(--theme-1-rgb), 0.20), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(var(--theme-2-rgb), 0.16), transparent 22%),
+    radial-gradient(circle at 18% 82%, rgba(var(--theme-3-rgb), 0.14), transparent 24%),
+    radial-gradient(circle at 86% 78%, rgba(var(--theme-4-rgb), 0.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, rgba(var(--theme-1-rgb), 0.03), transparent 45%),
     linear-gradient(180deg, #020308 0%, #070604 35%, #0a0804 65%, #020308 100%);
 
   font-family:
@@ -101,7 +136,7 @@ a {
 }
 
 ::selection {
-  background: rgba(212, 175, 55, 0.25);
+  background: rgba(var(--theme-1-rgb), 0.25);
   color: white;
 }
 
@@ -117,7 +152,7 @@ textarea,
 select {
   color: var(--text);
   background: rgba(14, 12, 6, 0.84);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(var(--theme-1-rgb), 0.2);
   border-radius: 14px;
   outline: none;
   transition:
@@ -134,10 +169,10 @@ textarea::placeholder {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(244, 196, 48, 0.5);
+  border-color: rgba(var(--theme-2-rgb), 0.5);
   box-shadow:
-    0 0 0 1px rgba(244, 196, 48, 0.18),
-    0 0 18px rgba(212, 175, 55, 0.14);
+    0 0 0 1px rgba(var(--theme-2-rgb), 0.18),
+    0 0 18px rgba(var(--theme-1-rgb), 0.14);
   background: rgba(16, 13, 6, 0.94);
 }
 
@@ -157,10 +192,10 @@ button {
   inset: -10%;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 20%, rgba(212, 175, 55, 0.15), transparent 18%),
-    radial-gradient(circle at 86% 18%, rgba(244, 196, 48, 0.13), transparent 18%),
-    radial-gradient(circle at 14% 84%, rgba(205, 127, 50, 0.12), transparent 18%),
-    radial-gradient(circle at 88% 82%, rgba(184, 134, 11, 0.13), transparent 18%);
+    radial-gradient(circle at 12% 20%, rgba(var(--theme-1-rgb), 0.15), transparent 18%),
+    radial-gradient(circle at 86% 18%, rgba(var(--theme-2-rgb), 0.13), transparent 18%),
+    radial-gradient(circle at 14% 84%, rgba(var(--theme-3-rgb), 0.12), transparent 18%),
+    radial-gradient(circle at 88% 82%, rgba(var(--theme-4-rgb), 0.13), transparent 18%);
   filter: blur(34px);
   z-index: 0;
   animation: bg-pan var(--bg-pan-duration) ease-in-out infinite;
@@ -178,8 +213,8 @@ button {
   inset: -120px;
   pointer-events: none;
   background:
-    linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(var(--theme-1-rgb), 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--theme-1-rgb), 0.03) 1px, transparent 1px);
   background-size: 42px 42px;
   opacity: 0.35;
   z-index: 0;
@@ -200,18 +235,18 @@ button {
   color: white;
   letter-spacing: -0.02em;
   text-shadow:
-    0 0 10px rgba(212, 175, 55, 0.1),
-    0 0 14px rgba(184, 134, 11, 0.06);
+    0 0 10px rgba(var(--theme-1-rgb), 0.1),
+    0 0 14px rgba(var(--theme-4-rgb), 0.06);
 }
 
 .neon-gradient-text {
   background: linear-gradient(
     90deg,
-    #d4af37 0%,
-    #f4c430 28%,
-    #cd7f32 52%,
-    #b8860b 78%,
-    #b87333 100%
+    rgb(var(--theme-1-rgb)) 0%,
+    rgb(var(--theme-2-rgb)) 28%,
+    rgb(var(--theme-3-rgb)) 52%,
+    rgb(var(--theme-4-rgb)) 78%,
+    rgb(var(--theme-5-rgb)) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -221,10 +256,10 @@ button {
 .neon-gradient-text-soft {
   background: linear-gradient(
     90deg,
-    rgba(212, 175, 55, 0.95) 0%,
-    rgba(244, 196, 48, 0.95) 35%,
-    rgba(184, 134, 11, 0.95) 70%,
-    rgba(184, 115, 51, 0.95) 100%
+    rgba(var(--theme-1-rgb), 0.95) 0%,
+    rgba(var(--theme-2-rgb), 0.95) 35%,
+    rgba(var(--theme-4-rgb), 0.95) 70%,
+    rgba(var(--theme-5-rgb), 0.95) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -251,12 +286,12 @@ button {
   backdrop-filter: blur(14px);
 
   /* ✅ bordure statique fallback */
-  border: 1px solid rgba(212, 175, 55, 0.18);
+  border: 1px solid rgba(var(--theme-1-rgb), 0.18);
 
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 12px 38px rgba(0, 0, 0, 0.34),
-    0 0 22px rgba(212, 175, 55, 0.07);
+    0 0 22px rgba(var(--theme-1-rgb), 0.07);
 }
 
 /* ✅ l’animation est sur un pseudo-element qui NE DESSINE QUE LE CONTOUR */
@@ -270,12 +305,12 @@ button {
   /* gradient long => pas d’artefacts diagonaux */
   background: linear-gradient(
     90deg,
-    rgba(212, 175, 55, 0.80),
-    rgba(244, 196, 48, 0.55),
-    rgba(205, 127, 50, 0.60),
-    rgba(184, 134, 11, 0.75),
-    rgba(184, 115, 51, 0.65),
-    rgba(212, 175, 55, 0.80)
+    rgba(var(--theme-1-rgb), 0.80),
+    rgba(var(--theme-2-rgb), 0.55),
+    rgba(var(--theme-3-rgb), 0.60),
+    rgba(var(--theme-4-rgb), 0.75),
+    rgba(var(--theme-5-rgb), 0.65),
+    rgba(var(--theme-1-rgb), 0.80)
   );
   background-size: 300% 300%;
   animation: rgb-border-shift var(--rgb-border-duration) linear infinite;
@@ -290,8 +325,8 @@ button {
 
   /* ✅ petit halo externe (optionnel, safe) */
   filter:
-    drop-shadow(0 0 10px rgba(212, 175, 55, 0.09))
-    drop-shadow(0 0 12px rgba(184, 134, 11, 0.07));
+    drop-shadow(0 0 10px rgba(var(--theme-1-rgb), 0.09))
+    drop-shadow(0 0 12px rgba(var(--theme-4-rgb), 0.07));
   opacity: 1;
 }
 
@@ -304,7 +339,7 @@ button {
 /* Soft cards (pas rgb) */
 .neon-card-soft {
   border-radius: 20px;
-  border: 1px solid rgba(212, 175, 55, 0.16);
+  border: 1px solid rgba(var(--theme-1-rgb), 0.16);
   background: rgba(14, 12, 6, 0.68);
   backdrop-filter: blur(12px);
   box-shadow:
@@ -314,20 +349,20 @@ button {
 
 /* Buttons */
 .neon-button {
-  border: 1px solid rgba(244, 196, 48, 0.32);
+  border: 1px solid rgba(var(--theme-2-rgb), 0.32);
   border-radius: 16px;
   background: linear-gradient(
     135deg,
-    rgba(212, 175, 55, 0.2),
-    rgba(244, 196, 48, 0.14),
-    rgba(184, 134, 11, 0.16)
+    rgba(var(--theme-1-rgb), 0.2),
+    rgba(var(--theme-2-rgb), 0.14),
+    rgba(var(--theme-4-rgb), 0.16)
   );
   color: white;
   font-weight: 700;
   box-shadow:
-    0 0 0 1px rgba(244, 196, 48, 0.05),
-    0 0 18px rgba(212, 175, 55, 0.13),
-    0 0 20px rgba(184, 134, 11, 0.09);
+    0 0 0 1px rgba(var(--theme-2-rgb), 0.05),
+    0 0 18px rgba(var(--theme-1-rgb), 0.13),
+    0 0 20px rgba(var(--theme-4-rgb), 0.09);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -336,15 +371,15 @@ button {
 
 .neon-button:hover {
   transform: translateY(-1px);
-  border-color: rgba(244, 196, 48, 0.5);
+  border-color: rgba(var(--theme-2-rgb), 0.5);
   box-shadow:
-    0 0 0 1px rgba(244, 196, 48, 0.09),
-    0 0 24px rgba(212, 175, 55, 0.18),
-    0 0 28px rgba(184, 134, 11, 0.13);
+    0 0 0 1px rgba(var(--theme-2-rgb), 0.09),
+    0 0 24px rgba(var(--theme-1-rgb), 0.18),
+    0 0 28px rgba(var(--theme-4-rgb), 0.13);
 }
 
 .neon-button-secondary {
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(var(--theme-1-rgb), 0.2);
   border-radius: 16px;
   background: rgba(18, 15, 8, 0.78);
   color: #fff6e0;
@@ -357,10 +392,10 @@ button {
 
 .neon-button-secondary:hover {
   transform: translateY(-1px);
-  border-color: rgba(184, 134, 11, 0.32);
+  border-color: rgba(var(--theme-4-rgb), 0.32);
   box-shadow:
-    0 0 18px rgba(184, 134, 11, 0.09),
-    0 0 12px rgba(212, 175, 55, 0.07);
+    0 0 18px rgba(var(--theme-4-rgb), 0.09),
+    0 0 12px rgba(var(--theme-1-rgb), 0.07);
 }
 
 .neon-badge {
@@ -368,7 +403,7 @@ button {
   align-items: center;
   gap: 0.45rem;
   border-radius: 999px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid rgba(var(--theme-1-rgb), 0.25);
   background: rgba(14, 12, 6, 0.76);
   padding: 0.35rem 0.8rem;
   font-size: 0.75rem;
@@ -377,8 +412,8 @@ button {
   text-transform: uppercase;
   color: #fff6e0;
   box-shadow:
-    0 0 12px rgba(212, 175, 55, 0.09),
-    inset 0 0 12px rgba(212, 175, 55, 0.03);
+    0 0 12px rgba(var(--theme-1-rgb), 0.09),
+    inset 0 0 12px rgba(var(--theme-1-rgb), 0.03);
 }
 
 /* ✅ Harmonisation mobile : badges plus compacts sur petits écrans */
@@ -394,7 +429,7 @@ button {
 /* Scrollbar */
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(212, 175, 55, 0.35) rgba(14, 12, 6, 0.5);
+  scrollbar-color: rgba(var(--theme-1-rgb), 0.35) rgba(14, 12, 6, 0.5);
 }
 
 .thin-scrollbar::-webkit-scrollbar {
@@ -409,9 +444,9 @@ button {
 .thin-scrollbar::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(212, 175, 55, 0.5),
-    rgba(244, 196, 48, 0.5),
-    rgba(184, 134, 11, 0.5)
+    rgba(var(--theme-1-rgb), 0.5),
+    rgba(var(--theme-2-rgb), 0.5),
+    rgba(var(--theme-4-rgb), 0.5)
   );
   border-radius: 999px;
 }
@@ -451,7 +486,7 @@ button {
    voir .logo-static ci-dessous. */
 .logo-static {
   display: inline-flex;
-  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.18));
+  filter: drop-shadow(0 0 8px rgba(var(--theme-1-rgb), 0.18));
 }
 
 /* ✅ Pop-up de bienvenue "membre CHAMA" : explosion d'ouverture */
