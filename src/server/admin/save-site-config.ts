@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/prisma";
 import { requireAdmin } from "@/server/auth/session";
 import { logServerError } from "@/lib/log-error";
@@ -90,6 +91,12 @@ export async function saveSiteConfig(formData: FormData) {
         theme,
       },
     });
+
+    // ✅ SiteConfig (thème, visibilité des onglets mix...) est lu par le
+    // layout racine et par SiteShell sur TOUTE page — sans ça, une page déjà
+    // visitée dans la session (cache de navigation côté client de Next)
+    // peut continuer à afficher l'ancien état jusqu'à sa propre expiration.
+    revalidatePath("/", "layout");
 
     await logActivity({
       action: "SITE_CONFIG_UPDATED",
