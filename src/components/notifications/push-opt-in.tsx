@@ -13,7 +13,61 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+/**
+ * Une fois la permission refusée, AUCUN site ne peut la redemander par JS
+ * (Notification.requestPermission() renvoie direct "denied" sans jamais
+ * raffiche le pop-up — restriction du navigateur, pas contournable). Le
+ * seul chemin est de rouvrir la permission à la main dans les réglages —
+ * on donne donc le trajet exact selon le navigateur détecté.
+ */
+function getReenableInstructions(): string {
+  if (typeof navigator === "undefined") return "";
+  const ua = navigator.userAgent;
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  const isFirefox = /firefox|fxios/i.test(ua);
+  const isSafariOnly = /safari/i.test(ua) && !/chrome|crios|fxios|edg/i.test(ua);
+
+  if (isIOS) {
+    return "Réglages iPhone → fais défiler jusqu'à Safari (ou l'appli CHAMA si installée sur l'écran d'accueil) → Notifications → Autoriser.";
+  }
+  if (isAndroid && isFirefox) {
+    return "Appuie sur le cadenas à côté de l'adresse du site → Autorisations → Notifications → Autoriser, puis reviens ici.";
+  }
+  if (isAndroid) {
+    return "Appuie sur le cadenas (ou les ⋮) à côté de l'adresse du site → Autorisations → Notifications → Autoriser, puis reviens ici.";
+  }
+  if (isSafariOnly) {
+    return "Menu Safari → Réglages pour ce site web → Notifications → Autoriser, puis recharge la page.";
+  }
+  if (isFirefox) {
+    return "Clique sur le cadenas à gauche de l'adresse → Autorisations → Notifications → Autoriser, puis recharge la page.";
+  }
+  return "Clique sur le cadenas à gauche de l'adresse du site → Autorisations du site → Notifications → Autoriser, puis recharge la page.";
+}
+
 type Status = "checking" | "unsupported" | "off" | "on" | "denied";
+
+async function readStatus(): Promise<Status> {
+  if (
+    !VAPID_PUBLIC_KEY ||
+    typeof window === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window)
+  ) {
+    return "unsupported";
+  }
+
+  if (Notification.permission === "denied") return "denied";
+
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    const existing = await registration.pushManager.getSubscription();
+    return existing ? "on" : "off";
+  } catch {
+    return "unsupported";
+  }
+}
 
 export function PushOptIn() {
   const [status, setStatus] = useState<Status>("checking");
@@ -21,37 +75,20 @@ export function PushOptIn() {
 
   useEffect(() => {
     let cancelled = false;
-
-    async function init() {
-      if (
-        !VAPID_PUBLIC_KEY ||
-        typeof window === "undefined" ||
-        !("serviceWorker" in navigator) ||
-        !("PushManager" in window)
-      ) {
-        if (!cancelled) setStatus("unsupported");
-        return;
-      }
-
-      if (Notification.permission === "denied") {
-        if (!cancelled) setStatus("denied");
-        return;
-      }
-
-      try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
-        const existing = await registration.pushManager.getSubscription();
-        if (!cancelled) setStatus(existing ? "on" : "off");
-      } catch {
-        if (!cancelled) setStatus("unsupported");
-      }
-    }
-
-    init();
+    readStatus().then((s) => {
+      if (!cancelled) setStatus(s);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  async function handleRecheck() {
+    setBusy(true);
+    const next = await readStatus();
+    setStatus(next);
+    setBusy(false);
+  }
 
   async function handleEnable() {
     if (!VAPID_PUBLIC_KEY) return;
@@ -112,10 +149,26 @@ export function PushOptIn() {
 
   if (status === "denied") {
     return (
-      <p className="neon-text-muted text-xs leading-5">
-        Notifications bloquées par le navigateur — autorise-les dans les
-        réglages du site pour les activer ici.
-      </p>
+      <div className="grid gap-2">
+        <p className="neon-text-muted text-xs leading-5">
+          Notifications bloquées — une fois refusées, un site ne peut plus
+          jamais redemander la permission tout seul, il faut l’autoriser à
+          la main :
+        </p>
+        <p className="neon-text-muted rounded-xl border border-white/8 bg-white/2 px-3 py-2 text-xs leading-5">
+          {getReenableInstructions()}
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={handleRecheck}
+            disabled={busy}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/[0.05] disabled:opacity-50"
+          >
+            {busy ? "..." : "J’ai autorisé, vérifier à nouveau"}
+          </button>
+        </div>
+      </div>
     );
   }
 
