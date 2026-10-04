@@ -12,6 +12,7 @@ import { disconnectDiscord } from "@/server/profil/disconnect-discord";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 import { isDiscordOAuthConfigured } from "@/lib/discord";
 import { PushOptIn } from "@/components/notifications/push-opt-in";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -461,6 +462,23 @@ export default async function ProfilePage({
           </p>
           <div className="mt-4">
             <PushOptIn />
+          </div>
+        </div>
+
+        {/* ===================== */}
+        {/* INSTALLER L'APPLICATION */}
+        {/* ===================== */}
+        <div className="neon-card p-6 md:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
+            Application
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-white">Installer l’application</h3>
+          <p className="neon-text-muted mt-2 text-sm leading-6">
+            Ajoute CHAMA sur ton écran d’accueil pour l’ouvrir comme une
+            application, sans passer par le navigateur.
+          </p>
+          <div className="mt-4">
+            <InstallAppButton />
           </div>
         </div>
 
