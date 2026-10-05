@@ -8,6 +8,7 @@ import { ScrollRestoration } from "@/components/layout/scroll-restoration";
 import { ChamaWelcomePopup } from "@/components/layout/chama-welcome-popup";
 import { ApprovalWelcomePopup } from "@/components/layout/approval-welcome-popup";
 import { PushOptInPrompt } from "@/components/notifications/push-opt-in-prompt";
+import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 import { SiteThemeOverlay } from "@/components/theme/site-theme-overlay";
 import { getSessionUser, getChamaWelcomeState, getApprovalWelcomeState } from "@/server/auth/session";
 import { db } from "@/lib/prisma";
@@ -46,6 +47,7 @@ export async function SiteShell({ children }: SiteShellProps) {
         <ChamaWelcomePopup />
       ) : null}
 
+      {user ? <InstallAppPrompt /> : null}
       {user ? <PushOptInPrompt /> : null}
 
       <div className="mx-auto max-w-7xl">
