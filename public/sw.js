@@ -9,6 +9,15 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// Chrome/Android vérifie la présence d'un gestionnaire fetch pour juger un
+// site "installable" (condition de beforeinstallprompt) — sans lui, le
+// bouton d'install en un clic peut ne jamais se proposer sur certains
+// appareils/versions. Pur passage au réseau, aucun cache ajouté (voir le
+// commentaire en tête de fichier : volontairement pas de mode hors-ligne).
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
