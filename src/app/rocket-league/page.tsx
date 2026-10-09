@@ -18,8 +18,10 @@ import { rocketLeagueRankLabel } from "@/lib/ranks";
 import { setTeamResult } from "@/server/mix/set-team-result";
 import { setPlayerStats } from "@/server/mix/set-player-stats";
 
-function getErrorMessage(error?: string) {
+function getErrorMessage(error?: string, wait?: string) {
   switch (error) {
+    case "cooldown":
+      return `Un mix vient d’être généré pour ce jeu — réessaie dans ${wait ?? "quelques"} min (délai anti-reroll de 20 min, sauf pour le super admin).`;
     case "forbidden":
       return "Rejoins d’abord la file Rocket League pour pouvoir générer.";
     case "pool_forbidden":
@@ -52,7 +54,7 @@ function getErrorMessage(error?: string) {
 export default async function RocketLeaguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; removed?: string; session?: string }>;
+  searchParams: Promise<{ error?: string; wait?: string; success?: string; removed?: string; session?: string }>;
 }) {
   const sessionUser = await requireAuth();
   if (!sessionUser) redirect("/login");
@@ -67,7 +69,7 @@ export default async function RocketLeaguePage({
   if (!user) redirect("/login");
 
   const sp = (await searchParams) ?? {};
-  const errorMessage = getErrorMessage(sp.error);
+  const errorMessage = getErrorMessage(sp.error, sp.wait);
   const isSuccess = sp.success === "1";
   const isRemoved = sp.removed === "1";
   const sessionId = sp.session;
