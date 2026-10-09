@@ -19,6 +19,11 @@ import {
 
 type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS";
 
+// ✅ Anti "reroll" : empêche de régénérer un mix en boucle jusqu'à tomber
+// sur la répartition voulue. Un SUPER_ADMIN n'est jamais concerné (voir
+// generateMix) — un simple ADMIN l'est comme n'importe quel joueur.
+const REGENERATE_COOLDOWN_MINUTES = 20;
+
 function isNextRedirectError(error: unknown) {
   return (
     typeof error === "object" &&
@@ -236,6 +241,24 @@ export async function generateMix(formData: FormData) {
 
   const game = gameFrom(formData.get("game"));
   if (!game) redirect("/dashboard");
+
+  if (sessionUser.role !== "SUPER_ADMIN") {
+    const lastSession = await db.mixSession.findFirst({
+      where: { game },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+
+    if (lastSession) {
+      const elapsedMs = Date.now() - lastSession.createdAt.getTime();
+      const cooldownMs = REGENERATE_COOLDOWN_MINUTES * 60_000;
+
+      if (elapsedMs < cooldownMs) {
+        const minutesLeft = Math.ceil((cooldownMs - elapsedMs) / 60_000);
+        redirectToGame(game, `?error=cooldown&wait=${minutesLeft}`);
+      }
+    }
+  }
 
   const onlineAdminsCount = await db.user.count({
     where: {
