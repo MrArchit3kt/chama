@@ -265,6 +265,10 @@ model SiteConfig {
   rocketLeagueMixEnabled  Boolean @default(true)
   versusMixEnabled        Boolean @default(true)
 
+  // ✅ Délai anti-reroll entre deux générations d'un même mix (minutes),
+  // voir generate-mix.ts. Réglable au cas où 20 min s'avère trop long/court.
+  mixRegenerateCooldownMinutes Int @default(20)
+
   // ✅ Thème événementiel (Halloween, Noël...) affiché sur tout le site.
   theme SiteTheme @default(DEFAULT)
 

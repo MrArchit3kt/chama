@@ -296,6 +296,29 @@ export default async function AdminSettingsPage({
               </div>
             </div>
 
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white">
+                Délai anti-reroll entre deux générations d’un même mix
+              </label>
+              <p className="neon-text-muted mb-3 text-xs leading-5">
+                Empêche de régénérer les équipes en boucle jusqu’à tomber sur
+                la répartition voulue. 0 = désactive le délai. Le super admin
+                n’est jamais concerné ; un admin avec la permission dédiée
+                peut le contourner si un joueur a rejoint la file entre-temps.
+              </p>
+              <div className="flex items-center gap-2 sm:max-w-xs">
+                <input
+                  name="mixRegenerateCooldownMinutes"
+                  type="number"
+                  min={0}
+                  max={180}
+                  defaultValue={config?.mixRegenerateCooldownMinutes ?? 20}
+                  className="w-full px-4 py-2.5 text-sm"
+                />
+                <span className="neon-text-muted shrink-0 text-sm">minutes</span>
+              </div>
+            </div>
+
             {errorMessage ? (
               <p className="text-sm font-medium text-rose-400">{errorMessage}</p>
             ) : null}
