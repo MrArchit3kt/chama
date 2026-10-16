@@ -144,6 +144,7 @@ export async function createEvent(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: event.title,
+      metadata: { eventDate: event.eventDate.toLocaleString("fr-FR") },
     });
   } catch (error) {
     await logServerError("CREATE_EVENT_ERROR", error);

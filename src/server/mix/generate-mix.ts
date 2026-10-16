@@ -6,8 +6,9 @@ import { requireAuth } from "@/server/auth/session";
 import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/discord";
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
-import { notifyMixTeamsGenerated } from "@/lib/mix-notifications";
+import { notifyMixTeamsGenerated, GAME_LABELS } from "@/lib/mix-notifications";
 import { hasAdminPermission } from "@/lib/admin-permissions";
+import { sendPushToUsers } from "@/lib/push";
 import {
   shuffle,
   getTeamSizesFourThree,
@@ -26,6 +27,13 @@ type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS"
 // réglable dans /admin/settings (SiteConfig.mixRegenerateCooldownMinutes),
 // repli sur 20 min si la config n'existe pas encore.
 const DEFAULT_REGENERATE_COOLDOWN_MINUTES = 20;
+
+// ✅ Seuil (fixe, pas réglable) pour l'alerte super admin "régénération
+// rapprochée" — distinct du délai anti-reroll lui-même : ne peut se
+// produire que si ce délai a été contourné (SUPER_ADMIN, ou ADMIN avec
+// mix.regenerate_bypass + nouveau joueur), donc toujours potentiellement
+// à examiner, même si légitime.
+const RAPID_REGENERATION_ALERT_MINUTES = 5;
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -120,6 +128,50 @@ async function hasNewPlayerSinceSession(game: MixGame, sessionId: string): Promi
 }
 
 /**
+ * Alerte (push + in-app) tous les SUPER_ADMIN quand un mix est régénéré
+ * moins de RAPID_REGENERATION_ALERT_MINUTES après le précédent — ne peut
+ * arriver que si le délai anti-reroll a été contourné, donc toujours
+ * potentiellement à examiner. Best-effort : ne doit jamais faire échouer
+ * la génération elle-même.
+ */
+async function notifyRapidRegeneration(
+  game: MixGame,
+  actor: { name: string; username: string; role: string },
+  minutesSincePrevious: number,
+) {
+  try {
+    const superAdmins = await db.user.findMany({
+      where: { role: "SUPER_ADMIN", status: "ACTIVE" },
+      select: { id: true },
+    });
+    if (superAdmins.length === 0) return;
+
+    const gameLabel = GAME_LABELS[game] ?? game;
+    const roleLabel = actor.role === "SUPER_ADMIN" ? "Super admin" : "Admin";
+    const whenLabel = minutesSincePrevious <= 0 ? "moins d’1 min" : `${minutesSincePrevious} min`;
+    const message = `${roleLabel} ${actor.name} (@${actor.username}) a regénéré le mix ${gameLabel} ${whenLabel} après la précédente génération — vérifie si c’est légitime.`;
+
+    await db.notification.createMany({
+      data: superAdmins.map((sa) => ({
+        userId: sa.id,
+        type: "INFO",
+        channel: "IN_APP",
+        status: "PENDING",
+        title: "⚠️ Régénération de mix rapprochée",
+        message,
+      })),
+    });
+
+    await sendPushToUsers(
+      superAdmins.map((sa) => sa.id),
+      { title: "⚠️ Régénération de mix rapprochée", body: message, url: "/admin/activity" },
+    );
+  } catch (error) {
+    await logServerError("MIX_RAPID_REGEN_ALERT_ERROR", error);
+  }
+}
+
+/**
  * Déplace automatiquement les joueurs (comptes réels avec un Discord lié
  * via OAuth) dans le salon vocal configuré pour leur équipe. Best-effort
  * total : jamais bloquant, jamais d'erreur remontée — un mix généré doit
@@ -172,7 +224,9 @@ async function moveTeamsToDiscordVoice(game: MixGame, teamsUserIds: string[][]) 
 /** WARZONE et BO7 partagent exactement la même logique de génération (4/3). */
 async function runFourThreeMix(
   game: "WARZONE" | "BO7",
-  sessionUser: { id: string; name: string; username: string },
+  sessionUser: { id: string; name: string; username: string; role: string },
+  isRapidRegeneration: boolean,
+  minutesSincePrevious: number,
 ) {
   const sessionUserId = sessionUser.id;
   const availabilityField =
@@ -277,6 +331,9 @@ async function runFourThreeMix(
 
   await moveTeamsToDiscordVoice(game, teamsUserIds);
   await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
+  if (isRapidRegeneration) {
+    await notifyRapidRegeneration(game, sessionUser, minutesSincePrevious);
+  }
 
   await logActivity({
     action: "MIX_GENERATED",
@@ -295,44 +352,53 @@ export async function generateMix(formData: FormData) {
   const game = gameFrom(formData.get("game"));
   if (!game) redirect("/dashboard");
 
-  if (sessionUser.role !== "SUPER_ADMIN") {
-    const lastSession = await db.mixSession.findFirst({
-      where: { game },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, createdAt: true },
+  // ✅ Lu pour TOUT le monde, SUPER_ADMIN compris : sert à la fois à
+  // l'application du délai (non-SUPER_ADMIN seulement, voir plus bas) et
+  // à l'alerte de régénération rapprochée ci-dessous, qui elle doit au
+  // contraire surveiller en priorité les cas qui CONTOURNENT le délai
+  // (SUPER_ADMIN toujours, ADMIN avec permission + nouveau joueur).
+  const lastSession = await db.mixSession.findFirst({
+    where: { game },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdAt: true },
+  });
+  const elapsedSinceLastMs = lastSession ? Date.now() - lastSession.createdAt.getTime() : null;
+
+  if (sessionUser.role !== "SUPER_ADMIN" && lastSession && elapsedSinceLastMs !== null) {
+    const siteConfig = await db.siteConfig.findUnique({
+      where: { id: "main" },
+      select: { mixRegenerateCooldownMinutes: true },
     });
+    const cooldownMinutes =
+      siteConfig?.mixRegenerateCooldownMinutes ?? DEFAULT_REGENERATE_COOLDOWN_MINUTES;
+    const cooldownMs = cooldownMinutes * 60_000;
 
-    if (lastSession) {
-      const siteConfig = await db.siteConfig.findUnique({
-        where: { id: "main" },
-        select: { mixRegenerateCooldownMinutes: true },
-      });
-      const cooldownMinutes =
-        siteConfig?.mixRegenerateCooldownMinutes ?? DEFAULT_REGENERATE_COOLDOWN_MINUTES;
+    if (elapsedSinceLastMs < cooldownMs) {
+      // ✅ Un ADMIN avec la permission mix.regenerate_bypass peut quand
+      // même regénérer avant la fin du délai, mais UNIQUEMENT si un
+      // joueur a rejoint la file depuis la dernière génération — sinon
+      // ça reviendrait à autoriser un reroll pour le même groupe.
+      const hasBypassPermission = hasAdminPermission(
+        sessionUser.role,
+        sessionUser.adminPermissions,
+        "mix.regenerate_bypass",
+      );
+      const canBypass =
+        hasBypassPermission && (await hasNewPlayerSinceSession(game, lastSession.id));
 
-      const elapsedMs = Date.now() - lastSession.createdAt.getTime();
-      const cooldownMs = cooldownMinutes * 60_000;
-
-      if (elapsedMs < cooldownMs) {
-        // ✅ Un ADMIN avec la permission mix.regenerate_bypass peut quand
-        // même regénérer avant la fin du délai, mais UNIQUEMENT si un
-        // joueur a rejoint la file depuis la dernière génération — sinon
-        // ça reviendrait à autoriser un reroll pour le même groupe.
-        const hasBypassPermission = hasAdminPermission(
-          sessionUser.role,
-          sessionUser.adminPermissions,
-          "mix.regenerate_bypass",
-        );
-        const canBypass =
-          hasBypassPermission && (await hasNewPlayerSinceSession(game, lastSession.id));
-
-        if (!canBypass) {
-          const minutesLeft = Math.ceil((cooldownMs - elapsedMs) / 60_000);
-          redirectToGame(game, `?error=cooldown&wait=${minutesLeft}`);
-        }
+      if (!canBypass) {
+        const minutesLeft = Math.ceil((cooldownMs - elapsedSinceLastMs) / 60_000);
+        redirectToGame(game, `?error=cooldown&wait=${minutesLeft}`);
       }
     }
   }
+
+  // ✅ Alerte super admin : une régénération a quand même eu lieu (délai
+  // contourné ou désactivé) moins de 5 min après la précédente — à
+  // examiner après coup, voir notifyRapidRegeneration plus bas.
+  const isRapidRegeneration =
+    elapsedSinceLastMs !== null && elapsedSinceLastMs < RAPID_REGENERATION_ALERT_MINUTES * 60_000;
+  const minutesSincePrevious = elapsedSinceLastMs !== null ? Math.floor(elapsedSinceLastMs / 60_000) : 0;
 
   const onlineAdminsCount = await db.user.count({
     where: {
@@ -390,7 +456,7 @@ export async function generateMix(formData: FormData) {
     // WARZONE NORMAL & BO7 (mêmes règles 4/3)
     // =========================
     if (game === "WARZONE" || game === "BO7") {
-      await runFourThreeMix(game, sessionUser);
+      await runFourThreeMix(game, sessionUser, isRapidRegeneration, minutesSincePrevious);
     }
 
     // =========================
@@ -489,6 +555,9 @@ export async function generateMix(formData: FormData) {
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
       await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
+      if (isRapidRegeneration) {
+        await notifyRapidRegeneration(game, sessionUser, minutesSincePrevious);
+      }
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -601,6 +670,9 @@ export async function generateMix(formData: FormData) {
 
       await moveTeamsToDiscordVoice(game, teamsUserIds);
       await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
+      if (isRapidRegeneration) {
+        await notifyRapidRegeneration(game, sessionUser, minutesSincePrevious);
+      }
 
       await logActivity({
         action: "MIX_GENERATED",
@@ -727,6 +799,9 @@ export async function generateMix(formData: FormData) {
 
     await moveTeamsToDiscordVoice(game, teamsUserIds);
     await notifyMixTeamsGenerated(game, teamsUserIds, teamsTempIds);
+    if (isRapidRegeneration) {
+      await notifyRapidRegeneration(game, sessionUser, minutesSincePrevious);
+    }
 
     await logActivity({
       action: "MIX_GENERATED",
