@@ -3,8 +3,10 @@ import { db } from "@/lib/prisma";
 import { logServerError } from "@/lib/log-error";
 import { sendPushToUsers } from "@/lib/push";
 
-const GAME_LABELS: Record<string, string> = {
-  WARZONE: "Warzone",
+// ✅ Exporté : réutilisé par generate-mix.ts (alerte de régénération
+// rapprochée) pour ne pas dupliquer ce mapping.
+export const GAME_LABELS: Record<string, string> = {
+  WARZONE: "Décontracté",
   WARZONE_RANKED: "Warzone Ranked",
   BO7: "BO7",
   ROCKET_LEAGUE: "Rocket League",

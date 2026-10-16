@@ -31,6 +31,7 @@ export async function deleteEvent(formData: FormData) {
       id: true,
       title: true,
       coverImageUrl: true,
+      eventDate: true,
     },
   });
 
@@ -52,6 +53,7 @@ export async function deleteEvent(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: existing.title,
+      metadata: { eventDate: existing.eventDate.toLocaleString("fr-FR") },
     });
   } catch (error) {
     await logServerError("DELETE_EVENT_ERROR", error);

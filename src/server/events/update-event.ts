@@ -151,7 +151,7 @@ export async function updateEvent(formData: FormData) {
       actorId: admin.id,
       actorLabel: `${admin.name} (@${admin.username})`,
       targetLabel: title,
-      metadata: { eventId: existing.id },
+      metadata: { eventId: existing.id, eventDate: startDate.toLocaleString("fr-FR") },
     });
   } catch (error) {
     await logServerError("UPDATE_EVENT_ERROR", error);
