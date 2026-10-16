@@ -46,6 +46,13 @@ export async function saveSiteConfig(formData: FormData) {
     ? (themeRaw as (typeof SITE_THEMES)[number])
     : "DEFAULT";
 
+  // ✅ Délai anti-reroll des mix (minutes) — borné 0-180 pour éviter une
+  // valeur absurde (0 = désactive le délai, pas de minimum imposé sinon).
+  const cooldownRaw = Number(formData.get("mixRegenerateCooldownMinutes"));
+  const mixRegenerateCooldownMinutes = Number.isFinite(cooldownRaw)
+    ? Math.min(180, Math.max(0, Math.round(cooldownRaw)))
+    : 20;
+
   if (!siteName || !homeHeadline || !homeDescription) {
     redirect("/admin/settings?error=validation");
   }
@@ -69,6 +76,7 @@ export async function saveSiteConfig(formData: FormData) {
         bo7MixEnabled: formData.get("bo7MixEnabled") === "on",
         rocketLeagueMixEnabled: formData.get("rocketLeagueMixEnabled") === "on",
         versusMixEnabled: formData.get("versusMixEnabled") === "on",
+        mixRegenerateCooldownMinutes,
         theme,
       },
       create: {
@@ -88,6 +96,7 @@ export async function saveSiteConfig(formData: FormData) {
         bo7MixEnabled: formData.get("bo7MixEnabled") === "on",
         rocketLeagueMixEnabled: formData.get("rocketLeagueMixEnabled") === "on",
         versusMixEnabled: formData.get("versusMixEnabled") === "on",
+        mixRegenerateCooldownMinutes,
         theme,
       },
     });

@@ -22,8 +22,10 @@ type MixGame = "WARZONE" | "WARZONE_RANKED" | "BO7" | "ROCKET_LEAGUE" | "VERSUS"
 
 // ✅ Anti "reroll" : empêche de régénérer un mix en boucle jusqu'à tomber
 // sur la répartition voulue. Un SUPER_ADMIN n'est jamais concerné (voir
-// generateMix) — un simple ADMIN l'est comme n'importe quel joueur.
-const REGENERATE_COOLDOWN_MINUTES = 20;
+// generateMix) — un simple ADMIN l'est comme n'importe quel joueur. Durée
+// réglable dans /admin/settings (SiteConfig.mixRegenerateCooldownMinutes),
+// repli sur 20 min si la config n'existe pas encore.
+const DEFAULT_REGENERATE_COOLDOWN_MINUTES = 20;
 
 function isNextRedirectError(error: unknown) {
   return (
@@ -301,8 +303,15 @@ export async function generateMix(formData: FormData) {
     });
 
     if (lastSession) {
+      const siteConfig = await db.siteConfig.findUnique({
+        where: { id: "main" },
+        select: { mixRegenerateCooldownMinutes: true },
+      });
+      const cooldownMinutes =
+        siteConfig?.mixRegenerateCooldownMinutes ?? DEFAULT_REGENERATE_COOLDOWN_MINUTES;
+
       const elapsedMs = Date.now() - lastSession.createdAt.getTime();
-      const cooldownMs = REGENERATE_COOLDOWN_MINUTES * 60_000;
+      const cooldownMs = cooldownMinutes * 60_000;
 
       if (elapsedMs < cooldownMs) {
         // ✅ Un ADMIN avec la permission mix.regenerate_bypass peut quand

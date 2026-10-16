@@ -21,7 +21,7 @@ import { setPlayerStats } from "@/server/mix/set-player-stats";
 function getErrorMessage(error?: string, wait?: string) {
   switch (error) {
     case "cooldown":
-      return `Un mix vient d’être généré pour ce jeu — réessaie dans ${wait ?? "quelques"} min (délai anti-reroll de 20 min, sauf pour le super admin).`;
+      return `Un mix vient d’être généré pour ce jeu — réessaie dans ${wait ?? "quelques"} min (délai anti-reroll, sauf pour le super admin).`;
     case "forbidden":
       return "Rejoins d’abord la file Rocket League pour pouvoir générer.";
     case "pool_forbidden":
