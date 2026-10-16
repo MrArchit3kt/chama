@@ -10,6 +10,7 @@ import { addPlayerToPool } from "@/server/mix/add-player-to-pool";
 import { createTempPlayer } from "@/server/mix/create-temp-player";
 import { setMixGenerator } from "@/server/mix/set-mix-generator";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
+import { PlayerSearchFilter } from "@/components/admin/player-search-filter";
 import { getBadgeIcon, getBadgeColorClasses } from "@/lib/badges";
 
 function getErrorMessage(error?: string) {
@@ -571,66 +572,72 @@ export default async function AdminMixVersusPage({
             Ajouter un joueur inscrit au pool Versus
           </h3>
 
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {poolCandidates.length === 0 ? (
-              <div className="neon-card-soft p-4">
-                <p className="neon-text-muted text-sm">
-                  Aucun joueur éligible à ajouter.
-                </p>
-              </div>
-            ) : (
-              poolCandidates.map((player) => (
-                <div key={player.id} className="neon-card-soft p-3">
-                  <h4 className="truncate text-sm font-bold text-white">
-                    {player.displayName}
-                  </h4>
-                  <p className="neon-text-muted mt-1 truncate text-[11px]">
-                    @{player.username}
-                  </p>
-                  <p className="neon-text-muted mt-2 truncate text-[11px]">
-                    Warzone : <span className="text-white">{player.warzoneUsername}</span>
-                  </p>
-                  <p className="neon-text-muted mt-1 truncate text-[11px]">
-                    Plateforme :{" "}
-                    <span className="text-white">{player.platform ?? "Non renseignée"}</span>
-                  </p>
+          {poolCandidates.length === 0 ? (
+            <div className="neon-card-soft mt-4 p-4">
+              <p className="neon-text-muted text-sm">
+                Aucun joueur éligible à ajouter.
+              </p>
+            </div>
+          ) : (
+            <PlayerSearchFilter>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {poolCandidates.map((player) => (
+                  <div
+                    key={player.id}
+                    data-player-search={player.displayName.toLowerCase()}
+                    className="neon-card-soft p-3"
+                  >
+                    <h4 className="truncate text-sm font-bold text-white">
+                      {player.displayName}
+                    </h4>
+                    <p className="neon-text-muted mt-1 truncate text-[11px]">
+                      @{player.username}
+                    </p>
+                    <p className="neon-text-muted mt-2 truncate text-[11px]">
+                      Warzone : <span className="text-white">{player.warzoneUsername}</span>
+                    </p>
+                    <p className="neon-text-muted mt-1 truncate text-[11px]">
+                      Plateforme :{" "}
+                      <span className="text-white">{player.platform ?? "Non renseignée"}</span>
+                    </p>
 
-                  {player.badges.length > 0 ? (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {player.badges.map(({ badge }) => {
-                        const Icon = getBadgeIcon(badge.icon);
-                        const colorClasses = getBadgeColorClasses(badge.color);
+                    {player.badges.length > 0 ? (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {player.badges.map(({ badge }) => {
+                          const Icon = getBadgeIcon(badge.icon);
+                          const colorClasses = getBadgeColorClasses(badge.color);
 
-                        return (
-                          <span
-                            key={badge.id}
-                            title={badge.description}
-                            className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${colorClasses}`}
-                          >
-                            <Icon className="h-2.5 w-2.5" />
-                            {badge.name}
-                          </span>
-                        );
-                      })}
+                          return (
+                            <span
+                              key={badge.id}
+                              title={badge.description}
+                              className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${colorClasses}`}
+                            >
+                              <Icon className="h-2.5 w-2.5" />
+                              {badge.name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-2.5">
+                      <form action={addPlayerToPool}>
+                        <input type="hidden" name="userId" value={player.id} />
+                        <input type="hidden" name="game" value="VERSUS" />
+                        <button
+                          type="submit"
+                          className="neon-button w-full px-3 py-2 text-xs"
+                        >
+                          Ajouter au pool
+                        </button>
+                      </form>
                     </div>
-                  ) : null}
-
-                  <div className="mt-2.5">
-                    <form action={addPlayerToPool}>
-                      <input type="hidden" name="userId" value={player.id} />
-                      <input type="hidden" name="game" value="VERSUS" />
-                      <button
-                        type="submit"
-                        className="neon-button w-full px-3 py-2 text-xs"
-                      >
-                        Ajouter au pool
-                      </button>
-                    </form>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))}
+              </div>
+            </PlayerSearchFilter>
+          )}
         </div>
 
         {/* LAST SESSION */}
