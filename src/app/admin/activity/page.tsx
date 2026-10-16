@@ -17,6 +17,8 @@ const ACTIVITY_LABELS: Record<string, string> = {
   AURA_TOGGLED: "Statut AURA",
   PLAYER_BANNED: "Bannissement",
   PLAYER_UNBANNED: "Déban",
+  PLAYER_EXCLUDED: "Exclusion temporaire",
+  PLAYER_EXCLUSION_EXPIRED: "Exclusion temporaire levée (échéance)",
   PLAYER_DELETED: "Suppression de compte",
   PASSWORD_RESET: "Mot de passe réinitialisé",
   PLAYER_IDENTITY_UPDATED: "Pseudo/@ d'un joueur modifié",

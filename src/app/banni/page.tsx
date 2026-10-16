@@ -37,6 +37,30 @@ function formatDate(value: Date) {
   }).format(value);
 }
 
+/**
+ * Temps restant lisible pour une exclusion temporaire (ex. "2 jours et 4
+ * heures", "moins d'une heure"). resolveSessionUser (session.ts) lève
+ * l'exclusion automatiquement dès que expiresAt est dépassé, donc cette
+ * page n'affiche jamais un temps négatif en pratique — on sécurise quand
+ * même avec un plancher à 0.
+ */
+function formatRemainingTime(expiresAt: Date) {
+  const diffMs = Math.max(0, expiresAt.getTime() - Date.now());
+  const totalMinutes = Math.ceil(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+
+  if (days > 0) {
+    return `${days} jour${days > 1 ? "s" : ""}${hours > 0 ? ` et ${hours} heure${hours > 1 ? "s" : ""}` : ""}`;
+  }
+
+  if (hours > 0) {
+    return `${hours} heure${hours > 1 ? "s" : ""}`;
+  }
+
+  return "moins d’une heure";
+}
+
 function getErrorMessage(error?: string) {
   switch (error) {
     case "validation":
@@ -72,6 +96,7 @@ export default async function BanniPage({
   const errorMessage = getErrorMessage(sp.error);
   const isSuccess = sp.success === "1";
   const warningLabel = getWarningTypeLabel(ban?.triggerType ?? null);
+  const isTemporaryExclusion = Boolean(ban?.expiresAt);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
@@ -80,24 +105,39 @@ export default async function BanniPage({
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/25 bg-rose-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-rose-300">
               <ShieldAlert className="h-3.5 w-3.5" />
-              Compte banni
+              {isTemporaryExclusion ? "Exclusion temporaire" : "Compte banni"}
             </span>
           </div>
 
           <h1 className="neon-title text-2xl font-black text-white md:text-3xl">
-            Ton compte a été banni
+            {isTemporaryExclusion
+              ? "Tu as été exclu temporairement"
+              : "Ton compte a été banni"}
           </h1>
 
           <p className="neon-text-muted mt-4 text-sm leading-6 md:text-base md:leading-7">
-            Tu ne peux plus accéder au site tant que ton bannissement n’est
-            pas levé par un admin. Voici la raison, et tu peux t’expliquer
-            juste en dessous — ta réponse part directement dans la boîte de
-            contact des admins.
+            {isTemporaryExclusion
+              ? "Tu ne peux plus accéder au site pendant la durée de l’exclusion. L’accès te sera automatiquement rendu à l’échéance, sans action de ta part. Voici la raison, et tu peux t’expliquer juste en dessous — ta réponse part directement dans la boîte de contact des admins."
+              : "Tu ne peux plus accéder au site tant que ton bannissement n’est pas levé par un admin. Voici la raison, et tu peux t’expliquer juste en dessous — ta réponse part directement dans la boîte de contact des admins."}
           </p>
+
+          {isTemporaryExclusion && ban?.expiresAt ? (
+            <div className="mt-6 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 md:p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/80">
+                Temps restant
+              </p>
+              <p className="mt-2 text-lg font-bold text-amber-300 md:text-xl">
+                {formatRemainingTime(ban.expiresAt)}
+              </p>
+              <p className="mt-1 text-xs text-white/50">
+                Fin de l’exclusion le {formatDate(ban.expiresAt)}.
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/5 p-4 md:p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-300/80">
-              Motif du bannissement
+              {isTemporaryExclusion ? "Motif de l’exclusion" : "Motif du bannissement"}
             </p>
 
             {ban ? (
