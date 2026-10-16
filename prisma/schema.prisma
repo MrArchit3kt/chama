@@ -331,6 +331,10 @@ model User {
   // ✅ Twitch (pseudo de chaîne, sans le "https://twitch.tv/")
   twitchUsername String?
 
+  // ✅ Réseaux sociaux affichés sur /lives (handle nu, sans @)
+  tiktokUsername    String?
+  instagramUsername String?
+
   micAvailable  Boolean @default(true)
   notes         String?
   isChamaMember Boolean @default(false)
