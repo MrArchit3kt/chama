@@ -26,6 +26,10 @@ function getErrorMessage(error?: string) {
       return "Cet email est déjà utilisé par un autre compte.";
     case "twitch_invalid":
       return "Pseudo Twitch invalide. Colle juste ton pseudo ou le lien de ta chaîne.";
+    case "tiktok_invalid":
+      return "Pseudo TikTok invalide. Colle juste ton pseudo ou le lien de ton profil.";
+    case "instagram_invalid":
+      return "Pseudo Instagram invalide. Colle juste ton pseudo ou le lien de ton profil.";
     case "password_validation":
       return "Mot de passe invalide (minimum 8 caractères, confirmation identique).";
     case "password_mismatch":
@@ -412,6 +416,40 @@ export default async function ProfilePage({
               <p className="neon-text-muted mt-2 text-xs leading-5">
                 Renseigne ton pseudo (ou le lien de ta chaîne) pour apparaître
                 dans l’onglet Lives dès que tu es en direct.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white">
+                TikTok
+              </label>
+              <input
+                name="tiktokUsername"
+                type="text"
+                defaultValue={user.tiktokUsername ?? ""}
+                placeholder="pseudo_tiktok"
+                className="w-full px-4 py-3"
+              />
+              <p className="neon-text-muted mt-2 text-xs leading-5">
+                Renseigne ton pseudo (ou le lien de ton profil) pour apparaître
+                dans l’onglet Lives.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white">
+                Instagram
+              </label>
+              <input
+                name="instagramUsername"
+                type="text"
+                defaultValue={user.instagramUsername ?? ""}
+                placeholder="pseudo_insta"
+                className="w-full px-4 py-3"
+              />
+              <p className="neon-text-muted mt-2 text-xs leading-5">
+                Renseigne ton pseudo (ou le lien de ton profil) pour apparaître
+                dans l’onglet Lives.
               </p>
             </div>
 

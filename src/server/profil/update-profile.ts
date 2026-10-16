@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { requireAuth } from "@/server/auth/session";
 import { normalizeTwitchUsername } from "@/lib/twitch";
+import { normalizeTiktokUsername, normalizeInstagramUsername } from "@/lib/socials";
 import { logServerError } from "@/lib/log-error";
 
 const rocketLeagueRankEnum = z.enum([
@@ -43,6 +44,8 @@ const updateProfileSchema = z.object({
   discordUsername: z.string().max(80).optional(),
   whatsappNumber: z.string().max(30).optional(),
   twitchUsername: z.string().max(25).optional(),
+  tiktokUsername: z.string().max(24).optional(),
+  instagramUsername: z.string().max(30).optional(),
   micAvailable: z.boolean().optional(),
   whatsappOptIn: z.boolean().optional(),
 
@@ -79,7 +82,8 @@ export async function updateProfile(formData: FormData) {
   const rlRankRaw = emptyToUndefined(formData.get("rocketLeagueRank"));
   const wzRankRaw = emptyToUndefined(formData.get("warzoneRankTier"));
 
-  // Twitch : accepte pseudo brut, URL complète ou "@pseudo" ; "" => pas de chaîne
+  // Twitch/TikTok/Instagram : acceptent pseudo brut, URL complète ou
+  // "@pseudo" ; "" => pas de chaîne
   const twitchRaw = emptyToUndefined(formData.get("twitchUsername"));
   let twitchUsername: string | null | undefined;
   if (twitchRaw === undefined) {
@@ -88,6 +92,28 @@ export async function updateProfile(formData: FormData) {
     twitchUsername = normalizeTwitchUsername(twitchRaw);
     if (!twitchUsername) {
       redirect("/profil?error=twitch_invalid");
+    }
+  }
+
+  const tiktokRaw = emptyToUndefined(formData.get("tiktokUsername"));
+  let tiktokUsername: string | null | undefined;
+  if (tiktokRaw === undefined) {
+    tiktokUsername = null;
+  } else {
+    tiktokUsername = normalizeTiktokUsername(tiktokRaw);
+    if (!tiktokUsername) {
+      redirect("/profil?error=tiktok_invalid");
+    }
+  }
+
+  const instagramRaw = emptyToUndefined(formData.get("instagramUsername"));
+  let instagramUsername: string | null | undefined;
+  if (instagramRaw === undefined) {
+    instagramUsername = null;
+  } else {
+    instagramUsername = normalizeInstagramUsername(instagramRaw);
+    if (!instagramUsername) {
+      redirect("/profil?error=instagram_invalid");
     }
   }
 
@@ -101,6 +127,8 @@ export async function updateProfile(formData: FormData) {
     discordUsername: emptyToUndefined(formData.get("discordUsername")),
     whatsappNumber: emptyToUndefined(formData.get("whatsappNumber")),
     twitchUsername: twitchUsername ?? undefined,
+    tiktokUsername: tiktokUsername ?? undefined,
+    instagramUsername: instagramUsername ?? undefined,
     micAvailable: formData.get("micAvailable") === "on",
     whatsappOptIn: formData.get("whatsappOptIn") === "on",
 
@@ -136,6 +164,8 @@ export async function updateProfile(formData: FormData) {
         discordUsername: data.discordUsername,
         whatsappNumber: data.whatsappNumber,
         twitchUsername: twitchUsername ?? null,
+        tiktokUsername: tiktokUsername ?? null,
+        instagramUsername: instagramUsername ?? null,
         micAvailable: Boolean(data.micAvailable),
         whatsappOptIn: Boolean(data.whatsappOptIn),
 
