@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/prisma";
 import { logServerError } from "@/lib/log-error";
+import { logActivity } from "@/lib/activity-log";
 import { hasAdminSectionAccess, type AdminSection } from "@/lib/admin-permissions";
 
 // ⚠️ redirect() de Next.js fonctionne en lançant une erreur spéciale pour
@@ -62,13 +63,67 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
+  let status = dbUser.status;
+
+  // ✅ Exclusion temporaire (voir exclude-player.ts) : levée automatique
+  // dès que l'échéance est passée, sans intervention admin. On vérifie à
+  // chaque résolution de session plutôt que via un cron, pour ne pas
+  // dépendre d'un process externe — le coût est négligeable (une requête
+  // de plus, uniquement pour les comptes BANNED).
+  if (status === "BANNED") {
+    const expiredBan = await db.ban.findFirst({
+      where: {
+        targetUserId: dbUser.id,
+        status: "ACTIVE",
+        expiresAt: { lte: new Date() },
+      },
+      orderBy: { startedAt: "desc" },
+      select: { id: true },
+    });
+
+    if (expiredBan) {
+      try {
+        await db.$transaction([
+          db.ban.update({
+            where: { id: expiredBan.id },
+            data: {
+              status: "EXPIRED",
+              liftedAt: new Date(),
+              liftReason: "Exclusion temporaire arrivée à échéance.",
+            },
+          }),
+          db.user.update({
+            where: { id: dbUser.id },
+            data: {
+              status: "ACTIVE",
+              bannedAt: null,
+              banReason: null,
+              banTriggerType: null,
+            },
+          }),
+        ]);
+
+        status = "ACTIVE";
+
+        await logActivity({
+          action: "PLAYER_EXCLUSION_EXPIRED",
+          actorLabel: "Système (échéance automatique)",
+          targetId: dbUser.id,
+          targetLabel: `${dbUser.displayName} (@${dbUser.username})`,
+        });
+      } catch (error) {
+        await logServerError("AUTO_EXPIRE_EXCLUSION_ERROR", error);
+      }
+    }
+  }
+
   return {
     id: dbUser.id,
     email: dbUser.email,
     name: dbUser.displayName,
     username: dbUser.username,
     role: dbUser.role,
-    status: dbUser.status,
+    status,
     registrationStatus: dbUser.registrationStatus,
     adminPermissions: dbUser.adminPermissions,
   };

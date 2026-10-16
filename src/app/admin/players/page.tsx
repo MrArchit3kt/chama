@@ -13,6 +13,7 @@ import { toggleChamaMember } from "@/server/admin/toggle-chama-member";
 import { toggleAuraMember } from "@/server/admin/toggle-aura-member";
 import { toggleUserRole } from "@/server/admin/toggle-user-role";
 import { banPlayer } from "@/server/admin/ban-player";
+import { excludePlayer } from "@/server/admin/exclude-player";
 import { deletePlayer } from "@/server/admin/delete-player";
 import { awardBadge } from "@/server/admin/award-badge";
 import { revokeBadge } from "@/server/admin/revoke-badge";
@@ -62,7 +63,7 @@ function getErrorMessage(error?: string) {
     case "self_ban":
       return "Tu ne peux pas te bannir toi-même.";
     case "already_banned":
-      return "Ce joueur est déjà banni.";
+      return "Ce joueur est déjà banni ou exclu.";
     case "self_delete":
       return "Tu ne peux pas supprimer ton propre compte.";
     case "admin_delete_locked":
@@ -150,6 +151,7 @@ export default async function AdminPlayersPage({
     aura?: string;
     role_updated?: string;
     manual_banned?: string;
+    excluded?: string;
     badge_awarded?: string;
     badge_revoked?: string;
     deleted?: string;
@@ -178,6 +180,7 @@ export default async function AdminPlayersPage({
   const isAuraDisabled = sp.aura === "0";
   const isRoleUpdated = sp.role_updated === "1";
   const isManuallyBanned = sp.manual_banned === "1";
+  const isExcluded = sp.excluded === "1";
   const isBadgeAwarded = sp.badge_awarded === "1";
   const isBadgeRevoked = sp.badge_revoked === "1";
   const isDeleted = sp.deleted === "1";
@@ -528,6 +531,14 @@ export default async function AdminPlayersPage({
           <div className="neon-card p-5">
             <p className="text-sm font-medium text-rose-400">
               Joueur banni avec succès.
+            </p>
+          </div>
+        ) : null}
+
+        {isExcluded ? (
+          <div className="neon-card p-5">
+            <p className="text-sm font-medium text-amber-300">
+              Joueur exclu temporairement avec succès.
             </p>
           </div>
         ) : null}
@@ -912,6 +923,45 @@ export default async function AdminPlayersPage({
                         </form>
                       ) : null}
                     </div>
+
+                    {admin.role === "SUPER_ADMIN" ? (
+                      <div className="rounded-2xl border border-amber-400/15 bg-amber-400/4 p-2.5 md:p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300/80">
+                          Exclusion temporaire
+                        </p>
+                        <p className="neon-text-muted mt-1 text-xs leading-5">
+                          Bloque l’accès au site pendant un nombre de jours
+                          défini, puis se lève automatiquement. Le joueur
+                          voit le motif et le temps restant sur /banni.
+                        </p>
+
+                        <form action={excludePlayer} className="mt-1.5 md:mt-2 grid gap-1.5 md:gap-2">
+                          <input type="hidden" name="userId" value={player.id} />
+                          <input
+                            name="days"
+                            type="number"
+                            min={1}
+                            max={90}
+                            required
+                            placeholder="Nombre de jours (1 à 90)"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+                          <input
+                            name="reason"
+                            type="text"
+                            required
+                            placeholder="Motif de l’exclusion"
+                            className="w-full px-4 py-2 md:py-2.5"
+                          />
+                          <button
+                            type="submit"
+                            className="neon-button-secondary w-full px-5 py-2 md:py-2.5"
+                          >
+                            Exclure temporairement
+                          </button>
+                        </form>
+                      </div>
+                    ) : null}
 
                     <div className="rounded-2xl border border-rose-400/15 bg-rose-400/4 p-2.5 md:p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-300/80">

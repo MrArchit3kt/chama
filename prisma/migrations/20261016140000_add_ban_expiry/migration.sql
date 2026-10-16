@@ -1,0 +1,9 @@
+-- AlterEnum
+ALTER TYPE "BanStatus" ADD VALUE 'EXPIRED';
+
+-- AlterEnum
+ALTER TYPE "ActivityAction" ADD VALUE 'PLAYER_EXCLUDED';
+ALTER TYPE "ActivityAction" ADD VALUE 'PLAYER_EXCLUSION_EXPIRED';
+
+-- AlterTable
+ALTER TABLE "Ban" ADD COLUMN     "expiresAt" TIMESTAMP(3);

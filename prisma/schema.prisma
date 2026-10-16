@@ -67,6 +67,10 @@ enum BanSource {
 enum BanStatus {
   ACTIVE
   LIFTED
+  // ✅ Exclusion temporaire arrivée à échéance toute seule (voir
+  // resolveSessionUser dans session.ts) — distinct de LIFTED (levée
+  // manuelle par un admin avant l'échéance).
+  EXPIRED
 }
 
 enum EventStatus {
@@ -618,6 +622,10 @@ model Ban {
   liftedAt   DateTime?
   liftReason String?   @db.Text
 
+  // ✅ Exclusion temporaire (super admin uniquement, voir exclude-player.ts)
+  // si renseigné — null = bannissement classique, sans échéance.
+  expiresAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -899,6 +907,8 @@ enum ActivityAction {
   AURA_TOGGLED
   PLAYER_BANNED
   PLAYER_UNBANNED
+  PLAYER_EXCLUDED
+  PLAYER_EXCLUSION_EXPIRED
   PLAYER_DELETED
   PASSWORD_RESET
   PLAYER_IDENTITY_UPDATED
