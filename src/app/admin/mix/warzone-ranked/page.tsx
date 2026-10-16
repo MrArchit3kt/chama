@@ -10,6 +10,7 @@ import { addPlayerToPool } from "@/server/mix/add-player-to-pool";
 import { createTempPlayer } from "@/server/mix/create-temp-player";
 import { setMixGenerator } from "@/server/mix/set-mix-generator";
 import { cleanupOldMixSessions } from "@/server/mix/cleanup-old-sessions";
+import { PlayerSearchFilter } from "@/components/admin/player-search-filter";
 
 function getErrorMessage(error?: string) {
   switch (error) {
@@ -518,46 +519,52 @@ export default async function AdminMixWarzoneRankedPage({
             Ajouter un joueur inscrit au pool Ranked
           </h3>
 
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {poolCandidates.length === 0 ? (
-              <div className="neon-card-soft p-4">
-                <p className="neon-text-muted text-sm">
-                  Aucun joueur éligible à ajouter.
-                </p>
-              </div>
-            ) : (
-              poolCandidates.map((player) => (
-                <div key={player.id} className="neon-card-soft p-3">
-                  <h4 className="truncate text-sm font-bold text-white">
-                    {player.displayName}
-                  </h4>
-                  <p className="neon-text-muted mt-1 truncate text-[11px]">
-                    @{player.username}
-                  </p>
-                  <p className="neon-text-muted mt-2 truncate text-[11px]">
-                    Warzone : <span className="text-white">{player.warzoneUsername}</span>
-                  </p>
-                  <p className="neon-text-muted mt-1 truncate text-[11px]">
-                    Plateforme :{" "}
-                    <span className="text-white">{player.platform ?? "Non renseignée"}</span>
-                  </p>
+          {poolCandidates.length === 0 ? (
+            <div className="neon-card-soft mt-4 p-4">
+              <p className="neon-text-muted text-sm">
+                Aucun joueur éligible à ajouter.
+              </p>
+            </div>
+          ) : (
+            <PlayerSearchFilter>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {poolCandidates.map((player) => (
+                  <div
+                    key={player.id}
+                    data-player-search={player.displayName.toLowerCase()}
+                    className="neon-card-soft p-3"
+                  >
+                    <h4 className="truncate text-sm font-bold text-white">
+                      {player.displayName}
+                    </h4>
+                    <p className="neon-text-muted mt-1 truncate text-[11px]">
+                      @{player.username}
+                    </p>
+                    <p className="neon-text-muted mt-2 truncate text-[11px]">
+                      Warzone : <span className="text-white">{player.warzoneUsername}</span>
+                    </p>
+                    <p className="neon-text-muted mt-1 truncate text-[11px]">
+                      Plateforme :{" "}
+                      <span className="text-white">{player.platform ?? "Non renseignée"}</span>
+                    </p>
 
-                  <div className="mt-2.5">
-                    <form action={addPlayerToPool}>
-                      <input type="hidden" name="userId" value={player.id} />
-                      <input type="hidden" name="game" value="WARZONE_RANKED" />
-                      <button
-                        type="submit"
-                        className="neon-button w-full px-3 py-2 text-xs"
-                      >
-                        Ajouter au pool
-                      </button>
-                    </form>
+                    <div className="mt-2.5">
+                      <form action={addPlayerToPool}>
+                        <input type="hidden" name="userId" value={player.id} />
+                        <input type="hidden" name="game" value="WARZONE_RANKED" />
+                        <button
+                          type="submit"
+                          className="neon-button w-full px-3 py-2 text-xs"
+                        >
+                          Ajouter au pool
+                        </button>
+                      </form>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))}
+              </div>
+            </PlayerSearchFilter>
+          )}
         </div>
 
         {/* LAST SESSION */}

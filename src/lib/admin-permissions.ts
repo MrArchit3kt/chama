@@ -53,6 +53,11 @@ export const ADMIN_PERMISSIONS = {
     section: "mix",
     label: "Gérer tous les mix (Warzone/Ranked/BO7/Rocket League/Versus)",
   },
+  "mix.regenerate_bypass": {
+    section: "mix",
+    label:
+      "Regénérer un mix avant la fin du délai de 20 min (uniquement si un joueur a rejoint la file depuis la dernière génération)",
+  },
   "points.config": {
     section: "points",
     label: "Configurer les modes de jeu et leurs conditions de points",

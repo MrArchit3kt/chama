@@ -7,6 +7,7 @@ import { isDiscordBotConfigured, moveGuildMemberToVoiceChannel } from "@/lib/dis
 import { logServerError } from "@/lib/log-error";
 import { logActivity } from "@/lib/activity-log";
 import { notifyMixTeamsGenerated } from "@/lib/mix-notifications";
+import { hasAdminPermission } from "@/lib/admin-permissions";
 import {
   shuffle,
   getTeamSizesFourThree,
@@ -64,6 +65,56 @@ function redirectToGame(game: MixGame, qs: string): never {
             : "/rocket-league";
 
   redirect(`${path}${qs}`);
+}
+
+/** Pool actuellement en file (inscrits + invités) pour un jeu donné. */
+async function getCurrentPoolIds(game: MixGame): Promise<{ userIds: string[]; tempIds: string[] }> {
+  const userWhere =
+    game === "WARZONE"
+      ? { isAvailableForWarzoneMix: true }
+      : game === "WARZONE_RANKED"
+        ? { isAvailableForWarzoneRankedMix: true }
+        : game === "BO7"
+          ? { isAvailableForBO7Mix: true }
+          : game === "ROCKET_LEAGUE"
+            ? { isAvailableForRocketLeagueMix: true }
+            : { isAvailableForVersusMix: true };
+
+  const [users, tempPlayers] = await Promise.all([
+    db.user.findMany({
+      where: { status: "ACTIVE", registrationStatus: "APPROVED", ...userWhere },
+      select: { id: true },
+    }),
+    db.tempPlayer.findMany({ where: { game, isAvailableForMix: true }, select: { id: true } }),
+  ]);
+
+  return { userIds: users.map((u) => u.id), tempIds: tempPlayers.map((t) => t.id) };
+}
+
+/**
+ * True si au moins un joueur (inscrit ou invité) actuellement en file ne
+ * faisait PAS partie du mix généré par `sessionId` — condition du bypass
+ * mix.regenerate_bypass : seul un vrai nouvel arrivant justifie de
+ * regénérer avant la fin du délai anti-reroll, pas juste retenter sa
+ * chance avec le même groupe.
+ */
+async function hasNewPlayerSinceSession(game: MixGame, sessionId: string): Promise<boolean> {
+  const [{ userIds, tempIds }, sessionPlayers] = await Promise.all([
+    getCurrentPoolIds(game),
+    db.mixSessionPlayer.findMany({
+      where: { sessionId },
+      select: { userId: true, tempPlayerId: true },
+    }),
+  ]);
+
+  const pastUserIds = new Set(
+    sessionPlayers.map((p) => p.userId).filter((id): id is string => Boolean(id)),
+  );
+  const pastTempIds = new Set(
+    sessionPlayers.map((p) => p.tempPlayerId).filter((id): id is string => Boolean(id)),
+  );
+
+  return userIds.some((id) => !pastUserIds.has(id)) || tempIds.some((id) => !pastTempIds.has(id));
 }
 
 /**
@@ -246,7 +297,7 @@ export async function generateMix(formData: FormData) {
     const lastSession = await db.mixSession.findFirst({
       where: { game },
       orderBy: { createdAt: "desc" },
-      select: { createdAt: true },
+      select: { id: true, createdAt: true },
     });
 
     if (lastSession) {
@@ -254,8 +305,22 @@ export async function generateMix(formData: FormData) {
       const cooldownMs = REGENERATE_COOLDOWN_MINUTES * 60_000;
 
       if (elapsedMs < cooldownMs) {
-        const minutesLeft = Math.ceil((cooldownMs - elapsedMs) / 60_000);
-        redirectToGame(game, `?error=cooldown&wait=${minutesLeft}`);
+        // ✅ Un ADMIN avec la permission mix.regenerate_bypass peut quand
+        // même regénérer avant la fin du délai, mais UNIQUEMENT si un
+        // joueur a rejoint la file depuis la dernière génération — sinon
+        // ça reviendrait à autoriser un reroll pour le même groupe.
+        const hasBypassPermission = hasAdminPermission(
+          sessionUser.role,
+          sessionUser.adminPermissions,
+          "mix.regenerate_bypass",
+        );
+        const canBypass =
+          hasBypassPermission && (await hasNewPlayerSinceSession(game, lastSession.id));
+
+        if (!canBypass) {
+          const minutesLeft = Math.ceil((cooldownMs - elapsedMs) / 60_000);
+          redirectToGame(game, `?error=cooldown&wait=${minutesLeft}`);
+        }
       }
     }
   }
